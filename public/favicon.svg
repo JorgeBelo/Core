@@ -1,0 +1,14 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" fill="#000000"/>
+  <text 
+    x="16" 
+    y="22" 
+    font-family="AC Soft Icecream, Fredoka One, Comfortaa, cursive" 
+    font-size="26" 
+    font-weight="400" 
+    fill="#a20100" 
+    text-anchor="middle" 
+    dominant-baseline="middle"
+    style="letter-spacing: 0.02em; font-weight: 400; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;"
+  >C</text>
+</svg>

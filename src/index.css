@@ -1,0 +1,127 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Fredoka+One:wght@400&family=Comfortaa:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Importar fonte AC Soft Icecream (se disponível localmente) */
+@font-face {
+  font-family: 'AC Soft Icecream';
+  src: url('./assets/fonts/AC-Soft-Icecream.woff2') format('woff2'),
+       url('./assets/fonts/AC-Soft-Icecream.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Classe para garantir fonte gordinha e redondinha */
+.font-brand-core {
+  font-family: 'AC Soft Icecream', 'Fredoka One', 'Comfortaa', cursive !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.02em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+@layer base {
+  * {
+    @apply border-gray-dark;
+  }
+  
+  body {
+    @apply bg-dark text-white font-sans antialiased;
+    background-color: #000000;
+    color: #ffffff;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans;
+    color: #ffffff;
+    font-weight: 600;
+  }
+}
+
+@layer components {
+  /* Botão primário com cor oficial */
+  .btn-primary {
+    @apply bg-primary text-white font-medium px-6 py-3 rounded-lg;
+    @apply hover:bg-primary-dark transition-colors duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-dark;
+  }
+
+  /* Botão secundário */
+  .btn-secondary {
+    @apply bg-dark-soft text-gray-light border border-gray-light font-medium px-6 py-3 rounded-lg;
+    @apply hover:bg-dark-lighter hover:text-white transition-colors duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-dark;
+  }
+
+  /* Input com estilo da marca */
+  .input-core {
+    @apply bg-dark-soft border border-gray-dark text-white rounded-lg px-4 py-3;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
+    @apply placeholder:text-gray-light;
+  }
+
+  /* Card com estilo dark */
+  .card-core {
+    @apply bg-dark-soft border border-gray-dark rounded-lg p-6;
+    @apply shadow-lg;
+  }
+
+  /* Texto secundário */
+  .text-secondary {
+    @apply text-gray-light;
+  }
+
+  /* Link com cor primária */
+  .link-primary {
+    @apply text-primary hover:text-primary-light transition-colors duration-200;
+  }
+}
+
+@layer utilities {
+  /* Scrollbar customizada para dark mode */
+  .scrollbar-dark::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-track {
+    @apply bg-dark;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-thumb {
+    @apply bg-gray-dark rounded-full;
+  }
+
+  .scrollbar-dark::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-light;
+  }
+}
+
+/* Reset e estilos globais */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Remover estilos padrão de botões */
+button {
+  @apply font-sans;
+}
+
+/* Estilos para inputs e selects */
+input, select, textarea {
+  @apply font-sans;
+}
+
+/* Garantir contraste adequado */
+::selection {
+  @apply bg-primary text-white;
+}
