@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Clock, Camera, Link as LinkIcon } from 'lucide-react';
+import { Save, Camera, Link as LinkIcon } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useUserProfile } from '../../hooks/useUserProfile';
@@ -27,20 +27,6 @@ export const Perfil = () => {
     }
   }, [userProfile]);
 
-  const [workHours, setWorkHours] = useState({
-    start: '08:00',
-    end: '18:00',
-    days: {
-      monday: true,
-      tuesday: true,
-      wednesday: true,
-      thursday: true,
-      friday: true,
-      saturday: false,
-      sunday: false,
-    },
-  });
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -56,12 +42,6 @@ export const Perfil = () => {
       console.error('Erro ao atualizar perfil:', error);
       toast.error('Erro ao atualizar perfil');
     }
-  };
-
-  const handleWorkHoursSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // TODO: Implementar chamada à API
-    toast.success('Horários de trabalho atualizados!');
   };
 
   return (
@@ -214,79 +194,6 @@ export const Perfil = () => {
           </form>
         </Card>
       </div>
-
-      {/* Horários de Trabalho */}
-      <Card title="Horários de Trabalho">
-        <form onSubmit={handleWorkHoursSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Horário de Início
-              </label>
-              <input
-                type="time"
-                value={workHours.start}
-                onChange={(e) => setWorkHours({ ...workHours, start: e.target.value })}
-                className="input-core w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Horário de Término
-              </label>
-              <input
-                type="time"
-                value={workHours.end}
-                onChange={(e) => setWorkHours({ ...workHours, end: e.target.value })}
-                className="input-core w-full"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-white mb-3">
-              Dias da Semana
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {Object.entries({
-                monday: 'Segunda-feira',
-                tuesday: 'Terça-feira',
-                wednesday: 'Quarta-feira',
-                thursday: 'Quinta-feira',
-                friday: 'Sexta-feira',
-                saturday: 'Sábado',
-                sunday: 'Domingo',
-              }).map(([key, label]) => (
-                <label
-                  key={key}
-                  className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border border-gray-dark hover:border-primary transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    checked={workHours.days[key as keyof typeof workHours.days]}
-                    onChange={(e) =>
-                      setWorkHours({
-                        ...workHours,
-                        days: { ...workHours.days, [key]: e.target.checked },
-                      })
-                    }
-                    className="w-4 h-4 text-primary bg-dark-soft border-gray-dark rounded focus:ring-primary"
-                  />
-                  <span className="text-white text-sm">{label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-4 border-t border-gray-dark">
-            <Button type="submit">
-              <Clock size={20} className="mr-2" />
-              Salvar Horários
-            </Button>
-          </div>
-        </form>
-      </Card>
 
       {/* Configurações Adicionais */}
       <Card title="Configurações">
