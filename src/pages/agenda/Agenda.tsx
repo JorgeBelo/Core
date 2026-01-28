@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, X, Plus } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
-import { format, startOfWeek, addDays, addWeeks, subWeeks } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import type { Aluno } from '../../types';
 
@@ -13,7 +11,7 @@ interface AgendaItem {
   id: string;
   personal_id: string;
   aluno_id?: string;
-  data: string; // YYYY-MM-DD
+  dia_semana: number; // 0 = Segunda, 6 = Domingo
   hora_inicio: string; // HH:mm
   hora_fim: string; // HH:mm
   aluno?: Aluno;
@@ -21,9 +19,18 @@ interface AgendaItem {
   updated_at: string;
 }
 
+const diasSemana = [
+  { id: 0, nome: 'Segunda-feira' },
+  { id: 1, nome: 'Terça-feira' },
+  { id: 2, nome: 'Quarta-feira' },
+  { id: 3, nome: 'Quinta-feira' },
+  { id: 4, nome: 'Sexta-feira' },
+  { id: 5, nome: 'Sábado' },
+  { id: 6, nome: 'Domingo' },
+];
+
 export const Agenda = () => {
   const { user } = useAuth();
-  const [currentWeek, setCurrentWeek] = useState(new Date());
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,9 +42,6 @@ export const Agenda = () => {
   const [selectedAlunoId, setSelectedAlunoId] = useState<string>('');
   const [horaInicio, setHoraInicio] = useState('08:00');
   const [horaFim, setHoraFim] = useState('09:00');
-
-  const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 }); // Segunda-feira
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   // Gerar horários de 6h às 23h com intervalos de 30 minutos
   const generateTimeSlots = () => {
@@ -57,7 +61,7 @@ export const Agenda = () => {
       loadAgenda();
       loadAlunos();
     }
-  }, [user, currentWeek]);
+  }, [user]);
 
   const loadAlunos = async () => {
     if (!user) return;
@@ -83,10 +87,7 @@ export const Agenda = () => {
 
     setLoading(true);
     try {
-      const weekStartStr = format(weekStart, 'yyyy-MM-dd');
-      const weekEndStr = format(addDays(weekStart, 6), 'yyyy-MM-dd');
-
-      // Buscar agenda da semana atual
+      // Buscar agenda - usando dia_semana ao invés de data
       const { data, error } = await supabase
         .from('agenda_personal')
         .select(`
@@ -99,8 +100,7 @@ export const Agenda = () => {
           )
         `)
         .eq('personal_id', user.id)
-        .gte('data', weekStartStr)
-        .lte('data', weekEndStr)
+        .order('dia_semana')
         .order('hora_inicio');
 
       if (error) throw error;
@@ -118,12 +118,9 @@ export const Agenda = () => {
   };
 
   const getAgendaForSlot = (dia: number, hora: string): AgendaItem | undefined => {
-    const dayDate = weekDays[dia];
-    const dateStr = format(dayDate, 'yyyy-MM-dd');
-
     return agendaItems.find(
       (item) =>
-        item.data === dateStr &&
+        item.dia_semana === dia &&
         item.hora_inicio <= hora &&
         item.hora_fim > hora
     );
@@ -161,15 +158,12 @@ export const Agenda = () => {
     }
 
     try {
-      const selectedDay = weekDays[selectedSlot.dia];
-      const dataStr = format(selectedDay, 'yyyy-MM-dd');
-
-      // Verificar se já existe um agendamento no mesmo horário
+      // Verificar se já existe um agendamento no mesmo horário e dia
       const { data: existing } = await supabase
         .from('agenda_personal')
         .select('id')
         .eq('personal_id', user.id)
-        .eq('data', dataStr)
+        .eq('dia_semana', selectedSlot.dia)
         .eq('hora_inicio', horaInicio)
         .single();
 
@@ -181,7 +175,7 @@ export const Agenda = () => {
       const { error } = await supabase.from('agenda_personal').insert({
         personal_id: user.id,
         aluno_id: selectedAlunoId,
-        data: dataStr,
+        dia_semana: selectedSlot.dia,
         hora_inicio: horaInicio,
         hora_fim: horaFim,
       });
@@ -236,122 +230,89 @@ export const Agenda = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-sans font-semibold text-white mb-2">Agenda</h1>
-          <p className="text-gray-light">Grade semanal de horários - Clique para agendar</p>
-        </div>
-        <Button onClick={() => setCurrentWeek(new Date())}>Hoje</Button>
+      <div>
+        <h1 className="text-3xl font-sans font-semibold text-white mb-2">Agenda Semanal</h1>
+        <p className="text-gray-light">Grade semanal fixa - Clique para agendar alunos</p>
       </div>
 
-      {/* Controles de Navegação */}
-      <Card>
-        <div className="flex items-center justify-between">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setCurrentWeek(subWeeks(currentWeek, 1));
-            }}
-          >
-            <ChevronLeft size={20} />
-            Semana Anterior
-          </Button>
-          <h2 className="text-xl font-sans font-semibold text-white">
-            {format(weekStart, "d 'de' MMMM", { locale: ptBR })} -{' '}
-            {format(addDays(weekStart, 6), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
-          </h2>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setCurrentWeek(addWeeks(currentWeek, 1));
-            }}
-          >
-            Próxima Semana
-            <ChevronRight size={20} />
-          </Button>
-        </div>
-      </Card>
-
-      {/* Grade Semanal */}
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr>
-                <th className="text-left py-3 px-4 text-gray-light font-medium w-24 border-b border-gray-dark sticky left-0 bg-dark-soft z-10">
-                  Horário
-                </th>
-                {weekDays.map((day) => (
-                  <th
-                    key={day.toString()}
-                    className="text-center py-3 px-4 text-gray-light font-medium min-w-[150px] border-b border-gray-dark"
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-sm font-normal">
-                        {format(day, 'EEE', { locale: ptBR })}
-                      </span>
-                      <span className="text-lg font-semibold text-white">
-                        {format(day, 'd')}
-                      </span>
-                    </div>
+      {loading ? (
+        <div className="text-center py-12 text-gray-light">Carregando...</div>
+      ) : (
+        <Card>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="text-left py-3 px-4 text-gray-light font-medium w-24 border-b border-gray-dark sticky left-0 bg-dark-soft z-10">
+                    Horário
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {timeSlots.map((hora) => (
-                <tr key={hora} className="border-b border-gray-dark">
-                  <td className="py-2 px-4 text-gray-light font-medium text-sm sticky left-0 bg-dark-soft z-10 border-r border-gray-dark">
-                    {hora}
-                  </td>
-                  {weekDays.map((day, diaIndex) => {
-                    const item = getAgendaForSlot(diaIndex, hora);
-                    const isFirstSlot = item && item.hora_inicio === hora;
-                    const slotHeight = calculateSlotHeight(item, hora);
-
-                    return (
-                      <td
-                        key={`${day.toString()}-${hora}`}
-                        className="py-1 px-1"
-                        style={{ position: 'relative', height: '48px' }}
-                      >
-                        {isFirstSlot && item && slotHeight ? (
-                          <div
-                            className={`${getSlotStyle(item)} rounded p-2 text-xs flex flex-col justify-center`}
-                            style={{
-                              height: `${slotHeight}px`,
-                              position: 'absolute',
-                              top: 0,
-                              left: '4px',
-                              right: '4px',
-                              zIndex: 10,
-                            }}
-                            onClick={() => handleSlotClick(diaIndex, hora)}
-                          >
-                            <p className="font-semibold truncate">
-                              {item.aluno?.nome || item.aluno?.name || 'Aluno'}
-                            </p>
-                            <p className="text-xs opacity-80 mt-1">
-                              {item.hora_inicio} - {item.hora_fim}
-                            </p>
-                          </div>
-                        ) : !item ? (
-                          <div
-                            className={`${getSlotStyle(item)} rounded p-1 text-center text-xs h-full flex items-center justify-center`}
-                            onClick={() => handleSlotClick(diaIndex, hora)}
-                          >
-                            <span className="text-gray-light opacity-50">Livre</span>
-                          </div>
-                        ) : null}
-                      </td>
-                    );
-                  })}
+                  {diasSemana.map((dia) => (
+                    <th
+                      key={dia.id}
+                      className="text-center py-3 px-4 text-gray-light font-medium min-w-[150px] border-b border-gray-dark"
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-lg font-semibold text-white">{dia.nome}</span>
+                      </div>
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+              </thead>
+              <tbody>
+                {timeSlots.map((hora) => (
+                  <tr key={hora} className="border-b border-gray-dark">
+                    <td className="py-2 px-4 text-gray-light font-medium text-sm sticky left-0 bg-dark-soft z-10 border-r border-gray-dark">
+                      {hora}
+                    </td>
+                    {diasSemana.map((dia) => {
+                      const item = getAgendaForSlot(dia.id, hora);
+                      const isFirstSlot = item && item.hora_inicio === hora;
+                      const slotHeight = calculateSlotHeight(item, hora);
+
+                      return (
+                        <td
+                          key={`${dia.id}-${hora}`}
+                          className="py-1 px-1"
+                          style={{ position: 'relative', height: '48px' }}
+                        >
+                          {isFirstSlot && item && slotHeight ? (
+                            <div
+                              className={`${getSlotStyle(item)} rounded p-2 text-xs flex flex-col justify-center`}
+                              style={{
+                                height: `${slotHeight}px`,
+                                position: 'absolute',
+                                top: 0,
+                                left: '4px',
+                                right: '4px',
+                                zIndex: 10,
+                              }}
+                              onClick={() => handleSlotClick(dia.id, hora)}
+                            >
+                              <p className="font-semibold truncate">
+                                {item.aluno?.nome || item.aluno?.name || 'Aluno'}
+                              </p>
+                              <p className="text-xs opacity-80 mt-1">
+                                {item.hora_inicio} - {item.hora_fim}
+                              </p>
+                            </div>
+                          ) : !item ? (
+                            <div
+                              className={`${getSlotStyle(item)} rounded p-1 text-center text-xs h-full flex items-center justify-center`}
+                              onClick={() => handleSlotClick(dia.id, hora)}
+                            >
+                              <span className="text-gray-light opacity-50">Livre</span>
+                            </div>
+                          ) : null}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {/* Modal de Seleção de Aluno */}
       {showAlunoModal && selectedSlot && (
@@ -376,9 +337,7 @@ export const Agenda = () => {
               <div>
                 <label className="block text-sm font-medium text-white mb-2">Dia</label>
                 <p className="text-gray-light">
-                  {format(weekDays[selectedSlot.dia], "EEEE, d 'de' MMMM", {
-                    locale: ptBR,
-                  })}
+                  {diasSemana.find((d) => d.id === selectedSlot.dia)?.nome}
                 </p>
               </div>
 
