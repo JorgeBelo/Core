@@ -80,15 +80,17 @@ export const Dashboard = () => {
 
       if (alunosError) throw alunosError;
 
-      // Calcular faturamento total
+      // Calcular faturamento total (soma das mensalidades dos alunos ativos)
+      // Busca nas colunas: monthly_value, valor_mensalidade, monthly_fee
       const faturamentoTotal =
         alunos?.reduce((sum, aluno: any) => {
           const valor =
-            aluno.monthly_fee ||
             aluno.monthly_value ||
             aluno.valor_mensalidade ||
+            aluno.monthly_fee ||
             0;
-          return sum + (typeof valor === 'number' ? valor : parseFloat(valor) || 0);
+          const valorNumerico = typeof valor === 'number' ? valor : parseFloat(valor) || 0;
+          return sum + valorNumerico;
         }, 0) || 0;
 
       // Carregar contas financeiras
