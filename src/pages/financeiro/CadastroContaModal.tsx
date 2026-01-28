@@ -20,6 +20,7 @@ export const CadastroContaModal = ({ onClose }: CadastroContaModalProps) => {
     tipo: 'pagar' as 'pagar' | 'receber',
     parcelada: false,
     numero_parcelas: 1,
+    conta_fixa: false,
   });
   const [loading, setLoading] = useState(false);
 
@@ -35,6 +36,34 @@ export const CadastroContaModal = ({ onClose }: CadastroContaModalProps) => {
       const valor = parseFloat(formData.valor);
       const dataVencimento = new Date(formData.data_vencimento);
 
+      // Conta Fixa (Recorrente Mensal)
+      if (formData.conta_fixa) {
+        // Criar contas para os próximos 12 meses
+        const contas = [];
+        for (let i = 0; i < 12; i++) {
+          const dataParcela = addMonths(dataVencimento, i);
+          contas.push({
+            personal_id: user.id,
+            descricao: formData.descricao,
+            valor: valor,
+            data_vencimento: format(dataParcela, 'yyyy-MM-dd'),
+            categoria: formData.categoria,
+            tipo: formData.tipo,
+            parcelada: false,
+            conta_fixa: true,
+            pago: false,
+          });
+        }
+
+        const { error } = await supabase.from('contas_financeiras').insert(contas);
+        if (error) throw error;
+
+        toast.success('Conta fixa cadastrada com sucesso! (12 meses)');
+        onClose();
+        return;
+      }
+
+      // Conta Parcelada
       if (formData.parcelada && formData.numero_parcelas > 1) {
         // Criar múltiplas contas para parcelas
         const contas = [];
@@ -50,27 +79,33 @@ export const CadastroContaModal = ({ onClose }: CadastroContaModalProps) => {
             parcelada: true,
             numero_parcelas: formData.numero_parcelas,
             parcela_atual: i + 1,
+            conta_fixa: false,
             pago: false,
           });
         }
 
         const { error } = await supabase.from('contas_financeiras').insert(contas);
         if (error) throw error;
-      } else {
-        // Conta única
-        const { error } = await supabase.from('contas_financeiras').insert({
-          personal_id: user.id,
-          descricao: formData.descricao,
-          valor: valor,
-          data_vencimento: formData.data_vencimento,
-          categoria: formData.categoria,
-          tipo: formData.tipo,
-          parcelada: false,
-          pago: false,
-        });
 
-        if (error) throw error;
+        toast.success(`Conta parcelada cadastrada com sucesso! (${formData.numero_parcelas} parcelas)`);
+        onClose();
+        return;
       }
+
+      // Conta única
+      const { error } = await supabase.from('contas_financeiras').insert({
+        personal_id: user.id,
+        descricao: formData.descricao,
+        valor: valor,
+        data_vencimento: formData.data_vencimento,
+        categoria: formData.categoria,
+        tipo: formData.tipo,
+        parcelada: false,
+        conta_fixa: false,
+        pago: false,
+      });
+
+      if (error) throw error;
 
       toast.success('Conta cadastrada com sucesso!');
       onClose();
@@ -170,39 +205,67 @@ export const CadastroContaModal = ({ onClose }: CadastroContaModalProps) => {
               />
             </div>
 
-            <div>
+            <div className="space-y-3">
               <label className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border border-gray-dark hover:border-primary transition-colors">
                 <input
                   type="checkbox"
-                  checked={formData.parcelada}
-                  onChange={(e) =>
-                    setFormData({ ...formData, parcelada: e.target.checked })
-                  }
+                  checked={formData.conta_fixa}
+                  onChange={(e) => {
+                    const isFixa = e.target.checked;
+                    setFormData({
+                      ...formData,
+                      conta_fixa: isFixa,
+                      parcelada: isFixa ? false : formData.parcelada, // Desmarca parcelada se marcar fixa
+                    });
+                  }}
                   className="w-4 h-4 text-primary bg-dark-soft border-gray-dark rounded focus:ring-primary"
                 />
-                <span className="text-white text-sm">É parcelada?</span>
+                <span className="text-white text-sm">Conta Fixa (Recorrente Mensal)</span>
               </label>
+              <p className="text-xs text-gray-light ml-7">
+                Ex: Aluguel, Assinaturas - Gera automaticamente para os próximos 12 meses
+              </p>
+
+              {!formData.conta_fixa && (
+                <>
+                  <label className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border border-gray-dark hover:border-primary transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={formData.parcelada}
+                      onChange={(e) =>
+                        setFormData({ ...formData, parcelada: e.target.checked })
+                      }
+                      className="w-4 h-4 text-primary bg-dark-soft border-gray-dark rounded focus:ring-primary"
+                    />
+                    <span className="text-white text-sm">É parcelada?</span>
+                  </label>
+                </>
+              )}
             </div>
 
-            {formData.parcelada && (
+            {formData.parcelada && !formData.conta_fixa && (
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
-                  Número de Parcelas *
+                  Número de Parcelas * (até 420x)
                 </label>
                 <input
                   type="number"
                   min="2"
-                  max="36"
+                  max="420"
                   required={formData.parcelada}
                   value={formData.numero_parcelas}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const num = parseInt(e.target.value) || 1;
                     setFormData({
                       ...formData,
-                      numero_parcelas: parseInt(e.target.value) || 1,
-                    })
-                  }
+                      numero_parcelas: Math.min(420, Math.max(1, num)),
+                    });
+                  }}
                   className="input-core w-full"
                 />
+                <p className="text-xs text-gray-light mt-1">
+                  Máximo: 420 parcelas (ex: financiamento de imóvel)
+                </p>
               </div>
             )}
           </div>

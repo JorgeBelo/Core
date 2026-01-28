@@ -113,6 +113,7 @@ export interface ContaFinanceira {
   numero_parcelas?: number;
   parcela_atual?: number;
   conta_original_id?: string; // ID da conta original se for parcela
+  conta_fixa: boolean; // Conta recorrente mensal (ex: aluguel, assinatura)
   pago: boolean;
   data_pagamento?: string;
   created_at: string;

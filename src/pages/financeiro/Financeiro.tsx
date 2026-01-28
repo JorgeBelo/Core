@@ -183,6 +183,11 @@ export const Financeiro = () => {
                           ({conta.parcela_atual || 1}/{conta.numero_parcelas})
                         </span>
                       )}
+                      {conta.conta_fixa && (
+                        <span className="text-xs text-primary ml-2 font-medium">
+                          [Fixa]
+                        </span>
+                      )}
                     </td>
                     <td className="py-4 px-4 text-gray-light">{conta.categoria}</td>
                     <td className="py-4 px-4">
