@@ -55,10 +55,45 @@ export const useUserProfile = () => {
     if (!authUser?.id) return;
 
     try {
+      // Garante que nunca enviamos name/email nulos para a tabela `users`,
+      // que exige esses campos como NOT NULL.
+      const safeName =
+        updates.name ||
+        userProfile?.name ||
+        authUser.name ||
+        'Personal Trainer';
+
+      const safeEmail =
+        updates.email ||
+        userProfile?.email ||
+        authUser.email ||
+        'sem-email@exemplo.com';
+
+      const safePhone =
+        updates.phone !== undefined
+          ? updates.phone
+          : userProfile?.phone || authUser.phone || '';
+
+      const safeCref =
+        updates.cref !== undefined
+          ? updates.cref
+          : userProfile?.cref || authUser.cref || '';
+
+      const safeAvatarUrl =
+        updates.avatar_url !== undefined
+          ? updates.avatar_url
+          : userProfile?.avatar_url || authUser.avatar_url || '';
+
       const { error } = await supabase
         .from('users')
         .upsert({
           id: authUser.id,
+          name: safeName,
+          email: safeEmail,
+          phone: safePhone,
+          cref: safeCref,
+          avatar_url: safeAvatarUrl,
+          // Mantém compatibilidade com possíveis colunas extras
           ...updates,
           updated_at: new Date().toISOString(),
         }, {
@@ -67,7 +102,19 @@ export const useUserProfile = () => {
 
       if (error) throw error;
 
-      setUserProfile((prev) => (prev ? { ...prev, ...updates } : null));
+      setUserProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: safeName,
+              email: safeEmail,
+              phone: safePhone,
+              cref: safeCref,
+              avatar_url: safeAvatarUrl,
+              ...updates,
+            }
+          : null
+      );
       return true;
     } catch (error: any) {
       console.error('Erro ao atualizar perfil:', error);
