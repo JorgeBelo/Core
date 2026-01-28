@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, TrendingDown, TrendingUp } from 'lucide-react';
+import { Plus, DollarSign, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { ContaFinanceira } from '../../types';
@@ -59,15 +59,20 @@ export const Financeiro = () => {
     return isWithinInterval(dataVenc, { start: inicioMes, end: fimMes });
   });
 
-  const totalAPagar = contasMes
-    .filter((c) => c.tipo === 'pagar' && !c.pago)
+  // Totais no estilo antigo (Recebido, Pendente, Atrasado, Total do Mês)
+  const totalRecebido = contasMes
+    .filter((c) => c.tipo === 'receber' && c.pago)
     .reduce((sum, c) => sum + c.valor, 0);
 
-  const totalAReceber = contasMes
-    .filter((c) => c.tipo === 'receber' && !c.pago)
+  const totalPendente = contasMes
+    .filter((c) => !c.pago && new Date(c.data_vencimento) >= hoje)
     .reduce((sum, c) => sum + c.valor, 0);
 
-  const saldo = totalAReceber - totalAPagar;
+  const totalAtrasado = contasMes
+    .filter((c) => !c.pago && new Date(c.data_vencimento) < hoje)
+    .reduce((sum, c) => sum + c.valor, 0);
+
+  const totalMes = totalRecebido + totalPendente + totalAtrasado;
 
   return (
     <div className="space-y-6">
@@ -82,17 +87,17 @@ export const Financeiro = () => {
         </Button>
       </div>
 
-      {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Cards de Resumo - estilo antigo */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-light text-sm mb-1">Total a Pagar (Mês)</p>
-              <p className="text-2xl font-bold text-primary">
-                R$ {totalAPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              <p className="text-gray-light text-sm mb-1">Total Recebido</p>
+              <p className="text-2xl font-bold text-green-500">
+                R$ {totalRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
             </div>
-            <TrendingDown className="text-primary" size={32} />
+            <CheckCircle className="text-green-500" size={32} />
           </div>
         </Card>
 
@@ -100,25 +105,35 @@ export const Financeiro = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-light text-sm mb-1">Faturamento Total</p>
-              <p className="text-2xl font-bold text-green-500">
-                R$ {totalAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              <p className="text-2xl font-bold text-yellow-500">
+                R$ {totalPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
             </div>
-            <TrendingUp className="text-green-500" size={32} />
+            <Clock className="text-yellow-500" size={32} />
           </div>
         </Card>
 
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-light text-sm mb-1">Saldo/Lucro</p>
-              <p className={`text-2xl font-bold ${saldo >= 0 ? 'text-green-500' : 'text-primary'}`}>
-                R$ {saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              <p className="text-gray-light text-sm mb-1">Atrasados</p>
+              <p className="text-2xl font-bold text-primary">
+                R$ {totalAtrasado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
             </div>
-            <div className={`${saldo >= 0 ? 'text-green-500' : 'text-primary'}`}>
-              {saldo >= 0 ? <TrendingUp size={32} /> : <TrendingDown size={32} />}
+            <AlertCircle className="text-primary" size={32} />
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-light text-sm mb-1">Total do Mês</p>
+              <p className="text-2xl font-bold text-white">
+                R$ {totalMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
             </div>
+            <DollarSign className="text-white" size={32} />
           </div>
         </Card>
       </div>
