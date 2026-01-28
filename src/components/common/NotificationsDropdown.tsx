@@ -88,7 +88,7 @@ export const NotificationsDropdown = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-dark-soft border border-gray-dark rounded-lg shadow-lg z-50 max-h-96 overflow-hidden flex flex-col">
+        <div className="absolute left-0 bottom-full mb-2 w-80 bg-dark-soft border border-gray-dark rounded-lg shadow-lg z-50 max-h-96 overflow-hidden flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-gray-dark">
             <h3 className="text-lg font-sans font-semibold text-white">Notificações</h3>
             <button
