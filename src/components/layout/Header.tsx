@@ -1,5 +1,6 @@
-import { Bell, User } from 'lucide-react';
 import { Logo } from '../common/Logo';
+import { NotificationsDropdown } from '../common/NotificationsDropdown';
+import { ProfileDropdownHeader } from '../common/ProfileDropdownHeader';
 
 export const Header = () => {
   return (
@@ -9,15 +10,8 @@ export const Header = () => {
       </div>
       
       <div className="flex items-center gap-4">
-        <button className="relative p-2 text-gray-light hover:text-white transition-colors">
-          <Bell size={20} />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
-        </button>
-        
-        <button className="flex items-center gap-2 text-gray-light hover:text-white transition-colors">
-          <User size={20} />
-          <span className="hidden md:block">Perfil</span>
-        </button>
+        <NotificationsDropdown />
+        <ProfileDropdownHeader />
       </div>
     </header>
   );

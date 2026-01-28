@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import toast from 'react-hot-toast';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabaseClient';
 import { maskWhatsApp, unmaskWhatsApp } from '../../utils/masks';
 import { useAuth } from '../../contexts/AuthContext';
 
