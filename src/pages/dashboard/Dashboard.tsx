@@ -230,8 +230,8 @@ export const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-sans font-semibold text-white mb-2">Dashboard</h1>
-        <p className="text-gray-light">
+        <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Dashboard</h1>
+        <p className="text-gray-light text-sm sm:text-base">
           Controle financeiro simples e direto do seu negócio
         </p>
       </div>
@@ -242,41 +242,41 @@ export const Dashboard = () => {
         <>
           {/* Card Principal: Saldo Final (Destaque) */}
           <Card className={`border-2 ${saldoPositivo ? 'border-green-500' : 'border-primary'}`}>
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
               <div className="flex-1 text-center md:text-left">
-                <p className="text-gray-light text-sm mb-2">Saldo do Mês</p>
+                <p className="text-gray-light text-xs sm:text-sm mb-2">Saldo do Mês</p>
                 <p 
-                  className={`text-5xl font-bold ${saldoPositivo ? 'text-green-500' : 'text-primary'}`}
+                  className={`text-3xl sm:text-4xl md:text-5xl font-bold ${saldoPositivo ? 'text-green-500' : 'text-primary'}`}
                 >
                   {currencyFormatter.format(saldoFinal)}
                 </p>
-                <p className="text-sm text-gray-light mt-2">
+                <p className="text-xs sm:text-sm text-gray-light mt-2">
                   {saldoPositivo 
                     ? '✅ Você está no verde! Sobrou dinheiro este mês.' 
                     : '⚠️ Atenção! Você tem mais contas do que recebeu.'}
                 </p>
               </div>
-              <div className={`p-6 rounded-full ${saldoPositivo ? 'bg-green-500/20' : 'bg-primary/20'}`}>
+              <div className={`p-4 sm:p-6 rounded-full ${saldoPositivo ? 'bg-green-500/20' : 'bg-primary/20'}`}>
                 {saldoPositivo ? (
-                  <TrendingUp className={saldoPositivo ? 'text-green-500' : 'text-primary'} size={64} />
+                  <TrendingUp className={saldoPositivo ? 'text-green-500' : 'text-primary'} size={48} />
                 ) : (
-                  <TrendingDown className="text-primary" size={64} />
+                  <TrendingDown className="text-primary" size={48} />
                 )}
               </div>
             </div>
           </Card>
 
           {/* Cards Principais: Recebido, A Pagar, Já Pago */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
             {/* Este mês eu recebi */}
             <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/30">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-gray-light text-sm mb-2">💰 Este mês eu recebi</p>
-                  <p className="text-3xl font-bold text-green-500 mb-1">
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-light text-xs sm:text-sm mb-2">💰 Este mês eu recebi</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-green-500 mb-1 truncate">
                     {currencyFormatter.format(totalRecebido)}
                   </p>
-                  <div className="text-xs text-gray-light space-y-1 mt-3">
+                  <div className="text-xs text-gray-light space-y-1 mt-3 hidden sm:block">
                     <div className="flex justify-between">
                       <span>Mensalidades:</span>
                       <span className="text-green-400">{currencyFormatter.format(stats.mensalidadesRecebidas)}</span>
@@ -287,101 +287,101 @@ export const Dashboard = () => {
                     </div>
                   </div>
                 </div>
-                <ArrowUpCircle className="text-green-500 flex-shrink-0" size={40} />
+                <ArrowUpCircle className="text-green-500 flex-shrink-0 hidden sm:block" size={40} />
               </div>
             </Card>
 
             {/* Tenho X para pagar */}
             <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-gray-light text-sm mb-2">⚠️ Tenho para pagar</p>
-                  <p className="text-3xl font-bold text-primary mb-1">
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-light text-xs sm:text-sm mb-2">⚠️ Tenho para pagar</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-primary mb-1 truncate">
                     {currencyFormatter.format(totalAPagar)}
                   </p>
-                  <p className="text-xs text-gray-light mt-3">
+                  <p className="text-xs text-gray-light mt-3 hidden sm:block">
                     {totalAPagar > 0 
                       ? 'Contas pendentes que ainda não foram pagas' 
                       : 'Nenhuma conta pendente! 🎉'}
                   </p>
                 </div>
-                <Clock className="text-primary flex-shrink-0" size={40} />
+                <Clock className="text-primary flex-shrink-0 hidden sm:block" size={40} />
               </div>
             </Card>
 
             {/* Já paguei */}
-            <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/30">
+            <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/30 sm:col-span-2 md:col-span-1">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-gray-light text-sm mb-2">✅ Já paguei</p>
-                  <p className="text-3xl font-bold text-blue-400 mb-1">
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-light text-xs sm:text-sm mb-2">✅ Já paguei</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-blue-400 mb-1 truncate">
                     {currencyFormatter.format(totalPago)}
                   </p>
-                  <p className="text-xs text-gray-light mt-3">
+                  <p className="text-xs text-gray-light mt-3 hidden sm:block">
                     Contas que já foram pagas este mês
                   </p>
                 </div>
-                <CheckCircle className="text-blue-400 flex-shrink-0" size={40} />
+                <CheckCircle className="text-blue-400 flex-shrink-0 hidden sm:block" size={40} />
               </div>
             </Card>
           </div>
 
           {/* Cards Secundários: Detalhes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-light text-xs mb-1">Mensalidades Pendentes</p>
-                  <p className="text-xl font-bold text-primary">
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-light text-xs mb-1 truncate">Mensalidades Pendentes</p>
+                  <p className="text-lg sm:text-xl font-bold text-primary truncate">
                     {currencyFormatter.format(stats.mensalidadesPendentes)}
                   </p>
                 </div>
-                <Clock className="text-primary" size={24} />
+                <Clock className="text-primary flex-shrink-0 hidden sm:block" size={24} />
               </div>
             </Card>
 
             <Card>
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-light text-xs mb-1">Contas Pagas (Mês)</p>
-                  <p className="text-xl font-bold text-blue-400">
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-light text-xs mb-1 truncate">Contas Pagas (Mês)</p>
+                  <p className="text-lg sm:text-xl font-bold text-blue-400 truncate">
                     {currencyFormatter.format(stats.contasPagarPagas)}
                   </p>
                 </div>
-                <CheckCircle className="text-blue-400" size={24} />
+                <CheckCircle className="text-blue-400 flex-shrink-0 hidden sm:block" size={24} />
               </div>
             </Card>
 
             <Card>
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-light text-xs mb-1">Alunos Ativos</p>
-                  <p className="text-xl font-bold text-white">{stats.alunosAtivos}</p>
-                  <p className="text-xs text-gray-light mt-1">
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-light text-xs mb-1 truncate">Alunos Ativos</p>
+                  <p className="text-lg sm:text-xl font-bold text-white">{stats.alunosAtivos}</p>
+                  <p className="text-xs text-gray-light mt-1 hidden sm:block">
                     {stats.alunosTotal} total
                   </p>
                 </div>
-                <Users className="text-primary" size={24} />
+                <Users className="text-primary flex-shrink-0 hidden sm:block" size={24} />
               </div>
             </Card>
 
             <Card>
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-light text-xs mb-1">Total do Mês</p>
-                  <p className="text-xl font-bold text-white">
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-light text-xs mb-1 truncate">Total do Mês</p>
+                  <p className="text-lg sm:text-xl font-bold text-white truncate">
                     {currencyFormatter.format(stats.mensalidadesRecebidas + stats.mensalidadesPendentes)}
                   </p>
-                  <p className="text-xs text-gray-light mt-1">Mensalidades</p>
+                  <p className="text-xs text-gray-light mt-1 hidden sm:block">Mensalidades</p>
                 </div>
-                <DollarSign className="text-white" size={24} />
+                <DollarSign className="text-white flex-shrink-0 hidden sm:block" size={24} />
               </div>
             </Card>
           </div>
 
           {/* Gráfico de Evolução do Faturamento */}
           <Card title="Evolução do Faturamento (Últimos 6 Meses)">
-            <div className="h-80">
+            <div className="h-64 sm:h-80">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
@@ -488,41 +488,44 @@ export const Dashboard = () => {
 
           {/* Ações rápidas */}
           <Card title="Ações Rápidas">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <Button
                 variant="secondary"
-                className="flex items-center justify-center gap-3 py-4"
+                className="flex items-center justify-center gap-3 py-4 min-h-[44px]"
                 onClick={() => navigate('/financeiro')}
               >
-                <DollarSign size={24} />
-                <div className="text-left">
-                  <p className="font-semibold">Ver financeiro detalhado</p>
+                <DollarSign size={20} className="sm:w-6 sm:h-6" />
+                <div className="text-left hidden sm:block">
+                  <p className="font-semibold text-sm">Ver financeiro detalhado</p>
                   <p className="text-xs opacity-80">Contas a pagar e a receber do mês</p>
                 </div>
+                <span className="sm:hidden font-semibold">Financeiro</span>
               </Button>
 
               <Button
                 variant="secondary"
-                className="flex items-center justify-center gap-3 py-4"
+                className="flex items-center justify-center gap-3 py-4 min-h-[44px]"
                 onClick={() => navigate('/alunos')}
               >
-                <Users size={24} />
-                <div className="text-left">
-                  <p className="font-semibold">Gerenciar alunos</p>
+                <Users size={20} className="sm:w-6 sm:h-6" />
+                <div className="text-left hidden sm:block">
+                  <p className="font-semibold text-sm">Gerenciar alunos</p>
                   <p className="text-xs opacity-80">Status de pagamento e dados de contato</p>
                 </div>
+                <span className="sm:hidden font-semibold">Alunos</span>
               </Button>
 
               <Button
                 variant="secondary"
-                className="flex items-center justify-center gap-3 py-4"
+                className="flex items-center justify-center gap-3 py-4 min-h-[44px] sm:col-span-2 md:col-span-1"
                 onClick={() => navigate('/agenda')}
               >
-                <Clock size={24} />
-                <div className="text-left">
-                  <p className="font-semibold">Ver agenda semanal</p>
+                <Clock size={20} className="sm:w-6 sm:h-6" />
+                <div className="text-left hidden sm:block">
+                  <p className="font-semibold text-sm">Ver agenda semanal</p>
                   <p className="text-xs opacity-80">Horários fixos de atendimento</p>
                 </div>
+                <span className="sm:hidden font-semibold">Agenda</span>
               </Button>
             </div>
           </Card>

@@ -22,7 +22,7 @@ const menuItems = [
 
 export const Sidebar = () => {
   return (
-    <aside className="w-64 bg-dark-soft border-r border-gray-dark h-screen fixed left-0 top-0 flex flex-col">
+    <aside className="hidden lg:flex w-64 bg-dark-soft border-r border-gray-dark h-screen fixed left-0 top-0 flex-col">
       <div className="px-6 py-6 mb-4 flex justify-center border-b border-gray-dark">
         <Logo variant="full" size="small" />
       </div>

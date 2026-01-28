@@ -45,13 +45,13 @@ export const Perfil = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-sans font-semibold text-white mb-2">Perfil do Personal</h1>
-        <p className="text-gray-light">Atualize seus dados profissionais e de acesso</p>
+        <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Perfil do Personal</h1>
+        <p className="text-gray-light text-sm sm:text-base">Atualize seus dados profissionais e de acesso</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Painel de perfil (foto + dados principais) - Estilo Nutcache com avatar à esquerda */}
         <Card className="lg:col-span-1">
           <div className="space-y-4">
@@ -72,10 +72,10 @@ export const Perfil = () => {
                 </div>
                 <button
                   type="button"
-                  className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-1.5 shadow-lg hover:bg-primary/80 transition-colors"
+                  className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-2 shadow-lg hover:bg-primary/80 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                   title="Alterar foto"
                 >
-                  <Camera size={14} />
+                  <Camera size={18} />
                 </button>
               </div>
               <div className="flex-1 min-w-0">
@@ -112,7 +112,7 @@ export const Perfil = () => {
                 </div>
                 <button
                   type="button"
-                  className="flex items-center gap-2 px-3 py-2 rounded-md bg-white text-black text-xs font-medium hover:bg-gray-200 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-md bg-white text-black text-xs font-medium hover:bg-gray-200 transition-colors min-h-[44px]"
                   disabled
                 >
                   <span className="bg-white rounded-full flex items-center justify-center w-5 h-5">
@@ -186,7 +186,7 @@ export const Perfil = () => {
             </div>
 
             <div className="flex justify-end pt-4 border-t border-gray-dark">
-              <Button type="submit">
+              <Button type="submit" className="min-h-[44px] w-full sm:w-auto">
                 <Save size={20} className="mr-2" />
                 Salvar Alterações
               </Button>

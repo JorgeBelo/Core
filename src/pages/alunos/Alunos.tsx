@@ -142,59 +142,60 @@ export const Alunos = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-sans font-semibold text-white mb-2">Alunos</h1>
-          <p className="text-gray-light">Gerencie seus alunos e seus dados</p>
+          <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Alunos</h1>
+          <p className="text-gray-light text-sm sm:text-base">Gerencie seus alunos e seus dados</p>
         </div>
         <Button 
           onClick={() => {
             setEditingAluno(null);
             setShowModal(true);
           }}
-          className="flex items-center"
+          className="flex items-center w-full sm:w-auto justify-center min-h-[44px]"
         >
           <Plus size={20} className="mr-2" />
-          Cadastrar Novo Aluno
+          <span className="hidden sm:inline">Cadastrar Novo Aluno</span>
+          <span className="sm:hidden">Novo Aluno</span>
         </Button>
       </div>
 
       {/* Cards de Resumo - estilo Financeiro */}
       {alunos.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
           <Card>
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-light text-sm mb-1">Total Recebido (Mensalidades)</p>
-                <p className="text-2xl font-bold text-green-500">
+              <div className="flex-1 min-w-0">
+                <p className="text-gray-light text-xs sm:text-sm mb-1 truncate">Total Recebido</p>
+                <p className="text-lg sm:text-2xl font-bold text-green-500 truncate">
                   {currencyFormatter.format(totalRecebido)}
                 </p>
               </div>
-              <CheckCircle className="text-green-500" size={32} />
+              <CheckCircle className="text-green-500 flex-shrink-0 hidden sm:block" size={32} />
             </div>
           </Card>
 
           <Card>
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-light text-sm mb-1">Pendentes (Mensalidades)</p>
-                <p className="text-2xl font-bold text-primary">
+              <div className="flex-1 min-w-0">
+                <p className="text-gray-light text-xs sm:text-sm mb-1 truncate">Pendentes</p>
+                <p className="text-lg sm:text-2xl font-bold text-primary truncate">
                   {currencyFormatter.format(totalPendentes)}
                 </p>
               </div>
-              <Clock className="text-primary" size={32} />
+              <Clock className="text-primary flex-shrink-0 hidden sm:block" size={32} />
             </div>
           </Card>
 
-          <Card>
+          <Card className="col-span-2 md:col-span-1">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-light text-sm mb-1">Total do Mês (Mensalidades)</p>
-                <p className="text-2xl font-bold text-white">
+              <div className="flex-1 min-w-0">
+                <p className="text-gray-light text-xs sm:text-sm mb-1 truncate">Total do Mês</p>
+                <p className="text-lg sm:text-2xl font-bold text-white truncate">
                   {currencyFormatter.format(totalMes)}
                 </p>
               </div>
-              <DollarSign className="text-white" size={32} />
+              <DollarSign className="text-white flex-shrink-0 hidden sm:block" size={32} />
             </div>
           </Card>
         </div>
@@ -228,9 +229,10 @@ export const Alunos = () => {
         </div>
       </Card>
 
-      {/* Tabela de Alunos */}
+      {/* Tabela de Alunos - Desktop */}
       <Card>
-        <div className="overflow-x-auto">
+        {/* Desktop Table */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-dark">
@@ -259,49 +261,254 @@ export const Alunos = () => {
                 </tr>
               ) : (
                 filteredAlunos.map((aluno) => {
-                  // Usa 'nome' (coluna do banco) se existir, senão usa 'name' (compatibilidade)
                   const alunoNome = aluno.nome || aluno.name || 'Sem nome';
                   return (
                     <tr key={aluno.id} className="border-b border-gray-dark hover:bg-dark-soft transition-colors">
-                    <td className="py-4 px-4 text-white">
+                      <td className="py-4 px-4 text-white">
+                        {aluno.active && (
+                          <span
+                            className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                              aluno.payment_status === 'pago' ? 'bg-green-500' : 'bg-primary'
+                            }`}
+                          ></span>
+                        )}
+                        {alunoNome}
+                      </td>
+                      <td className="py-4 px-4 text-gray-light">
+                        {aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}
+                      </td>
+                      <td className="py-4 px-4 text-white font-semibold">
+                        {aluno.active ? (
+                          currencyFormatter.format(
+                            typeof aluno.monthly_fee === 'number'
+                              ? aluno.monthly_fee
+                              : parseFloat(String(aluno.monthly_fee)) || 0
+                          )
+                        ) : (
+                          <span className="text-gray-light">-</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-4 text-gray-light">
+                        {aluno.active
+                          ? (aluno.frequency_per_week
+                              ? `${aluno.frequency_per_week}x/semana`
+                              : '-')
+                          : '-'}
+                      </td>
+                      <td className="py-4 px-4 text-gray-light">
+                        {aluno.active
+                          ? (aluno.payment_day
+                              ? `Todo dia ${aluno.payment_day}`
+                              : '-')
+                          : '-'}
+                      </td>
+                      <td className="py-4 px-4">
+                        {aluno.active ? (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!user) return;
+                              const current = aluno.payment_status || 'pendente';
+                              const ordem: Array<Aluno['payment_status']> = ['pendente', 'pago'];
+                              const idx = ordem.indexOf(current);
+                              const next = ordem[(idx + 1) % ordem.length];
+
+                              try {
+                                const { error } = await supabase
+                                  .from('alunos')
+                                  .update({ payment_status: next })
+                                  .eq('id', aluno.id);
+                                if (error) throw error;
+
+                                setAlunos((prev) =>
+                                  prev.map((a) =>
+                                    a.id === aluno.id ? { ...a, payment_status: next } : a
+                                  )
+                                );
+
+                                toast.success(`Status de pagamento de ${alunoNome} atualizado para "${next}".`);
+                              } catch (err: any) {
+                                console.error('Erro ao atualizar status de pagamento:', err);
+                                toast.error('Não foi possível atualizar o status de pagamento.');
+                              }
+                            }}
+                            className="focus:outline-none min-h-[44px]"
+                          >
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                aluno.payment_status === 'pago'
+                                  ? 'bg-green-500/20 text-green-500'
+                                  : 'bg-primary/20 text-primary'
+                              }`}
+                            >
+                              {aluno.payment_status === 'pago'
+                                ? 'Pago'
+                                : aluno.payment_status === 'atrasado'
+                                ? 'Atrasado'
+                                : 'Pendente'}
+                            </span>
+                          </button>
+                        ) : (
+                          <span className="text-gray-light">-</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (aluno.active) {
+                              setConfirmInativarAluno(aluno);
+                            } else {
+                              (async () => {
+                                try {
+                                  const { error } = await supabase
+                                    .from('alunos')
+                                    .update({ active: true })
+                                    .eq('id', aluno.id);
+                                  if (error) throw error;
+                                  setAlunos((prev) =>
+                                    prev.map((a) =>
+                                      a.id === aluno.id ? { ...a, active: true } : a
+                                    )
+                                  );
+                                  toast.success(`${alunoNome} reativado(a) com sucesso.`);
+                                } catch (err: any) {
+                                  console.error('Erro ao reativar aluno:', err);
+                                  toast.error('Não foi possível reativar o aluno.');
+                                }
+                              })();
+                            }
+                          }}
+                          className="focus:outline-none min-h-[44px]"
+                        >
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              aluno.active
+                                ? 'bg-green-500/20 text-green-500'
+                                : 'bg-gray-light/20 text-gray-light'
+                            }`}
+                          >
+                            {aluno.active ? 'Ativo' : 'Inativo'}
+                          </span>
+                        </button>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => navigate(`/alunos/${aluno.id}`)}
+                            className="text-primary hover:text-primary-light transition-colors flex items-center gap-1 min-h-[44px] min-w-[44px] justify-center"
+                            title="Ver Perfil"
+                          >
+                            <Eye size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(aluno)}
+                            className="text-yellow-500 hover:text-yellow-400 transition-colors flex items-center gap-1 min-h-[44px] min-w-[44px] justify-center"
+                            title="Editar"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(aluno.id, alunoNome)}
+                            className="text-primary hover:text-primary-light transition-colors flex items-center gap-1 min-h-[44px] min-w-[44px] justify-center"
+                            title="Excluir"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="lg:hidden space-y-4">
+          {loading ? (
+            <div className="text-center py-8 text-gray-light">Carregando...</div>
+          ) : filteredAlunos.length === 0 ? (
+            <div className="text-center py-8 text-gray-light">Nenhum aluno encontrado</div>
+          ) : (
+            filteredAlunos.map((aluno) => {
+              const alunoNome = aluno.nome || aluno.name || 'Sem nome';
+              return (
+                <div
+                  key={aluno.id}
+                  className="bg-dark-soft border border-gray-dark rounded-lg p-4 space-y-3"
+                >
+                  {/* Header: Nome e Status */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       {aluno.active && (
                         <span
-                          className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                          className={`flex-shrink-0 w-3 h-3 rounded-full ${
                             aluno.payment_status === 'pago' ? 'bg-green-500' : 'bg-primary'
                           }`}
                         ></span>
                       )}
-                      {alunoNome}
-                    </td>
-                    <td className="py-4 px-4 text-gray-light">
-                      {aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}
-                    </td>
-                    <td className="py-4 px-4 text-white font-semibold">
-                      {aluno.active ? (
-                        currencyFormatter.format(
-                          typeof aluno.monthly_fee === 'number'
-                            ? aluno.monthly_fee
-                            : parseFloat(String(aluno.monthly_fee)) || 0
-                        )
-                      ) : (
-                        <span className="text-gray-light">-</span>
-                      )}
-                    </td>
-                    <td className="py-4 px-4 text-gray-light">
-                      {aluno.active
-                        ? (aluno.frequency_per_week
-                            ? `${aluno.frequency_per_week}x/semana`
-                            : '-')
-                        : '-'}
-                    </td>
-                    <td className="py-4 px-4 text-gray-light">
-                      {aluno.active
-                        ? (aluno.payment_day
-                            ? `Todo dia ${aluno.payment_day}`
-                            : '-')
-                        : '-'}
-                    </td>
-                    <td className="py-4 px-4">
+                      <h3 className="text-white font-semibold truncate">{alunoNome}</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (aluno.active) {
+                          setConfirmInativarAluno(aluno);
+                        } else {
+                          (async () => {
+                            try {
+                              const { error } = await supabase
+                                .from('alunos')
+                                .update({ active: true })
+                                .eq('id', aluno.id);
+                              if (error) throw error;
+                              setAlunos((prev) =>
+                                prev.map((a) =>
+                                  a.id === aluno.id ? { ...a, active: true } : a
+                                )
+                              );
+                              toast.success(`${alunoNome} reativado(a) com sucesso.`);
+                            } catch (err: any) {
+                              console.error('Erro ao reativar aluno:', err);
+                              toast.error('Não foi possível reativar o aluno.');
+                            }
+                          })();
+                        }
+                      }}
+                      className="flex-shrink-0 min-h-[44px] px-3"
+                    >
+                      <span
+                        className={`px-3 py-2 rounded-full text-xs font-medium ${
+                          aluno.active
+                            ? 'bg-green-500/20 text-green-500'
+                            : 'bg-gray-light/20 text-gray-light'
+                        }`}
+                      >
+                        {aluno.active ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Informações Principais */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-gray-light text-xs mb-1">Mensalidade</p>
+                      <p className="text-white font-semibold">
+                        {aluno.active ? (
+                          currencyFormatter.format(
+                            typeof aluno.monthly_fee === 'number'
+                              ? aluno.monthly_fee
+                              : parseFloat(String(aluno.monthly_fee)) || 0
+                          )
+                        ) : (
+                          <span className="text-gray-light">-</span>
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-light text-xs mb-1">Status Pagamento</p>
                       {aluno.active ? (
                         <button
                           type="button"
@@ -331,10 +538,10 @@ export const Alunos = () => {
                               toast.error('Não foi possível atualizar o status de pagamento.');
                             }
                           }}
-                          className="focus:outline-none"
+                          className="min-h-[44px] w-full"
                         >
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            className={`px-3 py-2 rounded-full text-xs font-medium block text-center ${
                               aluno.payment_status === 'pago'
                                 ? 'bg-green-500/20 text-green-500'
                                 : 'bg-primary/20 text-primary'
@@ -350,80 +557,61 @@ export const Alunos = () => {
                       ) : (
                         <span className="text-gray-light">-</span>
                       )}
-                    </td>
-                    <td className="py-4 px-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (aluno.active) {
-                            // Confirmar inativação
-                            setConfirmInativarAluno(aluno);
-                          } else {
-                            // Reativar direto
-                            (async () => {
-                              try {
-                                const { error } = await supabase
-                                  .from('alunos')
-                                  .update({ active: true })
-                                  .eq('id', aluno.id);
-                                if (error) throw error;
-                                setAlunos((prev) =>
-                                  prev.map((a) =>
-                                    a.id === aluno.id ? { ...a, active: true } : a
-                                  )
-                                );
-                                toast.success(`${alunoNome} reativado(a) com sucesso.`);
-                              } catch (err: any) {
-                                console.error('Erro ao reativar aluno:', err);
-                                toast.error('Não foi possível reativar o aluno.');
-                              }
-                            })();
-                          }
-                        }}
-                        className="focus:outline-none"
-                      >
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            aluno.active
-                              ? 'bg-green-500/20 text-green-500'
-                              : 'bg-gray-light/20 text-gray-light'
-                          }`}
-                        >
-                          {aluno.active ? 'Ativo' : 'Inativo'}
-                        </span>
-                      </button>
-                    </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => navigate(`/alunos/${aluno.id}`)}
-                            className="text-primary hover:text-primary-light transition-colors flex items-center gap-1"
-                            title="Ver Perfil"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(aluno)}
-                            className="text-yellow-500 hover:text-yellow-400 transition-colors flex items-center gap-1"
-                            title="Editar"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(aluno.id, alunoNome)}
-                            className="text-primary hover:text-primary-light transition-colors flex items-center gap-1"
-                            title="Excluir"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                    </div>
+                  </div>
+
+                  {/* Informações Secundárias (Ocultas por padrão, podem ser expandidas) */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-gray-light text-xs mb-1">Vencimento</p>
+                      <p className="text-white">
+                        {aluno.active
+                          ? (aluno.payment_day
+                              ? `Dia ${aluno.payment_day}`
+                              : '-')
+                          : '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-light text-xs mb-1">Frequência</p>
+                      <p className="text-white">
+                        {aluno.active
+                          ? (aluno.frequency_per_week
+                              ? `${aluno.frequency_per_week}x/semana`
+                              : '-')
+                          : '-'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Ações */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-dark">
+                    <button
+                      onClick={() => navigate(`/alunos/${aluno.id}`)}
+                      className="flex items-center gap-2 text-primary hover:text-primary-light transition-colors min-h-[44px] px-4"
+                    >
+                      <Eye size={18} />
+                      <span className="text-sm">Ver</span>
+                    </button>
+                    <button
+                      onClick={() => handleEdit(aluno)}
+                      className="flex items-center gap-2 text-yellow-500 hover:text-yellow-400 transition-colors min-h-[44px] px-4"
+                    >
+                      <Edit size={18} />
+                      <span className="text-sm">Editar</span>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(aluno.id, alunoNome)}
+                      className="flex items-center gap-2 text-primary hover:text-primary-light transition-colors min-h-[44px] px-4"
+                    >
+                      <Trash2 size={18} />
+                      <span className="text-sm">Excluir</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </Card>
 

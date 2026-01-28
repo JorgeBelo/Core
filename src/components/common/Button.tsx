@@ -12,7 +12,7 @@ export const Button = ({
   className,
   ...props 
 }: ButtonProps) => {
-  const baseClasses = 'px-6 py-3 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark';
+  const baseClasses = 'px-6 py-3 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark min-h-[44px]';
   
   const variants = {
     primary: 'bg-primary text-white hover:bg-primary-dark focus:ring-primary',
