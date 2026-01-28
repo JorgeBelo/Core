@@ -245,15 +245,50 @@ export const Financeiro = () => {
                       {conta.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="py-4 px-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          conta.pago
-                            ? 'bg-green-500/20 text-green-500'
-                            : 'bg-primary/20 text-primary'
-                        }`}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!user) return;
+                          if (conta.tipo !== 'pagar') return; // Só alterna status para contas a pagar
+
+                          const nextPago = !conta.pago;
+
+                          try {
+                            const { error } = await supabase
+                              .from('contas_financeiras')
+                              .update({ pago: nextPago })
+                              .eq('id', conta.id);
+
+                            if (error) throw error;
+
+                            setContas((prev) =>
+                              prev.map((c) =>
+                                c.id === conta.id ? { ...c, pago: nextPago } : c
+                              )
+                            );
+
+                            toast.success(
+                              `Status da conta "${conta.descricao}" atualizado para "${
+                                nextPago ? 'Pago' : 'Pendente'
+                              }".`
+                            );
+                          } catch (err: any) {
+                            console.error('Erro ao atualizar status da conta:', err);
+                            toast.error('Não foi possível atualizar o status da conta.');
+                          }
+                        }}
+                        className="focus:outline-none"
                       >
-                        {conta.pago ? 'Pago' : 'Pendente'}
-                      </span>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            conta.pago
+                              ? 'bg-green-500/20 text-green-500'
+                              : 'bg-primary/20 text-primary'
+                          }`}
+                        >
+                          {conta.pago ? 'Pago' : 'Pendente'}
+                        </span>
+                      </button>
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
