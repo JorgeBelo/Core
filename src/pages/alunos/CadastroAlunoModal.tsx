@@ -19,6 +19,7 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
     nome: aluno?.nome || aluno?.name || '',
     whatsapp: aluno?.whatsapp ? maskWhatsApp(aluno.whatsapp) : '',
     monthly_fee: aluno?.monthly_fee?.toString() || '',
+    frequency_per_week: aluno?.frequency_per_week?.toString() || '3',
     payment_day: aluno?.payment_day?.toString() || '5',
     payment_status: aluno?.payment_status || 'pendente',
   });
@@ -43,6 +44,7 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
         nome: formData.nome,
         whatsapp: unmaskWhatsApp(formData.whatsapp),
         monthly_fee: parseFloat(formData.monthly_fee),
+        frequency_per_week: parseInt(formData.frequency_per_week),
         payment_day: parseInt(formData.payment_day),
         payment_status: formData.payment_status,
       };
@@ -141,7 +143,29 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
 
             <div>
               <label className="block text-sm font-medium text-white mb-2">
-                Dia de Pagamento *
+                Quantas vezes na semana? *
+              </label>
+              <select
+                required
+                value={formData.frequency_per_week}
+                onChange={(e) =>
+                  setFormData({ ...formData, frequency_per_week: e.target.value })
+                }
+                className="input-core w-full"
+              >
+                <option value="1">1x na semana</option>
+                <option value="2">2x na semana</option>
+                <option value="3">3x na semana</option>
+                <option value="4">4x na semana</option>
+                <option value="5">5x na semana</option>
+                <option value="6">6x na semana</option>
+                <option value="7">7x na semana</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Vencimento *
               </label>
               <input
                 type="number"
@@ -153,7 +177,9 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
                 className="input-core w-full"
                 placeholder="5"
               />
-              <p className="text-xs text-gray-light mt-1">Dia do mês (1-31)</p>
+              <p className="text-xs text-gray-light mt-1">
+                Todo dia XX do mês (1-31)
+              </p>
             </div>
 
             <div>

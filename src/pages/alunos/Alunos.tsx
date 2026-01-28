@@ -140,7 +140,8 @@ export const Alunos = () => {
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Nome</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">WhatsApp</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Mensalidade</th>
-                <th className="text-left py-3 px-4 text-gray-light font-medium">Dia Pagamento</th>
+                <th className="text-left py-3 px-4 text-gray-light font-medium">Freq. semana</th>
+                <th className="text-left py-3 px-4 text-gray-light font-medium">Vencimento</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Status Pagamento</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Status</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Ações</th>
@@ -173,7 +174,14 @@ export const Alunos = () => {
                       R$ {aluno.monthly_fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="py-4 px-4 text-gray-light">
-                      Dia {aluno.payment_day || '-'}
+                      {aluno.frequency_per_week
+                        ? `${aluno.frequency_per_week}x/semana`
+                        : '-'}
+                    </td>
+                    <td className="py-4 px-4 text-gray-light">
+                      {aluno.payment_day
+                        ? `Todo dia ${aluno.payment_day}`
+                        : '-'}
                     </td>
                     <td className="py-4 px-4">
                       <span

@@ -19,11 +19,13 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
     descricao: conta?.descricao ?? '',
     valor: conta?.valor?.toString() ?? '',
     data_vencimento: conta?.data_vencimento ?? '',
-    categoria: conta?.categoria ?? '',
     tipo: (conta?.tipo as 'pagar' | 'receber') ?? 'pagar',
-    parcelada: conta?.parcelada ?? false,
+    recorrencia: (conta?.conta_fixa
+      ? 'fixa'
+      : conta?.parcelada
+      ? 'parcelada'
+      : 'unica') as 'unica' | 'parcelada' | 'fixa',
     numero_parcelas: conta?.numero_parcelas ?? 1,
-    conta_fixa: conta?.conta_fixa ?? false,
   });
   const [loading, setLoading] = useState(false);
 
@@ -45,7 +47,6 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
           descricao: formData.descricao,
           valor,
           data_vencimento: formData.data_vencimento,
-          categoria: formData.categoria,
           tipo: formData.tipo,
         };
 
@@ -62,16 +63,15 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
       }
 
       // Conta Fixa (Recorrente Mensal) - NOVA
-      if (formData.conta_fixa) {
+      if (!isEditing && formData.recorrencia === 'fixa') {
         const contas = [];
         for (let i = 0; i < 12; i++) {
           const dataParcela = addMonths(dataVencimento, i);
           contas.push({
             personal_id: user.id,
             descricao: formData.descricao,
-            valor: valor,
+            valor,
             data_vencimento: format(dataParcela, 'yyyy-MM-dd'),
-            categoria: formData.categoria,
             tipo: formData.tipo,
             parcelada: false,
             conta_fixa: true,
@@ -88,7 +88,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
       }
 
       // Conta Parcelada
-      if (formData.parcelada && formData.numero_parcelas > 1) {
+      if (!isEditing && formData.recorrencia === 'parcelada' && formData.numero_parcelas > 1) {
         const contas = [];
         for (let i = 0; i < formData.numero_parcelas; i++) {
           const dataParcela = addMonths(dataVencimento, i);
@@ -97,7 +97,6 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
             descricao: `${formData.descricao} - Parcela ${i + 1}/${formData.numero_parcelas}`,
             valor: valor / formData.numero_parcelas,
             data_vencimento: format(dataParcela, 'yyyy-MM-dd'),
-            categoria: formData.categoria,
             tipo: formData.tipo,
             parcelada: true,
             numero_parcelas: formData.numero_parcelas,
@@ -115,13 +114,12 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
         return;
       }
 
-      // Conta única
+      // Conta única (somente este mês)
       const { error } = await supabase.from('contas_financeiras').insert({
         personal_id: user.id,
         descricao: formData.descricao,
-        valor: valor,
+        valor,
         data_vencimento: formData.data_vencimento,
-        categoria: formData.categoria,
         tipo: formData.tipo,
         parcelada: false,
         conta_fixa: false,
@@ -216,61 +214,32 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Categoria *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.categoria}
-                onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
-                className="input-core w-full"
-                placeholder="Ex: Aluguel, Material, Salário, etc"
-              />
-            </div>
-
             {!isEditing && (
-              <div className="space-y-3">
-                <label className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border border-gray-dark hover:border-primary transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={formData.conta_fixa}
-                    onChange={(e) => {
-                      const isFixa = e.target.checked;
-                      setFormData({
-                        ...formData,
-                        conta_fixa: isFixa,
-                        parcelada: isFixa ? false : formData.parcelada,
-                      });
-                    }}
-                    className="w-4 h-4 text-primary bg-dark-soft border-gray-dark rounded focus:ring-primary"
-                  />
-                  <span className="text-white text-sm">Conta Fixa (Recorrente Mensal)</span>
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Tipo de recorrência
                 </label>
-                <p className="text-xs text-gray-light ml-7">
-                  Ex: Aluguel, Assinaturas - Gera automaticamente para os próximos 12 meses
+                <select
+                  value={formData.recorrencia}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      recorrencia: e.target.value as 'unica' | 'parcelada' | 'fixa',
+                    })
+                  }
+                  className="input-core w-full"
+                >
+                  <option value="unica">Conta única (somente este mês)</option>
+                  <option value="parcelada">Parcelada (mensal, X vezes)</option>
+                  <option value="fixa">Fixa (todo mês)</option>
+                </select>
+                <p className="text-xs text-gray-light mt-1">
+                  Escolha se é uma conta única, parcelada ou fixa recorrente.
                 </p>
-
-                {!formData.conta_fixa && (
-                  <>
-                    <label className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border border-gray-dark hover:border-primary transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={formData.parcelada}
-                        onChange={(e) =>
-                          setFormData({ ...formData, parcelada: e.target.checked })
-                        }
-                        className="w-4 h-4 text-primary bg-dark-soft border-gray-dark rounded focus:ring-primary"
-                      />
-                      <span className="text-white text-sm">É parcelada?</span>
-                    </label>
-                  </>
-                )}
               </div>
             )}
 
-            {formData.parcelada && !formData.conta_fixa && !isEditing && (
+            {formData.recorrencia === 'parcelada' && !isEditing && (
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
                   Número de Parcelas * (até 420x)
@@ -279,7 +248,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
                   type="number"
                   min="2"
                   max="420"
-                  required={formData.parcelada}
+                  required
                   value={formData.numero_parcelas}
                   onChange={(e) => {
                     const num = parseInt(e.target.value) || 1;

@@ -187,7 +187,6 @@ export const Financeiro = () => {
             <thead>
               <tr className="border-b border-gray-dark">
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Descrição</th>
-                <th className="text-left py-3 px-4 text-gray-light font-medium">Categoria</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Tipo</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Parcelas</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Vencimento</th>
@@ -227,7 +226,6 @@ export const Financeiro = () => {
                         </span>
                       )}
                     </td>
-                    <td className="py-4 px-4 text-gray-light">{conta.categoria}</td>
                     <td className="py-4 px-4">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium ${

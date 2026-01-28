@@ -18,6 +18,8 @@ export interface Aluno {
   name?: string; // Compatibilidade
   whatsapp?: string;
   monthly_fee: number;
+   // Quantas vezes treina na semana (1-7)
+  frequency_per_week?: number;
   payment_day: number; // Dia do mês para pagamento (1-31)
   payment_status: 'pago' | 'pendente' | 'atrasado';
   active: boolean;
