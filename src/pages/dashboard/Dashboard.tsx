@@ -37,14 +37,23 @@ export const Dashboard = () => {
       // Carregar alunos ativos
       const { data: alunos, error: alunosError } = await supabase
         .from('alunos')
-        .select('monthly_fee, active')
+        .select('*')
         .eq('personal_id', user.id)
         .eq('active', true);
 
       if (alunosError) throw alunosError;
 
       // Calcular faturamento total (soma das mensalidades dos alunos ativos)
-      const faturamentoTotal = alunos?.reduce((sum, aluno) => sum + (aluno.monthly_fee || 0), 0) || 0;
+      // Tenta diferentes nomes de coluna: monthly_fee, monthly_value, valor_mensalidade
+      const faturamentoTotal =
+        alunos?.reduce((sum, aluno: any) => {
+          const valor =
+            aluno.monthly_fee ||
+            aluno.monthly_value ||
+            aluno.valor_mensalidade ||
+            0;
+          return sum + (typeof valor === 'number' ? valor : parseFloat(valor) || 0);
+        }, 0) || 0;
 
       // Carregar contas financeiras do mês
       const { data: contas, error: contasError } = await supabase
