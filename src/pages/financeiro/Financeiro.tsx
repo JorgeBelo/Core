@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, DollarSign, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Plus, DollarSign, AlertCircle, CheckCircle, Clock, Edit, Trash2 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { ContaFinanceira } from '../../types';
@@ -14,6 +14,7 @@ export const Financeiro = () => {
   const { user } = useAuth();
   const [contas, setContas] = useState<ContaFinanceira[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [editingConta, setEditingConta] = useState<ContaFinanceira | null>(null);
   const [loading, setLoading] = useState(true);
   const [tipoFilter, setTipoFilter] = useState<'todos' | 'pagar' | 'receber'>('todos');
 
@@ -75,6 +76,27 @@ export const Financeiro = () => {
 
   const totalMes = totalRecebido + totalPendente + totalAtrasado;
 
+  const handleDeleteConta = async (conta: ContaFinanceira) => {
+    if (!confirm(`Deseja realmente excluir a conta "${conta.descricao}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('contas_financeiras')
+        .delete()
+        .eq('id', conta.id);
+
+      if (error) throw error;
+
+      toast.success('Conta excluída com sucesso!');
+      loadContas();
+    } catch (error: any) {
+      console.error('Erro ao excluir conta:', error);
+      toast.error(error.message || 'Erro ao excluir conta');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -82,7 +104,12 @@ export const Financeiro = () => {
           <h1 className="text-3xl font-sans font-semibold text-white mb-2">Financeiro</h1>
           <p className="text-gray-light">Controle de contas a pagar e receber</p>
         </div>
-        <Button onClick={() => setShowModal(true)}>
+        <Button
+          onClick={() => {
+            setEditingConta(null);
+            setShowModal(true);
+          }}
+        >
           <Plus size={20} className="mr-2" />
           Nova Conta
         </Button>
@@ -168,18 +195,19 @@ export const Financeiro = () => {
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Vencimento</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Valor</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Status</th>
+                <th className="text-left py-3 px-4 text-gray-light font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-gray-light">
+                  <td colSpan={8} className="text-center py-8 text-gray-light">
                     Carregando...
                   </td>
                 </tr>
               ) : contasMesFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-gray-light">
+                  <td colSpan={8} className="text-center py-8 text-gray-light">
                     Nenhuma conta encontrada
                   </td>
                 </tr>
@@ -246,6 +274,27 @@ export const Financeiro = () => {
                           : 'Pendente'}
                       </span>
                     </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            setEditingConta(conta);
+                            setShowModal(true);
+                          }}
+                          className="text-yellow-500 hover:text-yellow-400 transition-colors flex items-center gap-1"
+                          title="Editar"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteConta(conta)}
+                          className="text-primary hover:text-primary-light transition-colors flex items-center gap-1"
+                          title="Excluir"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -256,8 +305,10 @@ export const Financeiro = () => {
 
       {showModal && (
         <CadastroContaModal
+          conta={editingConta}
           onClose={() => {
             setShowModal(false);
+            setEditingConta(null);
             loadContas();
           }}
         />

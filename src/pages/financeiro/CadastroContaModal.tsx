@@ -5,22 +5,25 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
 import { addMonths, format } from 'date-fns';
+import type { ContaFinanceira } from '../../types';
 
 interface CadastroContaModalProps {
   onClose: () => void;
+  conta?: ContaFinanceira | null;
 }
 
-export const CadastroContaModal = ({ onClose }: CadastroContaModalProps) => {
+export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) => {
   const { user } = useAuth();
+  const isEditing = !!conta;
   const [formData, setFormData] = useState({
-    descricao: '',
-    valor: '',
-    data_vencimento: '',
-    categoria: '',
-    tipo: 'pagar' as 'pagar' | 'receber',
-    parcelada: false,
-    numero_parcelas: 1,
-    conta_fixa: false,
+    descricao: conta?.descricao ?? '',
+    valor: conta?.valor?.toString() ?? '',
+    data_vencimento: conta?.data_vencimento ?? '',
+    categoria: conta?.categoria ?? '',
+    tipo: (conta?.tipo as 'pagar' | 'receber') ?? 'pagar',
+    parcelada: conta?.parcelada ?? false,
+    numero_parcelas: conta?.numero_parcelas ?? 1,
+    conta_fixa: conta?.conta_fixa ?? false,
   });
   const [loading, setLoading] = useState(false);
 
@@ -35,6 +38,28 @@ export const CadastroContaModal = ({ onClose }: CadastroContaModalProps) => {
     try {
       const valor = parseFloat(formData.valor);
       const dataVencimento = new Date(formData.data_vencimento);
+
+      // Edição de conta existente (atualiza apenas campos básicos)
+      if (isEditing && conta) {
+        const updateData = {
+          descricao: formData.descricao,
+          valor,
+          data_vencimento: formData.data_vencimento,
+          categoria: formData.categoria,
+          tipo: formData.tipo,
+        };
+
+        const { error } = await supabase
+          .from('contas_financeiras')
+          .update(updateData)
+          .eq('id', conta.id);
+
+        if (error) throw error;
+
+        toast.success('Conta atualizada com sucesso!');
+        onClose();
+        return;
+      }
 
       // Conta Fixa (Recorrente Mensal)
       if (formData.conta_fixa) {
@@ -121,7 +146,9 @@ export const CadastroContaModal = ({ onClose }: CadastroContaModalProps) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-dark-soft border border-gray-dark rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-dark">
-          <h2 className="text-2xl font-sans font-semibold text-white">Nova Conta</h2>
+          <h2 className="text-2xl font-sans font-semibold text-white">
+            {isEditing ? 'Editar Conta' : 'Nova Conta'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-light hover:text-white transition-colors"
@@ -205,45 +232,47 @@ export const CadastroContaModal = ({ onClose }: CadastroContaModalProps) => {
               />
             </div>
 
-            <div className="space-y-3">
-              <label className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border border-gray-dark hover:border-primary transition-colors">
-                <input
-                  type="checkbox"
-                  checked={formData.conta_fixa}
-                  onChange={(e) => {
-                    const isFixa = e.target.checked;
-                    setFormData({
-                      ...formData,
-                      conta_fixa: isFixa,
-                      parcelada: isFixa ? false : formData.parcelada, // Desmarca parcelada se marcar fixa
-                    });
-                  }}
-                  className="w-4 h-4 text-primary bg-dark-soft border-gray-dark rounded focus:ring-primary"
-                />
-                <span className="text-white text-sm">Conta Fixa (Recorrente Mensal)</span>
-              </label>
-              <p className="text-xs text-gray-light ml-7">
-                Ex: Aluguel, Assinaturas - Gera automaticamente para os próximos 12 meses
-              </p>
+            {!isEditing && (
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border border-gray-dark hover:border-primary transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={formData.conta_fixa}
+                    onChange={(e) => {
+                      const isFixa = e.target.checked;
+                      setFormData({
+                        ...formData,
+                        conta_fixa: isFixa,
+                        parcelada: isFixa ? false : formData.parcelada, // Desmarca parcelada se marcar fixa
+                      });
+                    }}
+                    className="w-4 h-4 text-primary bg-dark-soft border-gray-dark rounded focus:ring-primary"
+                  />
+                  <span className="text-white text-sm">Conta Fixa (Recorrente Mensal)</span>
+                </label>
+                <p className="text-xs text-gray-light ml-7">
+                  Ex: Aluguel, Assinaturas - Gera automaticamente para os próximos 12 meses
+                </p>
 
-              {!formData.conta_fixa && (
-                <>
-                  <label className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border border-gray-dark hover:border-primary transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={formData.parcelada}
-                      onChange={(e) =>
-                        setFormData({ ...formData, parcelada: e.target.checked })
-                      }
-                      className="w-4 h-4 text-primary bg-dark-soft border-gray-dark rounded focus:ring-primary"
-                    />
-                    <span className="text-white text-sm">É parcelada?</span>
-                  </label>
-                </>
-              )}
-            </div>
+                {!formData.conta_fixa && (
+                  <>
+                    <label className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border border-gray-dark hover:border-primary transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={formData.parcelada}
+                        onChange={(e) =>
+                          setFormData({ ...formData, parcelada: e.target.checked })
+                        }
+                        className="w-4 h-4 text-primary bg-dark-soft border-gray-dark rounded focus:ring-primary"
+                      />
+                      <span className="text-white text-sm">É parcelada?</span>
+                    </label>
+                  </>
+                )}
+              </div>
+            )}
 
-            {formData.parcelada && !formData.conta_fixa && (
+            {formData.parcelada && !formData.conta_fixa && !isEditing && (
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
                   Número de Parcelas * (até 420x)
@@ -275,7 +304,9 @@ export const CadastroContaModal = ({ onClose }: CadastroContaModalProps) => {
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Salvando...' : 'Salvar Conta'}
+              {loading
+                ? (isEditing ? 'Atualizando...' : 'Salvando...')
+                : (isEditing ? 'Atualizar Conta' : 'Salvar Conta')}
             </Button>
           </div>
         </form>
