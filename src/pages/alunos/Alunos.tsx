@@ -223,7 +223,7 @@ export const Alunos = () => {
                         onClick={async () => {
                           if (!user) return;
                           const current = aluno.payment_status || 'pendente';
-                          const ordem: Array<Aluno['payment_status']> = ['pendente', 'pago', 'atrasado'];
+                          const ordem: Array<Aluno['payment_status']> = ['pendente', 'pago'];
                           const idx = ordem.indexOf(current);
                           const next = ordem[(idx + 1) % ordem.length];
 
@@ -252,9 +252,7 @@ export const Alunos = () => {
                           className={`px-3 py-1 rounded-full text-xs font-medium ${
                             aluno.payment_status === 'pago'
                               ? 'bg-green-500/20 text-green-500'
-                              : aluno.payment_status === 'atrasado'
-                              ? 'bg-primary/20 text-primary'
-                              : 'bg-yellow-500/20 text-yellow-500'
+                              : 'bg-primary/20 text-primary'
                           }`}
                         >
                           {aluno.payment_status === 'pago'

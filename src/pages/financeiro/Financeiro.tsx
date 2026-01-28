@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, DollarSign, AlertCircle, CheckCircle, Clock, Edit, Trash2 } from 'lucide-react';
+import { Plus, DollarSign, CheckCircle, Clock, Edit, Trash2 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { ContaFinanceira } from '../../types';
@@ -65,14 +65,10 @@ export const Financeiro = () => {
     .reduce((sum, c) => sum + c.valor, 0);
 
   const totalPendente = contasMes
-    .filter((c) => !c.pago && new Date(c.data_vencimento) >= hoje)
+    .filter((c) => !c.pago)
     .reduce((sum, c) => sum + c.valor, 0);
 
-  const totalAtrasado = contasMes
-    .filter((c) => !c.pago && new Date(c.data_vencimento) < hoje)
-    .reduce((sum, c) => sum + c.valor, 0);
-
-  const totalMes = totalRecebido + totalPendente + totalAtrasado;
+  const totalMes = totalRecebido + totalPendente;
 
   const handleDeleteConta = async (conta: ContaFinanceira) => {
     if (!confirm(`Deseja realmente excluir a conta "${conta.descricao}"?`)) {
@@ -131,23 +127,11 @@ export const Financeiro = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-light text-sm mb-1">Pendentes</p>
-              <p className="text-2xl font-bold text-yellow-500">
+              <p className="text-2xl font-bold text-primary">
                 R$ {totalPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
             </div>
-            <Clock className="text-yellow-500" size={32} />
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-light text-sm mb-1">Atrasados</p>
-              <p className="text-2xl font-bold text-primary">
-                R$ {totalAtrasado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-            <AlertCircle className="text-primary" size={32} />
+            <Clock className="text-primary" size={32} />
           </div>
         </Card>
 
@@ -219,6 +203,13 @@ export const Financeiro = () => {
                     }`}
                   >
                     <td className="py-4 px-4 text-white">
+                      {conta.tipo === 'pagar' && (
+                        <span
+                          className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                            conta.pago ? 'bg-green-500' : 'bg-primary'
+                          }`}
+                        ></span>
+                      )}
                       {conta.descricao}
                       {conta.conta_fixa && (
                         <span className="text-xs text-primary ml-2 font-medium">
@@ -258,16 +249,10 @@ export const Financeiro = () => {
                         className={`px-3 py-1 rounded-full text-xs font-medium ${
                           conta.pago
                             ? 'bg-green-500/20 text-green-500'
-                            : new Date(conta.data_vencimento) < new Date()
-                            ? 'bg-primary/20 text-primary'
-                            : 'bg-yellow-500/20 text-yellow-500'
+                            : 'bg-primary/20 text-primary'
                         }`}
                       >
-                        {conta.pago
-                          ? 'Pago'
-                          : new Date(conta.data_vencimento) < new Date()
-                          ? 'Vencido'
-                          : 'Pendente'}
+                        {conta.pago ? 'Pago' : 'Pendente'}
                       </span>
                     </td>
                     <td className="py-4 px-4">

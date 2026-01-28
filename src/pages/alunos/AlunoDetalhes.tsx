@@ -106,7 +106,7 @@ export const AlunoDetalhes = () => {
                 </p>
               </div>
               <div>
-                <p className="text-gray-light text-sm mb-1">Dia de Pagamento</p>
+                <p className="text-gray-light text-sm mb-1">Vencimento</p>
                 <p className="text-white flex items-center gap-2">
                   <Calendar size={16} />
                   Dia {aluno.payment_day || '-'}
@@ -118,16 +118,10 @@ export const AlunoDetalhes = () => {
                   className={`px-3 py-1 rounded-full text-xs font-medium ${
                     aluno.payment_status === 'pago'
                       ? 'bg-green-500/20 text-green-500'
-                      : aluno.payment_status === 'atrasado'
-                      ? 'bg-primary/20 text-primary'
-                      : 'bg-yellow-500/20 text-yellow-500'
+                      : 'bg-primary/20 text-primary'
                   }`}
                 >
-                  {aluno.payment_status === 'pago'
-                    ? 'Pago'
-                    : aluno.payment_status === 'atrasado'
-                    ? 'Atrasado'
-                    : 'Pendente'}
+                  {aluno.payment_status === 'pago' ? 'Pago' : 'Pendente'}
                 </span>
               </div>
               <div>
@@ -171,16 +165,10 @@ export const AlunoDetalhes = () => {
                 className={`text-lg font-semibold ${
                   aluno.payment_status === 'pago'
                     ? 'text-green-500'
-                    : aluno.payment_status === 'atrasado'
-                    ? 'text-primary'
-                    : 'text-yellow-500'
+                    : 'text-primary'
                 }`}
               >
-                {aluno.payment_status === 'pago'
-                  ? 'Pago'
-                  : aluno.payment_status === 'atrasado'
-                  ? 'Atrasado'
-                  : 'Pendente'}
+                {aluno.payment_status === 'pago' ? 'Pago' : 'Pendente'}
               </p>
             </div>
           </div>
