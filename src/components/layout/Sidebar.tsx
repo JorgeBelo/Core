@@ -3,7 +3,6 @@ import {
   Users, 
   Calendar, 
   DollarSign, 
-  Clock,
   Bell,
   User as UserIcon
 } from 'lucide-react';
@@ -15,8 +14,7 @@ import { ProfileDropdown } from '../common/ProfileDropdown';
 const menuItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/alunos', icon: Users, label: 'Alunos' },
-  { path: '/aulas', icon: Clock, label: 'Aulas' },
-  { path: '/agenda', icon: Calendar, label: 'Agenda' },
+  { path: '/agenda', icon: Calendar, label: 'Agenda Semanal' },
   { path: '/financeiro', icon: DollarSign, label: 'Financeiro' },
   { path: '/notificacoes', icon: Bell, label: 'Notificações' },
   { path: '/perfil', icon: UserIcon, label: 'Perfil' },

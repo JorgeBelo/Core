@@ -8,7 +8,6 @@ import { Dashboard } from './pages/dashboard/Dashboard';
 import { Alunos } from './pages/alunos/Alunos';
 import { AlunoDetalhes } from './pages/alunos/AlunoDetalhes';
 import { Agenda } from './pages/agenda/Agenda';
-import { Aulas } from './pages/aulas/Aulas';
 import { Financeiro } from './pages/financeiro/Financeiro';
 import { Perfil } from './pages/perfil/Perfil';
 import { Notificacoes } from './pages/notificacoes/Notificacoes';
@@ -75,14 +74,6 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Agenda />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/aulas"
-        element={
-          <ProtectedRoute>
-            <Aulas />
           </ProtectedRoute>
         }
       />
