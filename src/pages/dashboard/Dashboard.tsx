@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, DollarSign, CheckCircle, Clock } from 'lucide-react';
+import { Users, DollarSign, CheckCircle, Clock, TrendingUp, TrendingDown, ArrowUpCircle } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useNavigate } from 'react-router-dom';
@@ -35,7 +35,9 @@ export const Dashboard = () => {
     mensalidadesRecebidas: 0,
     mensalidadesPendentes: 0,
     contasPagarPendentes: 0,
+    contasPagarPagas: 0,
     contasReceberPendentes: 0,
+    contasReceberPagas: 0,
   });
   const [highlights, setHighlights] = useState<{
     proximosVencimentos: Array<{ descricao: string; data: string; tipo: 'pagar' | 'receber' }>;
@@ -121,8 +123,16 @@ export const Dashboard = () => {
         .filter((c: any) => c.tipo === 'pagar' && !c.pago)
         .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
 
+      const contasPagarPagas = contasMes
+        .filter((c: any) => c.tipo === 'pagar' && c.pago)
+        .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
+
       const contasReceberPendentes = contasMes
         .filter((c: any) => c.tipo === 'receber' && !c.pago)
+        .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
+
+      const contasReceberPagas = contasMes
+        .filter((c: any) => c.tipo === 'receber' && c.pago)
         .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
 
       const proximosVencimentos = contasMes
@@ -191,7 +201,9 @@ export const Dashboard = () => {
         mensalidadesRecebidas,
         mensalidadesPendentes,
         contasPagarPendentes,
+        contasPagarPagas,
         contasReceberPendentes,
+        contasReceberPagas,
       });
 
       setHighlights({
@@ -208,14 +220,19 @@ export const Dashboard = () => {
     }
   };
 
-  const totalMensalidadesMes = stats.mensalidadesRecebidas + stats.mensalidadesPendentes;
+  // Cálculos financeiros principais
+  const totalRecebido = stats.mensalidadesRecebidas + stats.contasReceberPagas;
+  const totalAPagar = stats.contasPagarPendentes;
+  const totalPago = stats.contasPagarPagas;
+  const saldoFinal = totalRecebido - totalPago - totalAPagar;
+  const saldoPositivo = saldoFinal >= 0;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-sans font-semibold text-white mb-2">Dashboard</h1>
         <p className="text-gray-light">
-          Visão rápida do seu faturamento, pendências e agenda financeira.
+          Controle financeiro simples e direto do seu negócio
         </p>
       </div>
 
@@ -223,41 +240,115 @@ export const Dashboard = () => {
         <div className="text-center py-12 text-gray-light">Carregando dados...</div>
       ) : (
         <>
-          {/* Cards principais (resumo financeiro + alunos) */}
+          {/* Card Principal: Saldo Final (Destaque) */}
+          <Card className={`border-2 ${saldoPositivo ? 'border-green-500' : 'border-primary'}`}>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex-1 text-center md:text-left">
+                <p className="text-gray-light text-sm mb-2">Saldo do Mês</p>
+                <p 
+                  className={`text-5xl font-bold ${saldoPositivo ? 'text-green-500' : 'text-primary'}`}
+                >
+                  {currencyFormatter.format(saldoFinal)}
+                </p>
+                <p className="text-sm text-gray-light mt-2">
+                  {saldoPositivo 
+                    ? '✅ Você está no verde! Sobrou dinheiro este mês.' 
+                    : '⚠️ Atenção! Você tem mais contas do que recebeu.'}
+                </p>
+              </div>
+              <div className={`p-6 rounded-full ${saldoPositivo ? 'bg-green-500/20' : 'bg-primary/20'}`}>
+                {saldoPositivo ? (
+                  <TrendingUp className={saldoPositivo ? 'text-green-500' : 'text-primary'} size={64} />
+                ) : (
+                  <TrendingDown className="text-primary" size={64} />
+                )}
+              </div>
+            </div>
+          </Card>
+
+          {/* Cards Principais: Recebido, A Pagar, Já Pago */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Este mês eu recebi */}
+            <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/30">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-gray-light text-sm mb-2">💰 Este mês eu recebi</p>
+                  <p className="text-3xl font-bold text-green-500 mb-1">
+                    {currencyFormatter.format(totalRecebido)}
+                  </p>
+                  <div className="text-xs text-gray-light space-y-1 mt-3">
+                    <div className="flex justify-between">
+                      <span>Mensalidades:</span>
+                      <span className="text-green-400">{currencyFormatter.format(stats.mensalidadesRecebidas)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Contas a receber:</span>
+                      <span className="text-green-400">{currencyFormatter.format(stats.contasReceberPagas)}</span>
+                    </div>
+                  </div>
+                </div>
+                <ArrowUpCircle className="text-green-500 flex-shrink-0" size={40} />
+              </div>
+            </Card>
+
+            {/* Tenho X para pagar */}
+            <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/30">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-gray-light text-sm mb-2">⚠️ Tenho para pagar</p>
+                  <p className="text-3xl font-bold text-primary mb-1">
+                    {currencyFormatter.format(totalAPagar)}
+                  </p>
+                  <p className="text-xs text-gray-light mt-3">
+                    {totalAPagar > 0 
+                      ? 'Contas pendentes que ainda não foram pagas' 
+                      : 'Nenhuma conta pendente! 🎉'}
+                  </p>
+                </div>
+                <Clock className="text-primary flex-shrink-0" size={40} />
+              </div>
+            </Card>
+
+            {/* Já paguei */}
+            <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/30">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-gray-light text-sm mb-2">✅ Já paguei</p>
+                  <p className="text-3xl font-bold text-blue-400 mb-1">
+                    {currencyFormatter.format(totalPago)}
+                  </p>
+                  <p className="text-xs text-gray-light mt-3">
+                    Contas que já foram pagas este mês
+                  </p>
+                </div>
+                <CheckCircle className="text-blue-400 flex-shrink-0" size={40} />
+              </div>
+            </Card>
+          </div>
+
+          {/* Cards Secundários: Detalhes */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-light text-xs mb-1">Mensalidades Recebidas (Mês)</p>
-                  <p className="text-2xl font-bold text-green-500">
-                    {currencyFormatter.format(stats.mensalidadesRecebidas)}
-                  </p>
-                </div>
-                <CheckCircle className="text-green-500" size={28} />
-              </div>
-            </Card>
-
-            <Card>
-              <div className="flex items-center justify-between">
-                <div>
                   <p className="text-gray-light text-xs mb-1">Mensalidades Pendentes</p>
-                  <p className="text-2xl font-bold text-primary">
+                  <p className="text-xl font-bold text-primary">
                     {currencyFormatter.format(stats.mensalidadesPendentes)}
                   </p>
                 </div>
-                <Clock className="text-primary" size={28} />
+                <Clock className="text-primary" size={24} />
               </div>
             </Card>
 
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-light text-xs mb-1">Contas a Pagar Pendentes (Mês)</p>
-                  <p className="text-xl font-bold text-primary">
-                    {currencyFormatter.format(stats.contasPagarPendentes)}
+                  <p className="text-gray-light text-xs mb-1">Contas Pagas (Mês)</p>
+                  <p className="text-xl font-bold text-blue-400">
+                    {currencyFormatter.format(stats.contasPagarPagas)}
                   </p>
                 </div>
-                <DollarSign className="text-primary" size={24} />
+                <CheckCircle className="text-blue-400" size={24} />
               </div>
             </Card>
 
@@ -265,12 +356,25 @@ export const Dashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-light text-xs mb-1">Alunos Ativos</p>
-                  <p className="text-2xl font-bold text-white">{stats.alunosAtivos}</p>
+                  <p className="text-xl font-bold text-white">{stats.alunosAtivos}</p>
                   <p className="text-xs text-gray-light mt-1">
-                    {stats.alunosTotal} cadastrados no total
+                    {stats.alunosTotal} total
                   </p>
                 </div>
-                <Users className="text-primary" size={28} />
+                <Users className="text-primary" size={24} />
+              </div>
+            </Card>
+
+            <Card>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-light text-xs mb-1">Total do Mês</p>
+                  <p className="text-xl font-bold text-white">
+                    {currencyFormatter.format(stats.mensalidadesRecebidas + stats.mensalidadesPendentes)}
+                  </p>
+                  <p className="text-xs text-gray-light mt-1">Mensalidades</p>
+                </div>
+                <DollarSign className="text-white" size={24} />
               </div>
             </Card>
           </div>
@@ -331,32 +435,9 @@ export const Dashboard = () => {
             </div>
           </Card>
 
-          {/* Resumo textual e alertas do mês */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card title="Resumo do Mês">
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-light">Total em mensalidades (recebidas + pendentes)</span>
-                  <span className="font-semibold text-white">
-                    {currencyFormatter.format(totalMensalidadesMes)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-light">Contas a receber pendentes (Mês)</span>
-                  <span className="font-semibold text-green-500">
-                    {currencyFormatter.format(stats.contasReceberPendentes)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-light">Contas a pagar pendentes (Mês)</span>
-                  <span className="font-semibold text-primary">
-                    {currencyFormatter.format(stats.contasPagarPendentes)}
-                  </span>
-                </div>
-              </div>
-            </Card>
-
-            <Card title="Alertas do Mês">
+          {/* Alertas do mês */}
+          <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+            <Card title="📋 Próximas Ações e Lembretes">
               <div className="space-y-4 text-sm">
                 <div>
                   <p className="text-gray-light mb-2">Próximos vencimentos (até 5 lançamentos)</p>
