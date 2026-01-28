@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Eye, Filter, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, Eye, Filter, Edit, Trash2, CheckCircle, Clock, DollarSign } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { Aluno } from '../../types';
@@ -129,6 +129,58 @@ export const Alunos = () => {
           Cadastrar Novo Aluno
         </Button>
       </div>
+
+      {/* Cards de Resumo - estilo Financeiro */}
+      {alunos.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-light text-sm mb-1">Total Recebido (Mensalidades)</p>
+                <p className="text-2xl font-bold text-green-500">
+                  R${' '}
+                  {alunos
+                    .filter((a) => a.payment_status === 'pago')
+                    .reduce((sum, a) => sum + (a.monthly_fee || 0), 0)
+                    .toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              <CheckCircle className="text-green-500" size={32} />
+            </div>
+          </Card>
+
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-light text-sm mb-1">Pendentes (Mensalidades)</p>
+                <p className="text-2xl font-bold text-primary">
+                  R${' '}
+                  {alunos
+                    .filter((a) => a.payment_status !== 'pago')
+                    .reduce((sum, a) => sum + (a.monthly_fee || 0), 0)
+                    .toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              <Clock className="text-primary" size={32} />
+            </div>
+          </Card>
+
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-light text-sm mb-1">Total do Mês (Mensalidades)</p>
+                <p className="text-2xl font-bold text-white">
+                  R${' '}
+                  {alunos
+                    .reduce((sum, a) => sum + (a.monthly_fee || 0), 0)
+                    .toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              <DollarSign className="text-white" size={32} />
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Filtros e Busca */}
       <Card>
