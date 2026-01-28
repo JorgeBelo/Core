@@ -5,6 +5,8 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
+  // Registro profissional do personal (ex: CREF)
+  cref?: string;
   created_at: string;
   updated_at: string;
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Save, Clock } from 'lucide-react';
+import { Save, Clock, Camera, Link as LinkIcon } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,6 +11,8 @@ export const Perfil = () => {
     name: user?.name || '',
     email: user?.email || '',
     phone: user?.phone || '',
+    cref: user?.cref || '',
+    avatarUrl: '',
   });
 
   const [workHours, setWorkHours] = useState({
@@ -45,62 +47,152 @@ export const Perfil = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-sans font-semibold text-white mb-2">Perfil e Configurações</h1>
-        <p className="text-gray-light">Gerencie seus dados pessoais e preferências</p>
+        <h1 className="text-3xl font-sans font-semibold text-white mb-2">Perfil do Personal</h1>
+        <p className="text-gray-light">Atualize seus dados profissionais e de acesso</p>
       </div>
 
-      {/* Dados Pessoais */}
-      <Card title="Dados Pessoais">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Nome Completo
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="input-core w-full"
-              />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Painel de perfil (foto + dados principais) */}
+        <Card className="lg:col-span-1">
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="relative">
+              <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary to-dark-soft flex items-center justify-center overflow-hidden border-2 border-primary/60">
+                {formData.avatarUrl ? (
+                  <img
+                    src={formData.avatarUrl}
+                    alt={formData.name || 'Foto do personal'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-3xl font-semibold">
+                    {(formData.name || 'P')[0].toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-1.5 shadow-lg hover:bg-primary/80 transition-colors"
+                title="Alterar foto"
+              >
+                <Camera size={16} />
+              </button>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="input-core w-full"
-              />
+              <p className="text-white text-lg font-semibold">
+                {formData.name || 'Seu nome completo'}
+              </p>
+              <p className="text-gray-light text-sm">{formData.email || 'seu@email.com'}</p>
+              {formData.cref && (
+                <p className="text-xs text-primary font-medium mt-1">
+                  CREF: {formData.cref}
+                </p>
+              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Telefone
-              </label>
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="input-core w-full"
-                placeholder="(11) 98765-4321"
-              />
+            <div className="w-full space-y-3">
+              <div className="flex flex-col items-start gap-1">
+                <label className="text-xs text-gray-light">URL da foto (opcional)</label>
+                <input
+                  type="url"
+                  value={formData.avatarUrl}
+                  onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
+                  className="input-core w-full text-xs"
+                  placeholder="https://..."
+                />
+              </div>
+
+              <div className="p-3 rounded-lg border border-gray-dark bg-dark-soft flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-white text-sm font-medium">Conta Google</p>
+                  <p className="text-gray-light text-xs">
+                    Integração real com login Google será configurada depois.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 px-3 py-2 rounded-md bg-white text-black text-xs font-medium hover:bg-gray-200 transition-colors"
+                  disabled
+                >
+                  <span className="bg-white rounded-full flex items-center justify-center w-5 h-5">
+                    <span className="text-[10px] font-bold text-primary">G</span>
+                  </span>
+                  <span>Vincular Google</span>
+                  <LinkIcon size={14} />
+                </button>
+              </div>
             </div>
           </div>
+        </Card>
 
-          <div className="flex justify-end pt-4 border-t border-gray-dark">
-            <Button type="submit">
-              <Save size={20} className="mr-2" />
-              Salvar Alterações
-            </Button>
-          </div>
-        </form>
-      </Card>
+        {/* Formulário de dados pessoais / profissionais */}
+        <Card title="Informações do Personal" className="lg:col-span-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Nome Completo
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="input-core w-full"
+                  placeholder="Seu nome completo"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="input-core w-full"
+                  placeholder="seu@email.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Telefone de Contato
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="input-core w-full"
+                  placeholder="(11) 98765-4321"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  CREF
+                </label>
+                <input
+                  type="text"
+                  value={formData.cref}
+                  onChange={(e) => setFormData({ ...formData, cref: e.target.value })}
+                  className="input-core w-full"
+                  placeholder="Ex: CREF 123456-G/SP"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4 border-t border-gray-dark">
+              <Button type="submit">
+                <Save size={20} className="mr-2" />
+                Salvar Alterações
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
 
       {/* Horários de Trabalho */}
       <Card title="Horários de Trabalho">
