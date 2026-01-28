@@ -74,20 +74,25 @@ export const Perfil = () => {
 
       if (uploadError) throw uploadError;
 
-      const { data: publicData, error: publicError } = supabase.storage
+      // Obtém a URL pública do arquivo (getPublicUrl não retorna erro, só a URL)
+      const { data: publicData } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
-      if (publicError) throw publicError;
-
+      // A URL pública está em publicData.publicUrl
       const publicUrl = publicData?.publicUrl;
+      
       if (!publicUrl) {
         throw new Error('Não foi possível obter a URL pública da imagem.');
       }
 
+      // Log para debug (pode remover depois)
+      console.log('URL pública gerada:', publicUrl);
+
       // Atualiza estado local e no perfil (tabela users)
       setFormData((prev) => ({ ...prev, avatarUrl: publicUrl }));
       await updateProfile({ avatar_url: publicUrl });
+      
       toast.success('Foto de perfil atualizada com sucesso!');
     } catch (error: any) {
       console.error('Erro ao enviar foto de perfil:', error);

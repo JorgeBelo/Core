@@ -215,7 +215,6 @@ export const Financeiro = () => {
                         type="button"
                         onClick={async () => {
                           if (!user) return;
-                          if (conta.tipo !== 'pagar') return;
 
                           const nextPago = !conta.pago;
 
@@ -233,10 +232,17 @@ export const Financeiro = () => {
                               )
                             );
 
+                            const label =
+                              conta.tipo === 'receber'
+                                ? nextPago
+                                  ? 'Recebido'
+                                  : 'Pendente'
+                                : nextPago
+                                ? 'Pago'
+                                : 'Pendente';
+
                             toast.success(
-                              `Status da conta "${conta.descricao}" atualizado para "${
-                                nextPago ? 'Pago' : 'Pendente'
-                              }".`
+                              `Status da conta "${conta.descricao}" atualizado para "${label}".`
                             );
                           } catch (err: any) {
                             console.error('Erro ao atualizar status da conta:', err);
@@ -252,7 +258,13 @@ export const Financeiro = () => {
                               : 'bg-primary/20 text-primary'
                           }`}
                         >
-                          {conta.pago ? 'Pago' : 'Pendente'}
+                          {conta.tipo === 'receber'
+                            ? conta.pago
+                              ? 'Recebido'
+                              : 'Pendente'
+                            : conta.pago
+                            ? 'Pago'
+                            : 'Pendente'}
                         </span>
                       </button>
                     </td>
@@ -318,7 +330,6 @@ export const Financeiro = () => {
                     type="button"
                     onClick={async () => {
                       if (!user) return;
-                      if (conta.tipo !== 'pagar') return;
 
                       const nextPago = !conta.pago;
 
@@ -336,10 +347,17 @@ export const Financeiro = () => {
                           )
                         );
 
+                          const label =
+                            conta.tipo === 'receber'
+                              ? nextPago
+                                ? 'Recebido'
+                                : 'Pendente'
+                              : nextPago
+                              ? 'Pago'
+                              : 'Pendente';
+
                         toast.success(
-                          `Status da conta "${conta.descricao}" atualizado para "${
-                            nextPago ? 'Pago' : 'Pendente'
-                          }".`
+                            `Status da conta "${conta.descricao}" atualizado para "${label}".`
                         );
                       } catch (err: any) {
                         console.error('Erro ao atualizar status da conta:', err);
@@ -355,7 +373,13 @@ export const Financeiro = () => {
                           : 'bg-primary/20 text-primary'
                       }`}
                     >
-                      {conta.pago ? 'Pago' : 'Pendente'}
+                      {conta.tipo === 'receber'
+                        ? conta.pago
+                          ? 'Recebido'
+                          : 'Pendente'
+                        : conta.pago
+                        ? 'Pago'
+                        : 'Pendente'}
                     </span>
                   </button>
                 </div>

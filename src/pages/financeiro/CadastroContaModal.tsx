@@ -210,7 +210,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
 
             <div>
               <label className="block text-sm font-medium text-white mb-2">
-                Data de Vencimento *
+                {formData.tipo === 'receber' ? 'Data de Recebimento *' : 'Data de Vencimento *'}
               </label>
               <input
                 type="date"
