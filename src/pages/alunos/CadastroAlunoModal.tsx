@@ -5,21 +5,24 @@ import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabaseClient';
 import { maskWhatsApp, unmaskWhatsApp } from '../../utils/masks';
 import { useAuth } from '../../contexts/AuthContext';
+import type { Aluno } from '../../types';
 
 interface CadastroAlunoModalProps {
   onClose: () => void;
+  aluno?: Aluno | null;
 }
 
-export const CadastroAlunoModal = ({ onClose }: CadastroAlunoModalProps) => {
+export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) => {
   const { user } = useAuth();
+  const isEditing = !!aluno;
   const [formData, setFormData] = useState({
-    name: '',
-    birth_date: '',
-    whatsapp: '',
-    frequency_per_week: 2,
-    monthly_fee: '',
-    start_date: '',
-    observations: '',
+    nome: aluno?.nome || aluno?.name || '',
+    birth_date: aluno?.birth_date || '',
+    whatsapp: aluno?.whatsapp ? maskWhatsApp(aluno.whatsapp) : '',
+    frequency_per_week: aluno?.frequency_per_week || 2,
+    monthly_fee: aluno?.monthly_fee?.toString() || '',
+    start_date: aluno?.start_date || '',
+    observations: aluno?.observations || '',
   });
   const [loading, setLoading] = useState(false);
 
@@ -37,21 +40,39 @@ export const CadastroAlunoModal = ({ onClose }: CadastroAlunoModalProps) => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.from('alunos').insert({
+      const alunoData = {
         personal_id: user.id,
-        name: formData.name,
+        nome: formData.nome,
         birth_date: formData.birth_date,
         whatsapp: unmaskWhatsApp(formData.whatsapp),
         frequency_per_week: formData.frequency_per_week,
         monthly_fee: parseFloat(formData.monthly_fee),
         start_date: formData.start_date,
         observations: formData.observations || null,
-        active: true,
-      });
+      };
 
-      if (error) throw error;
+      if (isEditing && aluno) {
+        // Atualizar aluno existente
+        const { error } = await supabase
+          .from('alunos')
+          .update(alunoData)
+          .eq('id', aluno.id);
 
-      toast.success('Aluno cadastrado com sucesso!');
+        if (error) throw error;
+        toast.success('Aluno atualizado com sucesso!');
+      } else {
+        // Criar novo aluno
+        const { error } = await supabase
+          .from('alunos')
+          .insert({
+            ...alunoData,
+            active: true,
+          });
+
+        if (error) throw error;
+        toast.success('Aluno cadastrado com sucesso!');
+      }
+
       onClose();
     } catch (error: any) {
       console.error('Erro ao cadastrar aluno:', error);
@@ -65,7 +86,9 @@ export const CadastroAlunoModal = ({ onClose }: CadastroAlunoModalProps) => {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-dark-soft border border-gray-dark rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-dark">
-          <h2 className="text-2xl font-sans font-semibold text-white">Cadastrar Novo Aluno</h2>
+          <h2 className="text-2xl font-sans font-semibold text-white">
+            {isEditing ? 'Editar Aluno' : 'Cadastrar Novo Aluno'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-light hover:text-white transition-colors"
@@ -83,8 +106,8 @@ export const CadastroAlunoModal = ({ onClose }: CadastroAlunoModalProps) => {
               <input
                 type="text"
                 required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                value={formData.nome}
+                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                 className="input-core w-full"
                 placeholder="Nome do aluno"
               />
@@ -180,7 +203,10 @@ export const CadastroAlunoModal = ({ onClose }: CadastroAlunoModalProps) => {
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Cadastrando...' : 'Cadastrar Aluno'}
+              {loading 
+                ? (isEditing ? 'Atualizando...' : 'Cadastrando...') 
+                : (isEditing ? 'Atualizar Aluno' : 'Cadastrar Aluno')
+              }
             </Button>
           </div>
         </form>

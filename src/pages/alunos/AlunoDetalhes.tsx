@@ -1,43 +1,87 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Phone, Calendar, DollarSign } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { Aluno, ProgressoAluno } from '../../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { supabase } from '../../lib/supabaseClient';
+import { useAuth } from '../../contexts/AuthContext';
+import { maskWhatsApp } from '../../utils/masks';
+import toast from 'react-hot-toast';
 
-// Mock data
-const mockAluno: Aluno = {
-  id: '1',
-  personal_id: '1',
-  name: 'João Silva',
-  birth_date: '1990-05-15',
-  phone: '(11) 98765-4321',
-  whatsapp: '(11) 98765-4321',
-  frequency_per_week: 3,
-  monthly_fee: 300.00,
-  start_date: '2024-01-15',
-  active: true,
-  observations: 'Aluno dedicado, sempre presente nos treinos.',
-  created_at: '2024-01-15T10:00:00Z',
-  updated_at: '2024-01-15T10:00:00Z',
-};
-
-const mockProgresso: ProgressoAluno[] = [
-  { id: '1', aluno_id: '1', date: '2024-01-15', weight: 85.5, body_fat: 18, created_at: '2024-01-15T10:00:00Z' },
-  { id: '2', aluno_id: '1', date: '2024-02-15', weight: 84.2, body_fat: 17, created_at: '2024-02-15T10:00:00Z' },
-  { id: '3', aluno_id: '1', date: '2024-03-15', weight: 83.0, body_fat: 16, created_at: '2024-03-15T10:00:00Z' },
-  { id: '4', aluno_id: '1', date: '2024-04-15', weight: 82.1, body_fat: 15, created_at: '2024-04-15T10:00:00Z' },
-];
+// Mock progresso (será substituído por dados reais do banco quando a tabela for criada)
+const mockProgresso: ProgressoAluno[] = [];
 
 export const AlunoDetalhes = () => {
-  useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [aluno, setAluno] = useState<Aluno | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const progressoData = mockProgresso.map((p) => ({
-    date: new Date(p.date).toLocaleDateString('pt-BR', { month: 'short' }),
-    weight: p.weight,
-    bodyFat: p.body_fat,
-  }));
+  useEffect(() => {
+    if (id && user) {
+      loadAluno();
+    }
+  }, [id, user]);
+
+  const loadAluno = async () => {
+    if (!id || !user) return;
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('alunos')
+        .select('*')
+        .eq('id', id)
+        .eq('personal_id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      setAluno(data);
+    } catch (error: any) {
+      console.error('Erro ao carregar aluno:', error);
+      toast.error('Erro ao carregar dados do aluno');
+      navigate('/alunos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Mock progresso (será substituído por dados reais do banco quando a tabela for criada)
+  const progressoData = mockProgresso.length > 0 
+    ? mockProgresso.map((p) => ({
+        date: new Date(p.date).toLocaleDateString('pt-BR', { month: 'short' }),
+        weight: p.weight,
+        bodyFat: p.body_fat,
+      }))
+    : [];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-light">Carregando...</p>
+      </div>
+    );
+  }
+
+  if (!aluno) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-gray-light mb-4">Aluno não encontrado</p>
+          <Button onClick={() => navigate('/alunos')}>
+            <ArrowLeft size={20} className="mr-2" />
+            Voltar para Lista
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const alunoNome = aluno.nome || aluno.name || 'Sem nome';
 
   return (
     <div className="space-y-6">
@@ -47,7 +91,7 @@ export const AlunoDetalhes = () => {
           Voltar
         </Button>
         <div>
-          <h1 className="text-3xl font-sans font-semibold text-white mb-2">{mockAluno.name}</h1>
+          <h1 className="text-3xl font-sans font-semibold text-white mb-2">{alunoNome}</h1>
           <p className="text-gray-light">Perfil completo do aluno</p>
         </div>
       </div>
@@ -60,48 +104,47 @@ export const AlunoDetalhes = () => {
               <div>
                 <p className="text-gray-light text-sm mb-1">Data de Nascimento</p>
                 <p className="text-white">
-                  {new Date(mockAluno.birth_date).toLocaleDateString('pt-BR')}
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-light text-sm mb-1">Telefone</p>
-                <p className="text-white flex items-center gap-2">
-                  <Phone size={16} />
-                  {mockAluno.phone}
+                  {new Date(aluno.birth_date).toLocaleDateString('pt-BR')}
                 </p>
               </div>
               <div>
                 <p className="text-gray-light text-sm mb-1">WhatsApp</p>
                 <p className="text-white flex items-center gap-2">
                   <Phone size={16} />
-                  {mockAluno.whatsapp}
+                  {aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}
                 </p>
               </div>
               <div>
                 <p className="text-gray-light text-sm mb-1">Frequência Semanal</p>
                 <p className="text-white flex items-center gap-2">
                   <Calendar size={16} />
-                  {mockAluno.frequency_per_week}x por semana
+                  {aluno.frequency_per_week}x por semana
                 </p>
               </div>
               <div>
                 <p className="text-gray-light text-sm mb-1">Mensalidade</p>
                 <p className="text-white flex items-center gap-2">
                   <DollarSign size={16} />
-                  R$ {mockAluno.monthly_fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {aluno.monthly_fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
               <div>
                 <p className="text-gray-light text-sm mb-1">Status</p>
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-500">
-                  Ativo
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    aluno.active
+                      ? 'bg-green-500/20 text-green-500'
+                      : 'bg-gray-light/20 text-gray-light'
+                  }`}
+                >
+                  {aluno.active ? 'Ativo' : 'Inativo'}
                 </span>
               </div>
             </div>
-            {mockAluno.observations && (
+            {aluno.observations && (
               <div>
                 <p className="text-gray-light text-sm mb-1">Observações</p>
-                <p className="text-white">{mockAluno.observations}</p>
+                <p className="text-white">{aluno.observations}</p>
               </div>
             )}
           </div>
@@ -128,36 +171,42 @@ export const AlunoDetalhes = () => {
 
       {/* Gráfico de Progresso */}
       <Card title="Evolução de Peso e Gordura Corporal">
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={progressoData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
-              <XAxis dataKey="date" stroke="#b4b4b4" />
-              <YAxis stroke="#b4b4b4" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#1a1a1a',
-                  border: '1px solid #b4b4b4',
-                  color: '#ffffff',
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="weight"
-                stroke="#a20100"
-                strokeWidth={2}
-                name="Peso (kg)"
-              />
-              <Line
-                type="monotone"
-                dataKey="bodyFat"
-                stroke="#b4b4b4"
-                strokeWidth={2}
-                name="Gordura (%)"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        {progressoData.length > 0 ? (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={progressoData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
+                <XAxis dataKey="date" stroke="#b4b4b4" />
+                <YAxis stroke="#b4b4b4" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1a1a1a',
+                    border: '1px solid #b4b4b4',
+                    color: '#ffffff',
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="weight"
+                  stroke="#a20100"
+                  strokeWidth={2}
+                  name="Peso (kg)"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="bodyFat"
+                  stroke="#b4b4b4"
+                  strokeWidth={2}
+                  name="Gordura (%)"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="text-center py-12 text-gray-light">
+            <p>Nenhum dado de progresso registrado ainda.</p>
+          </div>
+        )}
       </Card>
     </div>
   );

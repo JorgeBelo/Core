@@ -12,7 +12,8 @@ export interface User {
 export interface Aluno {
   id: string;
   personal_id: string;
-  name: string;
+  nome: string; // Nome da coluna no banco
+  name?: string; // Compatibilidade
   birth_date: string;
   phone?: string;
   whatsapp?: string;
