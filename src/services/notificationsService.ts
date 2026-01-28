@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import type { Notification } from '../types';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 
 export const createNotification = async (
   personalId: string,
@@ -57,7 +57,7 @@ export const checkAndCreateNotifications = async (personalId: string) => {
           .eq('personal_id', personalId)
           .eq('type', 'atraso')
           .eq('related_id', aluno.id)
-          .gte('created_at', format(hoje, 'yyyy-MM-dd'))
+          .gte('created_at', format(startOfDay(hoje), 'yyyy-MM-dd'))
           .limit(1);
 
         if (!existing || existing.length === 0) {
@@ -87,7 +87,7 @@ export const checkAndCreateNotifications = async (personalId: string) => {
             .eq('personal_id', personalId)
             .eq('type', 'aniversario')
             .eq('related_id', aluno.id)
-            .gte('created_at', format(hoje, 'yyyy-MM-dd'))
+            .gte('created_at', format(startOfDay(hoje), 'yyyy-MM-dd'))
             .limit(1);
 
           if (!existing || existing.length === 0) {
@@ -127,7 +127,7 @@ export const checkAndCreateNotifications = async (personalId: string) => {
           .eq('personal_id', personalId)
           .eq('type', 'vencimento')
           .eq('related_id', conta.id)
-          .gte('created_at', format(hoje, 'yyyy-MM-dd'))
+          .gte('created_at', format(startOfDay(hoje), 'yyyy-MM-dd'))
           .limit(1);
 
         if (!existing || existing.length === 0) {

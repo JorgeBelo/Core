@@ -277,20 +277,28 @@ export const Alunos = () => {
                       {aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}
                     </td>
                     <td className="py-4 px-4 text-white font-semibold">
-                      {currencyFormatter.format(
-                        typeof aluno.monthly_fee === 'number'
-                          ? aluno.monthly_fee
-                          : parseFloat(String(aluno.monthly_fee)) || 0
+                      {aluno.active ? (
+                        currencyFormatter.format(
+                          typeof aluno.monthly_fee === 'number'
+                            ? aluno.monthly_fee
+                            : parseFloat(String(aluno.monthly_fee)) || 0
+                        )
+                      ) : (
+                        <span className="text-gray-light">-</span>
                       )}
                     </td>
                     <td className="py-4 px-4 text-gray-light">
-                      {aluno.frequency_per_week
-                        ? `${aluno.frequency_per_week}x/semana`
+                      {aluno.active
+                        ? (aluno.frequency_per_week
+                            ? `${aluno.frequency_per_week}x/semana`
+                            : '-')
                         : '-'}
                     </td>
                     <td className="py-4 px-4 text-gray-light">
-                      {aluno.payment_day
-                        ? `Todo dia ${aluno.payment_day}`
+                      {aluno.active
+                        ? (aluno.payment_day
+                            ? `Todo dia ${aluno.payment_day}`
+                            : '-')
                         : '-'}
                     </td>
                     <td className="py-4 px-4">
