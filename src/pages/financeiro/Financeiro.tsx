@@ -46,7 +46,7 @@ export const Financeiro = () => {
     }
   };
 
-  // Calcular totais do mês atual
+  // Totais do mês atual
   const hoje = new Date();
   const inicioMes = startOfMonth(hoje);
   const fimMes = endOfMonth(hoje);
@@ -56,12 +56,10 @@ export const Financeiro = () => {
     return isWithinInterval(dataVenc, { start: inicioMes, end: fimMes });
   });
 
-  // Aplicar filtro de tipo nas contas do mês (para tabela)
   const contasMesFiltradas = contasMes.filter((conta) => {
     return tipoFilter === 'todos' || conta.tipo === tipoFilter;
   });
 
-  // Totais no estilo antigo (Recebido, Pendente, Atrasado, Total do Mês)
   const totalRecebido = contasMes
     .filter((c) => c.tipo === 'receber' && c.pago)
     .reduce((sum, c) => sum + c.valor, 0);
@@ -132,7 +130,7 @@ export const Financeiro = () => {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-light text-sm mb-1">Faturamento Total</p>
+              <p className="text-gray-light text-sm mb-1">Pendentes</p>
               <p className="text-2xl font-bold text-yellow-500">
                 R$ {totalPendente.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
@@ -254,7 +252,7 @@ export const Financeiro = () => {
                       })}
                     </td>
                     <td className="py-4 px-4 text-white font-semibold">
-                      {conta.tipo === 'pagar' ? '-' : '+'}R${' '}
+                      {conta.tipo === 'pagar' ? '-' : '+'}R{' '}
                       {conta.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
                     <td className="py-4 px-4">

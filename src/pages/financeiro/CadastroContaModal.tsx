@@ -61,9 +61,8 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
         return;
       }
 
-      // Conta Fixa (Recorrente Mensal)
+      // Conta Fixa (Recorrente Mensal) - NOVA
       if (formData.conta_fixa) {
-        // Criar contas para os próximos 12 meses
         const contas = [];
         for (let i = 0; i < 12; i++) {
           const dataParcela = addMonths(dataVencimento, i);
@@ -90,7 +89,6 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
 
       // Conta Parcelada
       if (formData.parcelada && formData.numero_parcelas > 1) {
-        // Criar múltiplas contas para parcelas
         const contas = [];
         for (let i = 0; i < formData.numero_parcelas; i++) {
           const dataParcela = addMonths(dataVencimento, i);
@@ -135,8 +133,8 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
       toast.success('Conta cadastrada com sucesso!');
       onClose();
     } catch (error: any) {
-      console.error('Erro ao cadastrar conta:', error);
-      toast.error(error.message || 'Erro ao cadastrar conta');
+      console.error('Erro ao cadastrar/atualizar conta:', error);
+      toast.error(error.message || 'Erro ao cadastrar/atualizar conta');
     } finally {
       setLoading(false);
     }
@@ -243,7 +241,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
                       setFormData({
                         ...formData,
                         conta_fixa: isFixa,
-                        parcelada: isFixa ? false : formData.parcelada, // Desmarca parcelada se marcar fixa
+                        parcelada: isFixa ? false : formData.parcelada,
                       });
                     }}
                     className="w-4 h-4 text-primary bg-dark-soft border-gray-dark rounded focus:ring-primary"
