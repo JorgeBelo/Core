@@ -45,10 +45,6 @@ export const Financeiro = () => {
     }
   };
 
-  const filteredContas = contas.filter((conta) => {
-    return tipoFilter === 'todos' || conta.tipo === tipoFilter;
-  });
-
   // Calcular totais do mês atual
   const hoje = new Date();
   const inicioMes = startOfMonth(hoje);
@@ -57,6 +53,11 @@ export const Financeiro = () => {
   const contasMes = contas.filter((conta) => {
     const dataVenc = new Date(conta.data_vencimento);
     return isWithinInterval(dataVenc, { start: inicioMes, end: fimMes });
+  });
+
+  // Aplicar filtro de tipo nas contas do mês (para tabela)
+  const contasMesFiltradas = contasMes.filter((conta) => {
+    return tipoFilter === 'todos' || conta.tipo === tipoFilter;
   });
 
   // Totais no estilo antigo (Recebido, Pendente, Atrasado, Total do Mês)
@@ -163,6 +164,7 @@ export const Financeiro = () => {
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Descrição</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Categoria</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Tipo</th>
+                <th className="text-left py-3 px-4 text-gray-light font-medium">Parcelas</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Vencimento</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Valor</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Status</th>
@@ -171,18 +173,18 @@ export const Financeiro = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-gray-light">
+                  <td colSpan={7} className="text-center py-8 text-gray-light">
                     Carregando...
                   </td>
                 </tr>
-              ) : filteredContas.length === 0 ? (
+              ) : contasMesFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-gray-light">
+                  <td colSpan={7} className="text-center py-8 text-gray-light">
                     Nenhuma conta encontrada
                   </td>
                 </tr>
               ) : (
-                filteredContas.map((conta) => (
+                contasMesFiltradas.map((conta) => (
                   <tr
                     key={conta.id}
                     className={`border-b border-gray-dark hover:bg-dark-soft transition-colors ${
@@ -193,11 +195,6 @@ export const Financeiro = () => {
                   >
                     <td className="py-4 px-4 text-white">
                       {conta.descricao}
-                      {conta.parcelada && conta.numero_parcelas && (
-                        <span className="text-xs text-gray-light ml-2">
-                          ({conta.parcela_atual || 1}/{conta.numero_parcelas})
-                        </span>
-                      )}
                       {conta.conta_fixa && (
                         <span className="text-xs text-primary ml-2 font-medium">
                           [Fixa]
@@ -215,6 +212,13 @@ export const Financeiro = () => {
                       >
                         {conta.tipo === 'pagar' ? 'A Pagar' : 'A Receber'}
                       </span>
+                    </td>
+                    <td className="py-4 px-4 text-gray-light">
+                      {conta.parcelada && conta.numero_parcelas
+                        ? `${conta.parcela_atual || 1}/${conta.numero_parcelas}`
+                        : conta.conta_fixa
+                        ? 'Fixa'
+                        : '-'}
                     </td>
                     <td className="py-4 px-4 text-gray-light">
                       {format(new Date(conta.data_vencimento), "d 'de' MMM 'de' yyyy", {
