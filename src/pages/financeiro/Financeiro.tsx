@@ -241,8 +241,16 @@ export const Financeiro = () => {
                       })}
                     </td>
                     <td className="py-4 px-4 text-white font-semibold">
-                      {conta.tipo === 'pagar' ? '-' : '+'}R{' '}
-                      {conta.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      <span
+                        className={
+                          conta.tipo === 'pagar' ? 'text-primary' : 'text-green-500'
+                        }
+                      >
+                        R${' '}
+                        {conta.valor.toLocaleString('pt-BR', {
+                          minimumFractionDigits: 2,
+                        })}
+                      </span>
                     </td>
                     <td className="py-4 px-4">
                       <button

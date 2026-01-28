@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
 import { addMonths, format } from 'date-fns';
 import type { ContaFinanceira } from '../../types';
+import { maskCurrencyBRL, unmaskCurrencyBRLToNumber } from '../../utils/masks';
 
 interface CadastroContaModalProps {
   onClose: () => void;
@@ -17,7 +18,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
   const isEditing = !!conta;
   const [formData, setFormData] = useState({
     descricao: conta?.descricao ?? '',
-    valor: conta?.valor?.toString() ?? '',
+    valor: conta ? maskCurrencyBRL(conta.valor.toString()) : '',
     data_vencimento: conta?.data_vencimento ?? '',
     tipo: (conta?.tipo as 'pagar' | 'receber') ?? 'pagar',
     recorrencia: (conta?.conta_fixa
@@ -38,7 +39,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
 
     setLoading(true);
     try {
-      const valor = parseFloat(formData.valor);
+      const valor = unmaskCurrencyBRLToNumber(formData.valor);
       const dataVencimento = new Date(formData.data_vencimento);
 
       // Edição de conta existente (atualiza apenas campos básicos)
@@ -95,7 +96,8 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
           contas.push({
             personal_id: user.id,
             descricao: `${formData.descricao} - Parcela ${i + 1}/${formData.numero_parcelas}`,
-            valor: valor / formData.numero_parcelas,
+            // IMPORTANTE: valor é o valor de CADA parcela, não o total dividido
+            valor,
             data_vencimento: format(dataParcela, 'yyyy-MM-dd'),
             tipo: formData.tipo,
             parcelada: true,
@@ -191,13 +193,17 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
                 Valor *
               </label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
                 required
                 value={formData.valor}
-                onChange={(e) => setFormData({ ...formData, valor: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    valor: maskCurrencyBRL(e.target.value),
+                  })
+                }
                 className="input-core w-full"
-                placeholder="0.00"
+                placeholder="0,00"
               />
             </div>
 

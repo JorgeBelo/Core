@@ -3,7 +3,12 @@ import { X } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import toast from 'react-hot-toast';
 import { supabase } from '../../lib/supabaseClient';
-import { maskWhatsApp, unmaskWhatsApp } from '../../utils/masks';
+import {
+  maskWhatsApp,
+  unmaskWhatsApp,
+  maskCurrencyBRL,
+  unmaskCurrencyBRLToNumber,
+} from '../../utils/masks';
 import { useAuth } from '../../contexts/AuthContext';
 import type { Aluno } from '../../types';
 
@@ -18,7 +23,9 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
   const [formData, setFormData] = useState({
     nome: aluno?.nome || aluno?.name || '',
     whatsapp: aluno?.whatsapp ? maskWhatsApp(aluno.whatsapp) : '',
-    monthly_fee: aluno?.monthly_fee?.toString() || '',
+    monthly_fee: aluno?.monthly_fee
+      ? maskCurrencyBRL(aluno.monthly_fee.toString())
+      : '',
     birth_date: aluno?.birth_date || '',
     frequency_per_week: aluno?.frequency_per_week?.toString() || '3',
     payment_day: aluno?.payment_day?.toString() || '5',
@@ -43,7 +50,7 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
         personal_id: user.id,
         nome: formData.nome,
         whatsapp: unmaskWhatsApp(formData.whatsapp),
-        monthly_fee: parseFloat(formData.monthly_fee),
+        monthly_fee: unmaskCurrencyBRLToNumber(formData.monthly_fee),
         birth_date: formData.birth_date || null,
         frequency_per_week: parseInt(formData.frequency_per_week),
         payment_day: parseInt(formData.payment_day),
@@ -144,13 +151,17 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
                 Valor da Mensalidade *
               </label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
                 required
                 value={formData.monthly_fee}
-                onChange={(e) => setFormData({ ...formData, monthly_fee: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    monthly_fee: maskCurrencyBRL(e.target.value),
+                  })
+                }
                 className="input-core w-full"
-                placeholder="300.00"
+                placeholder="300,00"
               />
             </div>
 
