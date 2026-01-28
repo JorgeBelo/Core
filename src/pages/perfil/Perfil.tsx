@@ -1,12 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Save, Camera, Link as LinkIcon } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import toast from 'react-hot-toast';
+import { maskWhatsApp, unmaskWhatsApp } from '../../utils/masks';
+import { supabase } from '../../lib/supabaseClient';
 
 export const Perfil = () => {
   const { userProfile, updateProfile } = useUserProfile();
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,13 +18,14 @@ export const Perfil = () => {
     cref: '',
     avatarUrl: '',
   });
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     if (userProfile) {
       setFormData({
         name: userProfile.name || '',
         email: userProfile.email || '',
-        phone: userProfile.phone || '',
+        phone: userProfile.phone ? maskWhatsApp(userProfile.phone) : '',
         cref: userProfile.cref || '',
         avatarUrl: userProfile.avatar_url || '',
       });
@@ -33,7 +38,8 @@ export const Perfil = () => {
       await updateProfile({
         name: formData.name,
         email: formData.email,
-        phone: formData.phone,
+        // Salva telefone SEM máscara no banco
+        phone: formData.phone ? unmaskWhatsApp(formData.phone) : '',
         cref: formData.cref,
         avatar_url: formData.avatarUrl,
       });
@@ -41,6 +47,55 @@ export const Perfil = () => {
     } catch (error: any) {
       console.error('Erro ao atualizar perfil:', error);
       toast.error('Erro ao atualizar perfil');
+    }
+  };
+
+  const handleAvatarFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!userProfile?.id) {
+      toast.error('Usuário não encontrado para atualizar a foto.');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `avatars/${userProfile.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicData, error: publicError } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      if (publicError) throw publicError;
+
+      const publicUrl = publicData?.publicUrl;
+      if (!publicUrl) {
+        throw new Error('Não foi possível obter a URL pública da imagem.');
+      }
+
+      // Atualiza estado local e no perfil (tabela users)
+      setFormData((prev) => ({ ...prev, avatarUrl: publicUrl }));
+      await updateProfile({ avatar_url: publicUrl });
+      toast.success('Foto de perfil atualizada com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao enviar foto de perfil:', error);
+      toast.error(error.message || 'Erro ao enviar foto de perfil');
+    } finally {
+      setUploadingAvatar(false);
+      // Reseta o input para permitir re-upload do mesmo arquivo depois
+      e.target.value = '';
     }
   };
 
@@ -74,6 +129,11 @@ export const Perfil = () => {
                   type="button"
                   className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-2 shadow-lg hover:bg-primary/80 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                   title="Alterar foto"
+                  onClick={() => {
+                    // Abre o seletor de arquivos do dispositivo (PC ou celular)
+                    fileInputRef.current?.click();
+                  }}
+                  disabled={uploadingAvatar}
                 >
                   <Camera size={18} />
                 </button>
@@ -92,12 +152,23 @@ export const Perfil = () => {
             </div>
 
             <div className="w-full space-y-3">
+              {/* Input de arquivo escondido para upload direto */}
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleAvatarFileChange}
+              />
               <div className="flex flex-col items-start gap-1">
                 <label className="text-xs text-gray-light">URL da foto (opcional)</label>
                 <input
                   type="url"
                   value={formData.avatarUrl}
-                  onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, avatarUrl: e.target.value.trim() })
+                  }
+                  ref={avatarInputRef}
                   className="input-core w-full text-xs"
                   placeholder="https://..."
                 />
@@ -165,7 +236,9 @@ export const Perfil = () => {
                 <input
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: maskWhatsApp(e.target.value) })
+                  }
                   className="input-core w-full"
                   placeholder="(11) 98765-4321"
                 />
