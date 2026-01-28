@@ -1,19 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Save, Clock, Camera, Link as LinkIcon } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
-import { useAuth } from '../../contexts/AuthContext';
+import { useUserProfile } from '../../hooks/useUserProfile';
 import toast from 'react-hot-toast';
 
 export const Perfil = () => {
-  const { user, updateUser } = useAuth();
+  const { userProfile, updateProfile } = useUserProfile();
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    cref: user?.cref || '',
+    name: '',
+    email: '',
+    phone: '',
+    cref: '',
     avatarUrl: '',
   });
+
+  useEffect(() => {
+    if (userProfile) {
+      setFormData({
+        name: userProfile.name || '',
+        email: userProfile.email || '',
+        phone: userProfile.phone || '',
+        cref: userProfile.cref || '',
+        avatarUrl: userProfile.avatar_url || '',
+      });
+    }
+  }, [userProfile]);
 
   const [workHours, setWorkHours] = useState({
     start: '08:00',
@@ -29,13 +41,21 @@ export const Perfil = () => {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implementar chamada à API
-    if (user) {
-      updateUser({ ...user, ...formData });
+    try {
+      await updateProfile({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        cref: formData.cref,
+        avatar_url: formData.avatarUrl,
+      });
+      toast.success('Perfil atualizado com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao atualizar perfil:', error);
+      toast.error('Erro ao atualizar perfil');
     }
-    toast.success('Perfil atualizado com sucesso!');
   };
 
   const handleWorkHoursSubmit = (e: React.FormEvent) => {
@@ -52,42 +72,43 @@ export const Perfil = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Painel de perfil (foto + dados principais) */}
+        {/* Painel de perfil (foto + dados principais) - Estilo Nutcache com avatar à esquerda */}
         <Card className="lg:col-span-1">
-          <div className="flex flex-col items-center text-center space-y-4">
-            <div className="relative">
-              <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary to-dark-soft flex items-center justify-center overflow-hidden border-2 border-primary/60">
-                {formData.avatarUrl ? (
-                  <img
-                    src={formData.avatarUrl}
-                    alt={formData.name || 'Foto do personal'}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-3xl font-semibold">
-                    {(formData.name || 'P')[0].toUpperCase()}
-                  </span>
+          <div className="space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="relative flex-shrink-0">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-dark-soft flex items-center justify-center overflow-hidden border-2 border-primary/60">
+                  {formData.avatarUrl ? (
+                    <img
+                      src={formData.avatarUrl}
+                      alt={formData.name || 'Foto do personal'}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl font-semibold text-white">
+                      {(formData.name || 'P')[0].toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-1.5 shadow-lg hover:bg-primary/80 transition-colors"
+                  title="Alterar foto"
+                >
+                  <Camera size={14} />
+                </button>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white text-lg font-semibold">
+                  {formData.name || 'Seu nome completo'}
+                </p>
+                <p className="text-gray-light text-sm mt-1">{formData.email || 'seu@email.com'}</p>
+                {formData.cref && (
+                  <p className="text-xs text-primary font-medium mt-2">
+                    CREF: {formData.cref}
+                  </p>
                 )}
               </div>
-              <button
-                type="button"
-                className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-1.5 shadow-lg hover:bg-primary/80 transition-colors"
-                title="Alterar foto"
-              >
-                <Camera size={16} />
-              </button>
-            </div>
-
-            <div>
-              <p className="text-white text-lg font-semibold">
-                {formData.name || 'Seu nome completo'}
-              </p>
-              <p className="text-gray-light text-sm">{formData.email || 'seu@email.com'}</p>
-              {formData.cref && (
-                <p className="text-xs text-primary font-medium mt-1">
-                  CREF: {formData.cref}
-                </p>
-              )}
             </div>
 
             <div className="w-full space-y-3">

@@ -264,11 +264,13 @@ export const Alunos = () => {
                   return (
                     <tr key={aluno.id} className="border-b border-gray-dark hover:bg-dark-soft transition-colors">
                     <td className="py-4 px-4 text-white">
-                      <span
-                        className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                          aluno.payment_status === 'pago' ? 'bg-green-500' : 'bg-primary'
-                        }`}
-                      ></span>
+                      {aluno.active && (
+                        <span
+                          className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                            aluno.payment_status === 'pago' ? 'bg-green-500' : 'bg-primary'
+                          }`}
+                        ></span>
+                      )}
                       {alunoNome}
                     </td>
                     <td className="py-4 px-4 text-gray-light">
@@ -292,50 +294,54 @@ export const Alunos = () => {
                         : '-'}
                     </td>
                     <td className="py-4 px-4">
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!user) return;
-                          const current = aluno.payment_status || 'pendente';
-                          const ordem: Array<Aluno['payment_status']> = ['pendente', 'pago'];
-                          const idx = ordem.indexOf(current);
-                          const next = ordem[(idx + 1) % ordem.length];
+                      {aluno.active ? (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (!user) return;
+                            const current = aluno.payment_status || 'pendente';
+                            const ordem: Array<Aluno['payment_status']> = ['pendente', 'pago'];
+                            const idx = ordem.indexOf(current);
+                            const next = ordem[(idx + 1) % ordem.length];
 
-                          try {
-                            const { error } = await supabase
-                              .from('alunos')
-                              .update({ payment_status: next })
-                              .eq('id', aluno.id);
-                            if (error) throw error;
+                            try {
+                              const { error } = await supabase
+                                .from('alunos')
+                                .update({ payment_status: next })
+                                .eq('id', aluno.id);
+                              if (error) throw error;
 
-                            setAlunos((prev) =>
-                              prev.map((a) =>
-                                a.id === aluno.id ? { ...a, payment_status: next } : a
-                              )
-                            );
+                              setAlunos((prev) =>
+                                prev.map((a) =>
+                                  a.id === aluno.id ? { ...a, payment_status: next } : a
+                                )
+                              );
 
-                            toast.success(`Status de pagamento de ${alunoNome} atualizado para "${next}".`);
-                          } catch (err: any) {
-                            console.error('Erro ao atualizar status de pagamento:', err);
-                            toast.error('Não foi possível atualizar o status de pagamento.');
-                          }
-                        }}
-                        className="focus:outline-none"
-                      >
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            aluno.payment_status === 'pago'
-                              ? 'bg-green-500/20 text-green-500'
-                              : 'bg-primary/20 text-primary'
-                          }`}
+                              toast.success(`Status de pagamento de ${alunoNome} atualizado para "${next}".`);
+                            } catch (err: any) {
+                              console.error('Erro ao atualizar status de pagamento:', err);
+                              toast.error('Não foi possível atualizar o status de pagamento.');
+                            }
+                          }}
+                          className="focus:outline-none"
                         >
-                          {aluno.payment_status === 'pago'
-                            ? 'Pago'
-                            : aluno.payment_status === 'atrasado'
-                            ? 'Atrasado'
-                            : 'Pendente'}
-                        </span>
-                      </button>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              aluno.payment_status === 'pago'
+                                ? 'bg-green-500/20 text-green-500'
+                                : 'bg-primary/20 text-primary'
+                            }`}
+                          >
+                            {aluno.payment_status === 'pago'
+                              ? 'Pago'
+                              : aluno.payment_status === 'atrasado'
+                              ? 'Atrasado'
+                              : 'Pendente'}
+                          </span>
+                        </button>
+                      ) : (
+                        <span className="text-gray-light">-</span>
+                      )}
                     </td>
                     <td className="py-4 px-4">
                       <button

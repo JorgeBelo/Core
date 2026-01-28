@@ -1,53 +1,17 @@
 import { Bell, Check } from 'lucide-react';
 import { Card } from '../../components/common/Card';
+import { Button } from '../../components/common/Button';
 import type { Notification } from '../../types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useState } from 'react';
-
-// Mock data
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    personal_id: '1',
-    type: 'atraso',
-    title: 'Mensalidade Atrasada',
-    message: 'João Silva - Mensalidade de R$ 300,00 está atrasada há 5 dias',
-    related_id: '1',
-    read: false,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    personal_id: '1',
-    type: 'aula',
-    title: 'Aluno sem Treinar',
-    message: 'Maria Santos não treina há 5 dias',
-    related_id: '2',
-    read: false,
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: '3',
-    personal_id: '1',
-    type: 'vencimento',
-    title: 'Vencimento Próximo',
-    message: 'Pedro Oliveira - Mensalidade vence em 2 dias',
-    related_id: '3',
-    read: true,
-    created_at: new Date(Date.now() - 7200000).toISOString(),
-  },
-  {
-    id: '4',
-    personal_id: '1',
-    type: 'aniversario',
-    title: 'Aniversário Hoje',
-    message: 'João Silva completa anos hoje!',
-    related_id: '1',
-    read: false,
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-];
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  loadNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  checkAndCreateNotifications,
+} from '../../services/notificationsService';
 
 const getNotificationColor = (type: string) => {
   switch (type) {
@@ -78,15 +42,43 @@ const getNotificationIcon = (type: string) => {
 };
 
 export const Notificacoes = () => {
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const { user } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const markAsRead = (id: string) => {
+  useEffect(() => {
+    if (user?.id) {
+      loadNotificationsData();
+      // Verificar e criar notificações automáticas ao carregar
+      checkAndCreateNotifications(user.id).then(() => {
+        loadNotificationsData();
+      });
+    }
+  }, [user]);
+
+  const loadNotificationsData = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const data = await loadNotifications(user.id);
+      setNotifications(data);
+    } catch (error) {
+      console.error('Erro ao carregar notificações:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    await markNotificationAsRead(id);
     setNotifications(
       notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    if (!user?.id) return;
+    await markAllNotificationsAsRead(user.id);
     setNotifications(notifications.map((n) => ({ ...n, read: true })));
   };
 
@@ -104,18 +96,25 @@ export const Notificacoes = () => {
           </p>
         </div>
         {unreadCount > 0 && (
-          <button
+          <Button
+            variant="secondary"
             onClick={markAllAsRead}
-            className="btn-secondary flex items-center gap-2"
+            className="flex items-center gap-2"
           >
             <Check size={20} />
             Marcar todas como lidas
-          </button>
+          </Button>
         )}
       </div>
 
       <div className="space-y-4">
-        {notifications.length === 0 ? (
+        {loading ? (
+          <Card>
+            <div className="text-center py-12">
+              <p className="text-gray-light">Carregando notificações...</p>
+            </div>
+          </Card>
+        ) : notifications.length === 0 ? (
           <Card>
             <div className="text-center py-12">
               <Bell size={48} className="mx-auto text-gray-light mb-4" />

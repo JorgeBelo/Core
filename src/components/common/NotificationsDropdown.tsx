@@ -1,49 +1,55 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import type { Notification } from '../../types';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-
-// Mock data
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    personal_id: '1',
-    type: 'atraso',
-    title: 'Mensalidade Atrasada',
-    message: 'João Silva - Mensalidade de R$ 300,00 está atrasada há 5 dias',
-    related_id: '1',
-    read: false,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    personal_id: '1',
-    type: 'aula',
-    title: 'Aluno sem Treinar',
-    message: 'Maria Santos não treina há 5 dias',
-    related_id: '2',
-    read: false,
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: '3',
-    personal_id: '1',
-    type: 'vencimento',
-    title: 'Vencimento Próximo',
-    message: 'Pedro Oliveira - Mensalidade vence em 2 dias',
-    related_id: '3',
-    read: true,
-    created_at: new Date(Date.now() - 7200000).toISOString(),
-  },
-];
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  loadNotifications,
+  markNotificationAsRead,
+  checkAndCreateNotifications,
+} from '../../services/notificationsService';
 
 export const NotificationsDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    if (user?.id) {
+      loadNotificationsData();
+      // Verificar e criar notificações automáticas a cada minuto
+      const interval = setInterval(() => {
+        checkAndCreateNotifications(user.id).then(() => {
+          loadNotificationsData();
+        });
+      }, 60000); // 1 minuto
+
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const loadNotificationsData = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      // Verificar e criar notificações automáticas
+      await checkAndCreateNotifications(user.id);
+      // Carregar notificações
+      const data = await loadNotifications(user.id);
+      setNotifications(data);
+    } catch (error) {
+      console.error('Erro ao carregar notificações:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -56,7 +62,8 @@ export const NotificationsDropdown = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const markAsRead = (id: string) => {
+  const markAsRead = async (id: string) => {
+    await markNotificationAsRead(id);
     setNotifications(
       notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
@@ -83,7 +90,9 @@ export const NotificationsDropdown = () => {
       >
         <Bell size={20} />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
+          <span className="absolute top-0 right-0 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
         )}
       </button>
 
@@ -100,7 +109,11 @@ export const NotificationsDropdown = () => {
           </div>
 
           <div className="overflow-y-auto scrollbar-dark flex-1">
-            {notifications.length === 0 ? (
+            {loading ? (
+              <div className="p-4 text-center text-gray-light">
+                Carregando...
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="p-4 text-center text-gray-light">
                 Nenhuma notificação
               </div>
@@ -136,7 +149,13 @@ export const NotificationsDropdown = () => {
 
           {notifications.length > 0 && (
             <div className="p-3 border-t border-gray-dark">
-              <button className="text-primary text-sm hover:text-primary-light transition-colors w-full text-center">
+              <button
+                onClick={() => {
+                  navigate('/notificacoes');
+                  setIsOpen(false);
+                }}
+                className="text-primary text-sm hover:text-primary-light transition-colors w-full text-center"
+              >
                 Ver todas as notificações
               </button>
             </div>

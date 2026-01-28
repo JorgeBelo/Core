@@ -5,9 +5,19 @@ import { Button } from '../../components/common/Button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
-import { startOfMonth, endOfMonth, isWithinInterval, format } from 'date-fns';
+import { startOfMonth, endOfMonth, isWithinInterval, format, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -34,6 +44,12 @@ export const Dashboard = () => {
     proximosVencimentos: [],
     alunosPendentes: [],
   });
+  const [chartData, setChartData] = useState<Array<{
+    mes: string;
+    faturamento: number;
+    recebido: number;
+    pendente: number;
+  }>>([]);
 
   useEffect(() => {
     if (user) {
@@ -122,6 +138,53 @@ export const Dashboard = () => {
           tipo: c.tipo as 'pagar' | 'receber',
         }));
 
+      // Preparar dados para gráfico de evolução do faturamento (últimos 6 meses)
+      const chartDataArray = [];
+      for (let i = 5; i >= 0; i--) {
+        const mes = subMonths(hoje, i);
+        const inicioMesChart = startOfMonth(mes);
+        const fimMesChart = endOfMonth(mes);
+
+        const alunosMesChart = alunosList.filter((a: any) => a.active);
+        const mensalidadesRecebidasMes = alunosMesChart
+          .filter((a: any) => a.payment_status === 'pago')
+          .reduce((sum: number, a: any) => {
+            const v =
+              typeof a.monthly_fee === 'number'
+                ? a.monthly_fee
+                : parseFloat(String(a.monthly_fee)) || 0;
+            return sum + v;
+          }, 0);
+
+        const mensalidadesPendentesMes = alunosMesChart
+          .filter((a: any) => a.payment_status !== 'pago')
+          .reduce((sum: number, a: any) => {
+            const v =
+              typeof a.monthly_fee === 'number'
+                ? a.monthly_fee
+                : parseFloat(String(a.monthly_fee)) || 0;
+            return sum + v;
+          }, 0);
+
+        const contasMesChart = (contas || []).filter((conta: any) => {
+          const dataVenc = new Date(conta.data_vencimento);
+          return isWithinInterval(dataVenc, { start: inicioMesChart, end: fimMesChart });
+        });
+
+        const contasReceberMes = contasMesChart
+          .filter((c: any) => c.tipo === 'receber' && c.pago)
+          .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
+
+        const faturamentoTotal = mensalidadesRecebidasMes + contasReceberMes;
+
+        chartDataArray.push({
+          mes: format(mes, 'MMM', { locale: ptBR }),
+          faturamento: faturamentoTotal,
+          recebido: mensalidadesRecebidasMes + contasReceberMes,
+          pendente: mensalidadesPendentesMes,
+        });
+      }
+
       setStats({
         alunosTotal: alunosList.length,
         alunosAtivos,
@@ -135,6 +198,8 @@ export const Dashboard = () => {
         proximosVencimentos,
         alunosPendentes,
       });
+
+      setChartData(chartDataArray);
     } catch (error: any) {
       console.error('Erro ao carregar dados do dashboard:', error);
       toast.error('Erro ao carregar dados do dashboard');
@@ -209,6 +274,62 @@ export const Dashboard = () => {
               </div>
             </Card>
           </div>
+
+          {/* Gráfico de Evolução do Faturamento */}
+          <Card title="Evolução do Faturamento (Últimos 6 Meses)">
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
+                  <XAxis dataKey="mes" stroke="#b4b4b4" />
+                  <YAxis
+                    stroke="#b4b4b4"
+                    tickFormatter={(value) =>
+                      new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                        notation: 'compact',
+                      }).format(value)
+                    }
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1a1a1a',
+                      border: '1px solid #b4b4b4',
+                      color: '#ffffff',
+                    }}
+                    formatter={(value: number) => currencyFormatter.format(value)}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="faturamento"
+                    stroke="#10b981"
+                    strokeWidth={3}
+                    name="Faturamento Total"
+                    dot={{ fill: '#10b981', r: 4 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="recebido"
+                    stroke="#a20100"
+                    strokeWidth={2}
+                    name="Recebido"
+                    dot={{ fill: '#a20100', r: 3 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="pendente"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    name="Pendente"
+                    dot={{ fill: '#f59e0b', r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
 
           {/* Resumo textual e alertas do mês */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
