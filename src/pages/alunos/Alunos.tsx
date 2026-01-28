@@ -152,6 +152,7 @@ export const Alunos = () => {
             setEditingAluno(null);
             setShowModal(true);
           }}
+          className="flex items-center"
         >
           <Plus size={20} className="mr-2" />
           Cadastrar Novo Aluno

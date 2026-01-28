@@ -98,6 +98,7 @@ export const Financeiro = () => {
             setEditingConta(null);
             setShowModal(true);
           }}
+          className="flex items-center"
         >
           <Plus size={20} className="mr-2" />
           Nova Conta
@@ -204,16 +205,10 @@ export const Financeiro = () => {
                       })}
                     </td>
                     <td className="py-4 px-4 text-white font-semibold">
-                      <span
-                        className={
-                          conta.tipo === 'pagar' ? 'text-primary' : 'text-green-500'
-                        }
-                      >
-                        R${' '}
-                        {conta.valor.toLocaleString('pt-BR', {
-                          minimumFractionDigits: 2,
-                        })}
-                      </span>
+                      R${' '}
+                      {conta.valor.toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                      })}
                     </td>
                     <td className="py-4 px-4">
                       <button

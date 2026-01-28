@@ -160,6 +160,23 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-white mb-2">
+                Tipo *
+              </label>
+              <select
+                required
+                value={formData.tipo}
+                onChange={(e) =>
+                  setFormData({ ...formData, tipo: e.target.value as 'pagar' | 'receber' })
+                }
+                className="input-core w-full"
+              >
+                <option value="pagar">Conta a Pagar</option>
+                <option value="receber">Conta a Receber</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
                 Descrição *
               </label>
               <input
@@ -168,7 +185,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
                 value={formData.descricao}
                 onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
                 className="input-core w-full"
-                placeholder="Ex: Aluguel, Mensalidade, etc"
+                placeholder="Ex: Aluguel, Mensalidade, Venda de bicicleta, etc"
               />
             </div>
 
