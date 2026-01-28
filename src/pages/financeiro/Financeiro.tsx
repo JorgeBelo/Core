@@ -16,7 +16,6 @@ export const Financeiro = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingConta, setEditingConta] = useState<ContaFinanceira | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tipoFilter, setTipoFilter] = useState<'todos' | 'pagar' | 'receber'>('todos');
 
   useEffect(() => {
     if (user) {
@@ -54,10 +53,6 @@ export const Financeiro = () => {
   const contasMes = contas.filter((conta) => {
     const dataVenc = new Date(conta.data_vencimento);
     return isWithinInterval(dataVenc, { start: inicioMes, end: fimMes });
-  });
-
-  const contasMesFiltradas = contasMes.filter((conta) => {
-    return tipoFilter === 'todos' || conta.tipo === tipoFilter;
   });
 
   const totalRecebido = contasMes
@@ -148,22 +143,6 @@ export const Financeiro = () => {
         </Card>
       </div>
 
-      {/* Filtros */}
-      <Card>
-        <div className="flex items-center gap-4">
-          <label className="text-gray-light">Filtrar por:</label>
-          <select
-            value={tipoFilter}
-            onChange={(e) => setTipoFilter(e.target.value as 'todos' | 'pagar' | 'receber')}
-            className="input-core"
-          >
-            <option value="todos">Todas</option>
-            <option value="pagar">Contas a Pagar</option>
-            <option value="receber">Contas a Receber</option>
-          </select>
-        </div>
-      </Card>
-
       {/* Histórico Financeiro */}
       <Card title="Histórico Financeiro">
         <div className="overflow-x-auto">
@@ -171,7 +150,6 @@ export const Financeiro = () => {
             <thead>
               <tr className="border-b border-gray-dark">
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Descrição</th>
-                <th className="text-left py-3 px-4 text-gray-light font-medium">Tipo</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Parcelas</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Vencimento</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Valor</th>
@@ -182,18 +160,18 @@ export const Financeiro = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-8 text-gray-light">
+                  <td colSpan={6} className="text-center py-8 text-gray-light">
                     Carregando...
                   </td>
                 </tr>
-              ) : contasMesFiltradas.length === 0 ? (
+              ) : contasMes.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-8 text-gray-light">
+                  <td colSpan={6} className="text-center py-8 text-gray-light">
                     Nenhuma conta encontrada
                   </td>
                 </tr>
               ) : (
-                contasMesFiltradas.map((conta) => (
+                contasMes.map((conta) => (
                   <tr
                     key={conta.id}
                     className={`border-b border-gray-dark hover:bg-dark-soft transition-colors ${
@@ -216,17 +194,6 @@ export const Financeiro = () => {
                           [Fixa]
                         </span>
                       )}
-                    </td>
-                    <td className="py-4 px-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          conta.tipo === 'pagar'
-                            ? 'bg-primary/20 text-primary'
-                            : 'bg-green-500/20 text-green-500'
-                        }`}
-                      >
-                        {conta.tipo === 'pagar' ? 'A Pagar' : 'A Receber'}
-                      </span>
                     </td>
                     <td className="py-4 px-4 text-gray-light">
                       {conta.parcelada && conta.numero_parcelas

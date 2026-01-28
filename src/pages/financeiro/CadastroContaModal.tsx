@@ -20,6 +20,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
     descricao: conta?.descricao ?? '',
     valor: conta ? maskCurrencyBRL(conta.valor.toString()) : '',
     data_vencimento: conta?.data_vencimento ?? '',
+    // Tipo não é mais escolhido na interface; padrão: 'pagar'
     tipo: (conta?.tipo as 'pagar' | 'receber') ?? 'pagar',
     recorrencia: (conta?.conta_fixa
       ? 'fixa'
@@ -157,23 +158,6 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Tipo *
-              </label>
-              <select
-                required
-                value={formData.tipo}
-                onChange={(e) =>
-                  setFormData({ ...formData, tipo: e.target.value as 'pagar' | 'receber' })
-                }
-                className="input-core w-full"
-              >
-                <option value="pagar">Conta a Pagar</option>
-                <option value="receber">Conta a Receber</option>
-              </select>
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-white mb-2">
                 Descrição *
