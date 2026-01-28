@@ -19,9 +19,9 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
     nome: aluno?.nome || aluno?.name || '',
     whatsapp: aluno?.whatsapp ? maskWhatsApp(aluno.whatsapp) : '',
     monthly_fee: aluno?.monthly_fee?.toString() || '',
+    birth_date: aluno?.birth_date || '',
     frequency_per_week: aluno?.frequency_per_week?.toString() || '3',
     payment_day: aluno?.payment_day?.toString() || '5',
-    payment_status: aluno?.payment_status || 'pendente',
   });
   const [loading, setLoading] = useState(false);
 
@@ -44,13 +44,13 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
         nome: formData.nome,
         whatsapp: unmaskWhatsApp(formData.whatsapp),
         monthly_fee: parseFloat(formData.monthly_fee),
+        birth_date: formData.birth_date || null,
         frequency_per_week: parseInt(formData.frequency_per_week),
         payment_day: parseInt(formData.payment_day),
-        payment_status: formData.payment_status,
       };
 
       if (isEditing && aluno) {
-        // Atualizar aluno existente
+        // Atualizar aluno existente (não mexe em payment_status aqui)
         const { error } = await supabase
           .from('alunos')
           .update(alunoData)
@@ -59,11 +59,12 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
         if (error) throw error;
         toast.success('Aluno atualizado com sucesso!');
       } else {
-        // Criar novo aluno
+        // Criar novo aluno (sempre começa como pendente)
         const { error } = await supabase
           .from('alunos')
           .insert({
             ...alunoData,
+            payment_status: 'pendente',
             active: true,
           });
 
@@ -128,6 +129,18 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
 
             <div>
               <label className="block text-sm font-medium text-white mb-2">
+                Data de Nascimento
+              </label>
+              <input
+                type="date"
+                value={formData.birth_date}
+                onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
+                className="input-core w-full"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
                 Valor da Mensalidade *
               </label>
               <input
@@ -182,26 +195,6 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Status de Pagamento *
-              </label>
-              <select
-                required
-                value={formData.payment_status}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    payment_status: e.target.value as 'pago' | 'pendente' | 'atrasado',
-                  })
-                }
-                className="input-core w-full"
-              >
-                <option value="pendente">Pendente</option>
-                <option value="pago">Pago</option>
-                <option value="atrasado">Atrasado</option>
-              </select>
-            </div>
           </div>
 
           <div className="flex justify-end gap-4 pt-4 border-t border-gray-dark">
