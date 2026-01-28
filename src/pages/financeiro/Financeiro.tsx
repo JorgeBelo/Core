@@ -188,19 +188,15 @@ export const Financeiro = () => {
                           }`}
                         ></span>
                       )}
-                      {conta.descricao}
-                      {conta.conta_fixa && (
-                        <span className="text-xs text-primary ml-2 font-medium">
-                          [Fixa]
-                        </span>
-                      )}
+                      {/* Exibir apenas a descrição base, sem " - Parcela X/Y" */}
+                      {String(conta.descricao).split(' - Parcela')[0]}
                     </td>
                     <td className="py-4 px-4 text-gray-light">
                       {conta.parcelada && conta.numero_parcelas
                         ? `${conta.parcela_atual || 1}/${conta.numero_parcelas}`
                         : conta.conta_fixa
                         ? 'Fixa'
-                        : '-'}
+                        : 'Única'}
                     </td>
                     <td className="py-4 px-4 text-gray-light">
                       {format(new Date(conta.data_vencimento), "d 'de' MMM 'de' yyyy", {
