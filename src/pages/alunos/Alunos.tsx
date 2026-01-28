@@ -18,6 +18,7 @@ export const Alunos = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingAluno, setEditingAluno] = useState<Aluno | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confirmInativarAluno, setConfirmInativarAluno] = useState<Aluno | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -112,6 +113,33 @@ export const Alunos = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+  });
+
+  const alunosAtivos = alunos.filter((a) => a.active);
+
+  const totalRecebido = alunosAtivos
+    .filter((a) => a.payment_status === 'pago')
+    .reduce((sum, a) => {
+      const v = typeof a.monthly_fee === 'number' ? a.monthly_fee : parseFloat(String(a.monthly_fee)) || 0;
+      return sum + v;
+    }, 0);
+
+  const totalPendentes = alunosAtivos
+    .filter((a) => a.payment_status !== 'pago')
+    .reduce((sum, a) => {
+      const v = typeof a.monthly_fee === 'number' ? a.monthly_fee : parseFloat(String(a.monthly_fee)) || 0;
+      return sum + v;
+    }, 0);
+
+  const totalMes = alunosAtivos.reduce((sum, a) => {
+    const v = typeof a.monthly_fee === 'number' ? a.monthly_fee : parseFloat(String(a.monthly_fee)) || 0;
+    return sum + v;
+  }, 0);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -138,11 +166,7 @@ export const Alunos = () => {
               <div>
                 <p className="text-gray-light text-sm mb-1">Total Recebido (Mensalidades)</p>
                 <p className="text-2xl font-bold text-green-500">
-                  R${' '}
-                  {alunos
-                    .filter((a) => a.payment_status === 'pago')
-                    .reduce((sum, a) => sum + (a.monthly_fee || 0), 0)
-                    .toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {currencyFormatter.format(totalRecebido)}
                 </p>
               </div>
               <CheckCircle className="text-green-500" size={32} />
@@ -154,11 +178,7 @@ export const Alunos = () => {
               <div>
                 <p className="text-gray-light text-sm mb-1">Pendentes (Mensalidades)</p>
                 <p className="text-2xl font-bold text-primary">
-                  R${' '}
-                  {alunos
-                    .filter((a) => a.payment_status !== 'pago')
-                    .reduce((sum, a) => sum + (a.monthly_fee || 0), 0)
-                    .toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {currencyFormatter.format(totalPendentes)}
                 </p>
               </div>
               <Clock className="text-primary" size={32} />
@@ -170,10 +190,7 @@ export const Alunos = () => {
               <div>
                 <p className="text-gray-light text-sm mb-1">Total do Mês (Mensalidades)</p>
                 <p className="text-2xl font-bold text-white">
-                  R${' '}
-                  {alunos
-                    .reduce((sum, a) => sum + (a.monthly_fee || 0), 0)
-                    .toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {currencyFormatter.format(totalMes)}
                 </p>
               </div>
               <DollarSign className="text-white" size={32} />
@@ -257,7 +274,11 @@ export const Alunos = () => {
                       {aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}
                     </td>
                     <td className="py-4 px-4 text-white font-semibold">
-                      R$ {aluno.monthly_fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      {currencyFormatter.format(
+                        typeof aluno.monthly_fee === 'number'
+                          ? aluno.monthly_fee
+                          : parseFloat(String(aluno.monthly_fee)) || 0
+                      )}
                     </td>
                     <td className="py-4 px-4 text-gray-light">
                       {aluno.frequency_per_week
@@ -316,15 +337,46 @@ export const Alunos = () => {
                       </button>
                     </td>
                     <td className="py-4 px-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          aluno.active
-                            ? 'bg-green-500/20 text-green-500'
-                            : 'bg-gray-light/20 text-gray-light'
-                        }`}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (aluno.active) {
+                            // Confirmar inativação
+                            setConfirmInativarAluno(aluno);
+                          } else {
+                            // Reativar direto
+                            (async () => {
+                              try {
+                                const { error } = await supabase
+                                  .from('alunos')
+                                  .update({ active: true })
+                                  .eq('id', aluno.id);
+                                if (error) throw error;
+                                setAlunos((prev) =>
+                                  prev.map((a) =>
+                                    a.id === aluno.id ? { ...a, active: true } : a
+                                  )
+                                );
+                                toast.success(`${alunoNome} reativado(a) com sucesso.`);
+                              } catch (err: any) {
+                                console.error('Erro ao reativar aluno:', err);
+                                toast.error('Não foi possível reativar o aluno.');
+                              }
+                            })();
+                          }
+                        }}
+                        className="focus:outline-none"
                       >
-                        {aluno.active ? 'Ativo' : 'Inativo'}
-                      </span>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            aluno.active
+                              ? 'bg-green-500/20 text-green-500'
+                              : 'bg-gray-light/20 text-gray-light'
+                          }`}
+                        >
+                          {aluno.active ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </button>
                     </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
@@ -369,6 +421,59 @@ export const Alunos = () => {
             loadAlunos();
           }}
         />
+      )}
+
+      {confirmInativarAluno && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-soft border border-gray-dark rounded-lg w-full max-w-md p-6">
+            <h2 className="text-xl font-sans font-semibold text-white mb-4">
+              Confirmar inativação
+            </h2>
+            <p className="text-gray-light text-sm mb-4">
+              Se o aluno ficar inativo por 12 meses, ele será removido automaticamente do sistema.
+              Deseja continuar?
+            </p>
+            <div className="flex justify-end gap-3 mt-4">
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={() => setConfirmInativarAluno(null)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={async () => {
+                  const aluno = confirmInativarAluno;
+                  if (!aluno || !user) {
+                    setConfirmInativarAluno(null);
+                    return;
+                  }
+                  try {
+                    const { error } = await supabase
+                      .from('alunos')
+                      .update({ active: false })
+                      .eq('id', aluno.id);
+                    if (error) throw error;
+                    setAlunos((prev) =>
+                      prev.map((a) =>
+                        a.id === aluno.id ? { ...a, active: false } : a
+                      )
+                    );
+                    toast.success(`${aluno.nome || aluno.name || 'Aluno'} marcado como inativo.`);
+                  } catch (err: any) {
+                    console.error('Erro ao inativar aluno:', err);
+                    toast.error('Não foi possível inativar o aluno.');
+                  } finally {
+                    setConfirmInativarAluno(null);
+                  }
+                }}
+              >
+                Confirmar
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

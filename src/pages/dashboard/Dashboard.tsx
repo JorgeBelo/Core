@@ -1,59 +1,38 @@
 import { useState, useEffect } from 'react';
-import {
-  Users,
-  DollarSign,
-  TrendingDown,
-  TrendingUp,
-  AlertCircle,
-  Calendar,
-} from 'lucide-react';
+import { Users, DollarSign, CheckCircle, Clock } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
-import {
-  startOfMonth,
-  endOfMonth,
-  isWithinInterval,
-  subMonths,
-  format,
-} from 'date-fns';
+import { startOfMonth, endOfMonth, isWithinInterval, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
+
+const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+  minimumFractionDigits: 2,
+});
 
 export const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    totalAPagar: 0,
-    faturamentoTotal: 0,
-    saldoLucro: 0,
+    alunosTotal: 0,
     alunosAtivos: 0,
-    contasPendentes: 0,
-    contasVencidas: 0,
+    mensalidadesRecebidas: 0,
+    mensalidadesPendentes: 0,
+    contasPagarPendentes: 0,
+    contasReceberPendentes: 0,
   });
-  const [chartData, setChartData] = useState<any>({
-    faturamentoMensal: [],
-    contasPagasRecebidas: [],
-    distribuicaoContas: [],
-    evolucaoSaldo: [],
+  const [highlights, setHighlights] = useState<{
+    proximosVencimentos: Array<{ descricao: string; data: string; tipo: 'pagar' | 'receber' }>;
+    alunosPendentes: Array<{ id: string; nome: string }>;
+  }>({
+    proximosVencimentos: [],
+    alunosPendentes: [],
   });
 
   useEffect(() => {
@@ -71,29 +50,45 @@ export const Dashboard = () => {
       const inicioMes = startOfMonth(hoje);
       const fimMes = endOfMonth(hoje);
 
-      // Carregar alunos ativos
+      // Alunos
       const { data: alunos, error: alunosError } = await supabase
         .from('alunos')
         .select('*')
-        .eq('personal_id', user.id)
-        .eq('active', true);
+        .eq('personal_id', user.id);
 
       if (alunosError) throw alunosError;
 
-      // Calcular faturamento total (soma das mensalidades dos alunos ativos)
-      // Busca nas colunas: monthly_value, valor_mensalidade, monthly_fee
-      const faturamentoTotal =
-        alunos?.reduce((sum, aluno: any) => {
-          const valor =
-            aluno.monthly_value ||
-            aluno.valor_mensalidade ||
-            aluno.monthly_fee ||
-            0;
-          const valorNumerico = typeof valor === 'number' ? valor : parseFloat(valor) || 0;
-          return sum + valorNumerico;
-        }, 0) || 0;
+      const alunosList = alunos || [];
+      const alunosAtivos = alunosList.filter((a: any) => a.active).length;
 
-      // Carregar contas financeiras
+      const mensalidadesRecebidas = alunosList
+        .filter((a: any) => a.active && a.payment_status === 'pago')
+        .reduce((sum: number, a: any) => {
+          const v =
+            typeof a.monthly_fee === 'number'
+              ? a.monthly_fee
+              : parseFloat(String(a.monthly_fee)) || 0;
+          return sum + v;
+        }, 0);
+
+      const mensalidadesPendentes = alunosList
+        .filter((a: any) => a.active && a.payment_status !== 'pago')
+        .reduce((sum: number, a: any) => {
+          const v =
+            typeof a.monthly_fee === 'number'
+              ? a.monthly_fee
+              : parseFloat(String(a.monthly_fee)) || 0;
+          return sum + v;
+        }, 0);
+
+      const alunosPendentes = alunosList
+        .filter((a: any) => a.active && a.payment_status !== 'pago')
+        .map((a: any) => ({
+          id: a.id,
+          nome: a.nome || a.name || 'Aluno',
+        }));
+
+      // Contas financeiras
       const { data: contas, error: contasError } = await supabase
         .from('contas_financeiras')
         .select('*')
@@ -101,107 +96,44 @@ export const Dashboard = () => {
 
       if (contasError) throw contasError;
 
-      // Filtrar contas do mês atual
-      const contasMes = contas?.filter((conta) => {
+      const contasMes = (contas || []).filter((conta: any) => {
         const dataVenc = new Date(conta.data_vencimento);
         return isWithinInterval(dataVenc, { start: inicioMes, end: fimMes });
-      }) || [];
-
-      // Calcular totais
-      const totalAPagar =
-        contasMes
-          .filter((c) => c.tipo === 'pagar' && !c.pago)
-          .reduce((sum, c) => sum + c.valor, 0) || 0;
-
-      const contasPendentes = contasMes.filter(
-        (c) => !c.pago && new Date(c.data_vencimento) >= hoje
-      ).length;
-
-      const contasVencidas = contasMes.filter(
-        (c) => !c.pago && new Date(c.data_vencimento) < hoje
-      ).length;
-
-      const saldoLucro = faturamentoTotal - totalAPagar;
-
-      // Preparar dados para gráficos
-      const faturamentoMensal = [];
-      for (let i = 5; i >= 0; i--) {
-        const mes = subMonths(hoje, i);
-        const inicioMesChart = startOfMonth(mes);
-        const fimMesChart = endOfMonth(mes);
-
-        const contasMesChart = contas?.filter((conta) => {
-          const dataVenc = new Date(conta.data_vencimento);
-          return isWithinInterval(dataVenc, { start: inicioMesChart, end: fimMesChart });
-        }) || [];
-
-        const recebido =
-          contasMesChart
-            .filter((c) => c.tipo === 'receber' && c.pago)
-            .reduce((sum, c) => sum + c.valor, 0) || 0;
-
-        const pago =
-          contasMesChart
-            .filter((c) => c.tipo === 'pagar' && c.pago)
-            .reduce((sum, c) => sum + c.valor, 0) || 0;
-
-        faturamentoMensal.push({
-          mes: format(mes, 'MMM', { locale: ptBR }),
-          recebido,
-          pago,
-          saldo: recebido - pago,
-        });
-      }
-
-      const contasPagasRecebidas = [
-        {
-          nome: 'Contas Pagas',
-          valor: contasMes.filter((c) => c.tipo === 'pagar' && c.pago).length,
-        },
-        {
-          nome: 'Contas Recebidas',
-          valor: contasMes.filter((c) => c.tipo === 'receber' && c.pago).length,
-        },
-        {
-          nome: 'Pendentes',
-          valor: contasMes.filter((c) => !c.pago).length,
-        },
-      ];
-
-      const distribuicaoContas = [
-        {
-          nome: 'A Pagar',
-          valor: contasMes
-            .filter((c) => c.tipo === 'pagar')
-            .reduce((sum, c) => sum + c.valor, 0),
-        },
-        {
-          nome: 'A Receber',
-          valor: contasMes
-            .filter((c) => c.tipo === 'receber')
-            .reduce((sum, c) => sum + c.valor, 0),
-        },
-      ];
-
-      const evolucaoSaldo = faturamentoMensal.map((item) => ({
-        mes: item.mes,
-        saldo: item.saldo,
-      }));
-
-      setStats({
-        totalAPagar,
-        faturamentoTotal,
-        saldoLucro,
-        alunosAtivos: alunos?.length || 0,
-        contasPendentes,
-        contasVencidas,
       });
 
-      setChartData({
-        faturamentoMensal,
-        contasPagasRecebidas,
-        distribuicaoContas,
-        evolucaoSaldo,
+      const contasPagarPendentes = contasMes
+        .filter((c: any) => c.tipo === 'pagar' && !c.pago)
+        .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
+
+      const contasReceberPendentes = contasMes
+        .filter((c: any) => c.tipo === 'receber' && !c.pago)
+        .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
+
+      const proximosVencimentos = contasMes
+        .filter((c: any) => !c.pago)
+        .sort(
+          (a: any, b: any) =>
+            new Date(a.data_vencimento).getTime() - new Date(b.data_vencimento).getTime()
+        )
+        .slice(0, 5)
+        .map((c: any) => ({
+          descricao: c.descricao,
+          data: c.data_vencimento,
+          tipo: c.tipo as 'pagar' | 'receber',
+        }));
+
+      setStats({
+        alunosTotal: alunosList.length,
+        alunosAtivos,
+        mensalidadesRecebidas,
+        mensalidadesPendentes,
+        contasPagarPendentes,
+        contasReceberPendentes,
+      });
+
+      setHighlights({
+        proximosVencimentos,
+        alunosPendentes,
       });
     } catch (error: any) {
       console.error('Erro ao carregar dados do dashboard:', error);
@@ -211,266 +143,187 @@ export const Dashboard = () => {
     }
   };
 
-  const statCards = [
-    {
-      title: 'Total a Pagar (Mês)',
-      value: `R$ ${stats.totalAPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      icon: TrendingDown,
-      color: 'text-primary',
-    },
-    {
-      title: 'Faturamento Total',
-      value: `R$ ${stats.faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      icon: DollarSign,
-      color: 'text-green-500',
-    },
-    {
-      title: 'Saldo/Lucro',
-      value: `R$ ${stats.saldoLucro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      icon: stats.saldoLucro >= 0 ? TrendingUp : TrendingDown,
-      color: stats.saldoLucro >= 0 ? 'text-green-500' : 'text-primary',
-    },
-    {
-      title: 'Alunos Ativos',
-      value: stats.alunosAtivos,
-      icon: Users,
-      color: 'text-primary',
-    },
-    {
-      title: 'Contas Pendentes',
-      value: stats.contasPendentes,
-      icon: Calendar,
-      color: 'text-yellow-500',
-    },
-    {
-      title: 'Contas Vencidas',
-      value: stats.contasVencidas,
-      icon: AlertCircle,
-      color: 'text-primary',
-    },
-  ];
-
-  const COLORS = ['#a20100', '#b4b4b4', '#10b981', '#f59e0b'];
+  const totalMensalidadesMes = stats.mensalidadesRecebidas + stats.mensalidadesPendentes;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-sans font-semibold text-white mb-2">Dashboard</h1>
-        <p className="text-gray-light">Visão geral financeira e administrativa</p>
+        <p className="text-gray-light">
+          Visão rápida do seu faturamento, pendências e agenda financeira.
+        </p>
       </div>
 
       {loading ? (
         <div className="text-center py-12 text-gray-light">Carregando dados...</div>
       ) : (
         <>
-          {/* Cards de Estatísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-            {statCards.map((stat, index) => {
-              const Icon = stat.icon;
-              return (
-                <Card key={index} className="hover:border-primary transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-light text-xs mb-1">{stat.title}</p>
-                      <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
-                    </div>
-                    <div className={`${stat.color} bg-dark-soft p-2 rounded-lg`}>
-                      <Icon size={20} />
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-
-          {/* Gráficos */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Faturamento Mensal */}
-            <Card title="Faturamento Mensal (Últimos 6 Meses)">
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData.faturamentoMensal}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
-                    <XAxis dataKey="mes" stroke="#b4b4b4" />
-                    <YAxis stroke="#b4b4b4" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#1a1a1a',
-                        border: '1px solid #b4b4b4',
-                        color: '#ffffff',
-                      }}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="recebido"
-                      stroke="#10b981"
-                      strokeWidth={2}
-                      name="Recebido"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="pago"
-                      stroke="#a20100"
-                      strokeWidth={2}
-                      name="Pago"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="saldo"
-                      stroke="#b4b4b4"
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      name="Saldo"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+          {/* Cards principais (resumo financeiro + alunos) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-light text-xs mb-1">Mensalidades Recebidas (Mês)</p>
+                  <p className="text-2xl font-bold text-green-500">
+                    {currencyFormatter.format(stats.mensalidadesRecebidas)}
+                  </p>
+                </div>
+                <CheckCircle className="text-green-500" size={28} />
               </div>
             </Card>
 
-            {/* Distribuição de Contas */}
-            <Card title="Distribuição de Contas (Mês Atual)">
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={chartData.distribuicaoContas}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) =>
-                        `${name}: ${(percent * 100).toFixed(0)}%`
-                      }
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="valor"
-                    >
-                      {chartData.distribuicaoContas.map((entry: any, index: number) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={index === 0 ? '#a20100' : '#10b981'}
-                        />
+            <Card>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-light text-xs mb-1">Mensalidades Pendentes</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {currencyFormatter.format(stats.mensalidadesPendentes)}
+                  </p>
+                </div>
+                <Clock className="text-primary" size={28} />
+              </div>
+            </Card>
+
+            <Card>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-light text-xs mb-1">Contas a Pagar Pendentes (Mês)</p>
+                  <p className="text-xl font-bold text-primary">
+                    {currencyFormatter.format(stats.contasPagarPendentes)}
+                  </p>
+                </div>
+                <DollarSign className="text-primary" size={24} />
+              </div>
+            </Card>
+
+            <Card>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-light text-xs mb-1">Alunos Ativos</p>
+                  <p className="text-2xl font-bold text-white">{stats.alunosAtivos}</p>
+                  <p className="text-xs text-gray-light mt-1">
+                    {stats.alunosTotal} cadastrados no total
+                  </p>
+                </div>
+                <Users className="text-primary" size={28} />
+              </div>
+            </Card>
+          </div>
+
+          {/* Resumo textual e alertas do mês */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card title="Resumo do Mês">
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-light">Total em mensalidades (recebidas + pendentes)</span>
+                  <span className="font-semibold text-white">
+                    {currencyFormatter.format(totalMensalidadesMes)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-light">Contas a receber pendentes (Mês)</span>
+                  <span className="font-semibold text-green-500">
+                    {currencyFormatter.format(stats.contasReceberPendentes)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-light">Contas a pagar pendentes (Mês)</span>
+                  <span className="font-semibold text-primary">
+                    {currencyFormatter.format(stats.contasPagarPendentes)}
+                  </span>
+                </div>
+              </div>
+            </Card>
+
+            <Card title="Alertas do Mês">
+              <div className="space-y-4 text-sm">
+                <div>
+                  <p className="text-gray-light mb-2">Próximos vencimentos (até 5 lançamentos)</p>
+                  {highlights.proximosVencimentos.length === 0 ? (
+                    <p className="text-xs text-gray-light">Nenhuma conta pendente neste mês.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {highlights.proximosVencimentos.map((c, idx) => (
+                        <li
+                          key={`${c.descricao}-${idx}`}
+                          className="flex items-center justify-between text-xs border border-gray-dark rounded-lg px-3 py-2 bg-dark-soft"
+                        >
+                          <div className="flex flex-col">
+                            <span className="text-white">{c.descricao}</span>
+                            <span className="text-gray-light">
+                              {c.tipo === 'pagar' ? 'A pagar' : 'A receber'} em{' '}
+                              {format(new Date(c.data), "d 'de' MMM", { locale: ptBR })}
+                            </span>
+                          </div>
+                        </li>
                       ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#1a1a1a',
-                        border: '1px solid #b4b4b4',
-                        color: '#ffffff',
-                      }}
-                      formatter={(value: number) =>
-                        `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                      }
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
+                    </ul>
+                  )}
+                </div>
 
-            {/* Contas Pagas/Recebidas */}
-            <Card title="Status das Contas (Mês Atual)">
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData.contasPagasRecebidas}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
-                    <XAxis dataKey="nome" stroke="#b4b4b4" />
-                    <YAxis stroke="#b4b4b4" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#1a1a1a',
-                        border: '1px solid #b4b4b4',
-                        color: '#ffffff',
-                      }}
-                    />
-                    <Bar dataKey="valor" fill="#a20100" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-
-            {/* Evolução do Saldo */}
-            <Card title="Evolução do Saldo (Últimos 6 Meses)">
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData.evolucaoSaldo}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#404040" />
-                    <XAxis dataKey="mes" stroke="#b4b4b4" />
-                    <YAxis stroke="#b4b4b4" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#1a1a1a',
-                        border: '1px solid #b4b4b4',
-                        color: '#ffffff',
-                      }}
-                      formatter={(value: number) =>
-                        `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                      }
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="saldo"
-                      stroke="#b4b4b4"
-                      strokeWidth={3}
-                      dot={{ fill: '#a20100', r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div className="pt-2 border-t border-gray-dark">
+                  <p className="text-gray-light mb-2">
+                    Alunos com mensalidade pendente ({highlights.alunosPendentes.length})
+                  </p>
+                  {highlights.alunosPendentes.length === 0 ? (
+                    <p className="text-xs text-gray-light">Nenhum aluno pendente no momento.</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {highlights.alunosPendentes.slice(0, 8).map((a) => (
+                        <span
+                          key={a.id}
+                          className="px-2 py-1 rounded-full text-xs bg-primary/10 text-primary border border-primary/40"
+                        >
+                          {a.nome}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </Card>
           </div>
 
-          {/* Resumo Financeiro */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card title="Resumo Financeiro do Mês">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-light">Faturamento (Mensalidades)</span>
-                  <span className="text-green-500 font-semibold text-lg">
-                    R$ {stats.faturamentoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
+          {/* Ações rápidas */}
+          <Card title="Ações Rápidas">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button
+                variant="secondary"
+                className="flex items-center justify-center gap-3 py-4"
+                onClick={() => navigate('/financeiro')}
+              >
+                <DollarSign size={24} />
+                <div className="text-left">
+                  <p className="font-semibold">Ver financeiro detalhado</p>
+                  <p className="text-xs opacity-80">Contas a pagar e a receber do mês</p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-light">Contas a Pagar</span>
-                  <span className="text-primary font-semibold text-lg">
-                    R$ {stats.totalAPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="pt-4 border-t border-gray-dark">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-light">Saldo Final</span>
-                    <span
-                      className={`font-semibold text-xl ${
-                        stats.saldoLucro >= 0 ? 'text-green-500' : 'text-primary'
-                      }`}
-                    >
-                      R$ {stats.saldoLucro.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </Card>
+              </Button>
 
-            <Card title="Ações Rápidas">
-              <div className="space-y-3">
-                <Button
-                  variant="secondary"
-                  className="w-full justify-start"
-                  onClick={() => navigate('/financeiro')}
-                >
-                  <DollarSign size={20} className="mr-2" />
-                  Gerenciar Finanças
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="w-full justify-start"
-                  onClick={() => navigate('/alunos')}
-                >
-                  <Users size={20} className="mr-2" />
-                  Gerenciar Alunos
-                </Button>
-              </div>
-            </Card>
-          </div>
+              <Button
+                variant="secondary"
+                className="flex items-center justify-center gap-3 py-4"
+                onClick={() => navigate('/alunos')}
+              >
+                <Users size={24} />
+                <div className="text-left">
+                  <p className="font-semibold">Gerenciar alunos</p>
+                  <p className="text-xs opacity-80">Status de pagamento e dados de contato</p>
+                </div>
+              </Button>
+
+              <Button
+                variant="secondary"
+                className="flex items-center justify-center gap-3 py-4"
+                onClick={() => navigate('/agenda')}
+              >
+                <Clock size={24} />
+                <div className="text-left">
+                  <p className="font-semibold">Ver agenda semanal</p>
+                  <p className="text-xs opacity-80">Horários fixos de atendimento</p>
+                </div>
+              </Button>
+            </div>
+          </Card>
         </>
       )}
     </div>
