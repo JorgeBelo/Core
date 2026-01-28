@@ -10,6 +10,7 @@ import {
 import { NavLink } from 'react-router-dom';
 import { Logo } from '../common/Logo';
 import { NotificationsDropdown } from '../common/NotificationsDropdown';
+import { ProfileDropdown } from '../common/ProfileDropdown';
 
 const menuItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -54,9 +55,10 @@ export const Sidebar = () => {
         </ul>
       </nav>
 
-      {/* Notificações no rodapé da sidebar */}
-      <div className="p-4 border-t border-gray-dark">
+      {/* Rodapé da sidebar */}
+      <div className="p-4 border-t border-gray-dark space-y-3">
         <NotificationsDropdown />
+        <ProfileDropdown />
       </div>
     </aside>
   );

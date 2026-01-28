@@ -2,28 +2,63 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import toast from 'react-hot-toast';
+import { supabase } from '../../lib/supabase';
+import { maskWhatsApp, unmaskWhatsApp } from '../../utils/masks';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface CadastroAlunoModalProps {
   onClose: () => void;
 }
 
 export const CadastroAlunoModal = ({ onClose }: CadastroAlunoModalProps) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     birth_date: '',
-    phone: '',
     whatsapp: '',
     frequency_per_week: 2,
     monthly_fee: '',
     start_date: '',
     observations: '',
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleWhatsAppChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const masked = maskWhatsApp(e.target.value);
+    setFormData({ ...formData, whatsapp: masked });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implementar chamada à API
-    toast.success('Aluno cadastrado com sucesso!');
-    onClose();
+    if (!user) {
+      toast.error('Usuário não autenticado');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('alunos').insert({
+        personal_id: user.id,
+        name: formData.name,
+        birth_date: formData.birth_date,
+        whatsapp: unmaskWhatsApp(formData.whatsapp),
+        frequency_per_week: formData.frequency_per_week,
+        monthly_fee: parseFloat(formData.monthly_fee),
+        start_date: formData.start_date,
+        observations: formData.observations || null,
+        active: true,
+      });
+
+      if (error) throw error;
+
+      toast.success('Aluno cadastrado com sucesso!');
+      onClose();
+    } catch (error: any) {
+      console.error('Erro ao cadastrar aluno:', error);
+      toast.error(error.message || 'Erro ao cadastrar aluno');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -70,27 +105,16 @@ export const CadastroAlunoModal = ({ onClose }: CadastroAlunoModalProps) => {
 
             <div>
               <label className="block text-sm font-medium text-white mb-2">
-                Telefone
+                WhatsApp *
               </label>
               <input
                 type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="input-core w-full"
-                placeholder="(11) 98765-4321"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                WhatsApp
-              </label>
-              <input
-                type="tel"
+                required
                 value={formData.whatsapp}
-                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                onChange={handleWhatsAppChange}
                 className="input-core w-full"
-                placeholder="(11) 98765-4321"
+                placeholder="(11) 9 9999-9999"
+                maxLength={16}
               />
             </div>
 
@@ -152,11 +176,11 @@ export const CadastroAlunoModal = ({ onClose }: CadastroAlunoModalProps) => {
           </div>
 
           <div className="flex justify-end gap-4 pt-4 border-t border-gray-dark">
-            <Button variant="secondary" type="button" onClick={onClose}>
+            <Button variant="secondary" type="button" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit">
-              Cadastrar Aluno
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Cadastrando...' : 'Cadastrar Aluno'}
             </Button>
           </div>
         </form>

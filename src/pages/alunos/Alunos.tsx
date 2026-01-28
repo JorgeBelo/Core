@@ -1,63 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Eye, Filter } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { Aluno } from '../../types';
 import { CadastroAlunoModal } from './CadastroAlunoModal';
-
-// Mock data
-const mockAlunos: Aluno[] = [
-  {
-    id: '1',
-    personal_id: '1',
-    name: 'João Silva',
-    birth_date: '1990-05-15',
-    phone: '(11) 98765-4321',
-    whatsapp: '(11) 98765-4321',
-    frequency_per_week: 3,
-    monthly_fee: 300.00,
-    start_date: '2024-01-15',
-    active: true,
-    created_at: '2024-01-15T10:00:00Z',
-    updated_at: '2024-01-15T10:00:00Z',
-  },
-  {
-    id: '2',
-    personal_id: '1',
-    name: 'Maria Santos',
-    birth_date: '1985-08-22',
-    phone: '(11) 97654-3210',
-    whatsapp: '(11) 97654-3210',
-    frequency_per_week: 2,
-    monthly_fee: 250.00,
-    start_date: '2024-02-01',
-    active: true,
-    created_at: '2024-02-01T10:00:00Z',
-    updated_at: '2024-02-01T10:00:00Z',
-  },
-  {
-    id: '3',
-    personal_id: '1',
-    name: 'Pedro Oliveira',
-    birth_date: '1992-12-10',
-    phone: '(11) 96543-2109',
-    frequency_per_week: 4,
-    monthly_fee: 350.00,
-    start_date: '2023-11-20',
-    active: false,
-    created_at: '2023-11-20T10:00:00Z',
-    updated_at: '2024-01-10T10:00:00Z',
-  },
-];
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
+import { maskWhatsApp } from '../../utils/masks';
+import toast from 'react-hot-toast';
 
 export const Alunos = () => {
+  const { user } = useAuth();
+  const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'todos' | 'ativo' | 'inativo'>('todos');
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const filteredAlunos = mockAlunos.filter((aluno) => {
+  useEffect(() => {
+    if (user) {
+      loadAlunos();
+    }
+  }, [user]);
+
+  const loadAlunos = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('alunos')
+        .select('*')
+        .eq('personal_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setAlunos(data || []);
+    } catch (error: any) {
+      console.error('Erro ao carregar alunos:', error);
+      toast.error('Erro ao carregar alunos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredAlunos = alunos.filter((aluno) => {
     const matchesSearch = aluno.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = 
       statusFilter === 'todos' || 
@@ -114,7 +104,7 @@ export const Alunos = () => {
             <thead>
               <tr className="border-b border-gray-dark">
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Nome</th>
-                <th className="text-left py-3 px-4 text-gray-light font-medium">Telefone</th>
+                <th className="text-left py-3 px-4 text-gray-light font-medium">WhatsApp</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Frequência</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Mensalidade</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Status</th>
@@ -122,7 +112,13 @@ export const Alunos = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredAlunos.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-gray-light">
+                    Carregando...
+                  </td>
+                </tr>
+              ) : filteredAlunos.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-8 text-gray-light">
                     Nenhum aluno encontrado
@@ -132,7 +128,9 @@ export const Alunos = () => {
                 filteredAlunos.map((aluno) => (
                   <tr key={aluno.id} className="border-b border-gray-dark hover:bg-dark-soft transition-colors">
                     <td className="py-4 px-4 text-white">{aluno.name}</td>
-                    <td className="py-4 px-4 text-gray-light">{aluno.phone || '-'}</td>
+                    <td className="py-4 px-4 text-gray-light">
+                      {aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}
+                    </td>
                     <td className="py-4 px-4 text-gray-light">{aluno.frequency_per_week}x/semana</td>
                     <td className="py-4 px-4 text-white">
                       R$ {aluno.monthly_fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -165,7 +163,14 @@ export const Alunos = () => {
         </div>
       </Card>
 
-      {showModal && <CadastroAlunoModal onClose={() => setShowModal(false)} />}
+      {showModal && (
+        <CadastroAlunoModal
+          onClose={() => {
+            setShowModal(false);
+            loadAlunos();
+          }}
+        />
+      )}
     </div>
   );
 };
