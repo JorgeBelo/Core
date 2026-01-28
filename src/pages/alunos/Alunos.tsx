@@ -139,8 +139,9 @@ export const Alunos = () => {
               <tr className="border-b border-gray-dark">
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Nome</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">WhatsApp</th>
-                <th className="text-left py-3 px-4 text-gray-light font-medium">Frequência</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Mensalidade</th>
+                <th className="text-left py-3 px-4 text-gray-light font-medium">Dia Pagamento</th>
+                <th className="text-left py-3 px-4 text-gray-light font-medium">Status Pagamento</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Status</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Ações</th>
               </tr>
@@ -148,13 +149,13 @@ export const Alunos = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-gray-light">
+                  <td colSpan={7} className="text-center py-8 text-gray-light">
                     Carregando...
                   </td>
                 </tr>
               ) : filteredAlunos.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8 text-gray-light">
+                  <td colSpan={7} className="text-center py-8 text-gray-light">
                     Nenhum aluno encontrado
                   </td>
                 </tr>
@@ -164,25 +165,44 @@ export const Alunos = () => {
                   const alunoNome = aluno.nome || aluno.name || 'Sem nome';
                   return (
                     <tr key={aluno.id} className="border-b border-gray-dark hover:bg-dark-soft transition-colors">
-                      <td className="py-4 px-4 text-white">{alunoNome}</td>
-                      <td className="py-4 px-4 text-gray-light">
-                        {aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}
-                      </td>
-                      <td className="py-4 px-4 text-gray-light">{aluno.frequency_per_week}x/semana</td>
-                      <td className="py-4 px-4 text-white">
-                        R$ {aluno.monthly_fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </td>
-                      <td className="py-4 px-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            aluno.active
-                              ? 'bg-green-500/20 text-green-500'
-                              : 'bg-gray-light/20 text-gray-light'
-                          }`}
-                        >
-                          {aluno.active ? 'Ativo' : 'Inativo'}
-                        </span>
-                      </td>
+                    <td className="py-4 px-4 text-white">{alunoNome}</td>
+                    <td className="py-4 px-4 text-gray-light">
+                      {aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}
+                    </td>
+                    <td className="py-4 px-4 text-white font-semibold">
+                      R$ {aluno.monthly_fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="py-4 px-4 text-gray-light">
+                      Dia {aluno.payment_day || '-'}
+                    </td>
+                    <td className="py-4 px-4">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          aluno.payment_status === 'pago'
+                            ? 'bg-green-500/20 text-green-500'
+                            : aluno.payment_status === 'atrasado'
+                            ? 'bg-primary/20 text-primary'
+                            : 'bg-yellow-500/20 text-yellow-500'
+                        }`}
+                      >
+                        {aluno.payment_status === 'pago'
+                          ? 'Pago'
+                          : aluno.payment_status === 'atrasado'
+                          ? 'Atrasado'
+                          : 'Pendente'}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          aluno.active
+                            ? 'bg-green-500/20 text-green-500'
+                            : 'bg-gray-light/20 text-gray-light'
+                        }`}
+                      >
+                        {aluno.active ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
                           <button

@@ -14,13 +14,10 @@ export interface Aluno {
   personal_id: string;
   nome: string; // Nome da coluna no banco
   name?: string; // Compatibilidade
-  birth_date: string;
-  phone?: string;
   whatsapp?: string;
-  frequency_per_week: number;
   monthly_fee: number;
-  start_date: string;
-  observations?: string;
+  payment_day: number; // Dia do mês para pagamento (1-31)
+  payment_status: 'pago' | 'pendente' | 'atrasado';
   active: boolean;
   created_at: string;
   updated_at: string;
@@ -103,19 +100,21 @@ export interface Exercicio {
   notes?: string;
 }
 
-export interface ProgressoAluno {
+// Conta a Pagar/Receber
+export interface ContaFinanceira {
   id: string;
-  aluno_id: string;
-  date: string;
-  weight?: number;
-  body_fat?: number;
-  measurements?: {
-    chest?: number;
-    waist?: number;
-    hip?: number;
-    arm?: number;
-    thigh?: number;
-  };
-  notes?: string;
+  personal_id: string;
+  descricao: string;
+  valor: number;
+  data_vencimento: string;
+  categoria: string;
+  tipo: 'pagar' | 'receber';
+  parcelada: boolean;
+  numero_parcelas?: number;
+  parcela_atual?: number;
+  conta_original_id?: string; // ID da conta original se for parcela
+  pago: boolean;
+  data_pagamento?: string;
   created_at: string;
+  updated_at: string;
 }

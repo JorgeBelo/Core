@@ -17,12 +17,10 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
   const isEditing = !!aluno;
   const [formData, setFormData] = useState({
     nome: aluno?.nome || aluno?.name || '',
-    birth_date: aluno?.birth_date || '',
     whatsapp: aluno?.whatsapp ? maskWhatsApp(aluno.whatsapp) : '',
-    frequency_per_week: aluno?.frequency_per_week || 2,
     monthly_fee: aluno?.monthly_fee?.toString() || '',
-    start_date: aluno?.start_date || '',
-    observations: aluno?.observations || '',
+    payment_day: aluno?.payment_day?.toString() || '5',
+    payment_status: aluno?.payment_status || 'pendente',
   });
   const [loading, setLoading] = useState(false);
 
@@ -43,12 +41,10 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
       const alunoData = {
         personal_id: user.id,
         nome: formData.nome,
-        birth_date: formData.birth_date,
         whatsapp: unmaskWhatsApp(formData.whatsapp),
-        frequency_per_week: formData.frequency_per_week,
         monthly_fee: parseFloat(formData.monthly_fee),
-        start_date: formData.start_date,
-        observations: formData.observations || null,
+        payment_day: parseInt(formData.payment_day),
+        payment_status: formData.payment_status,
       };
 
       if (isEditing && aluno) {
@@ -115,19 +111,6 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
 
             <div>
               <label className="block text-sm font-medium text-white mb-2">
-                Data de Nascimento *
-              </label>
-              <input
-                type="date"
-                required
-                value={formData.birth_date}
-                onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
-                className="input-core w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
                 WhatsApp *
               </label>
               <input
@@ -138,21 +121,6 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
                 className="input-core w-full"
                 placeholder="(11) 9 9999-9999"
                 maxLength={16}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Frequência Semanal *
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="7"
-                required
-                value={formData.frequency_per_week}
-                onChange={(e) => setFormData({ ...formData, frequency_per_week: parseInt(e.target.value) })}
-                className="input-core w-full"
               />
             </div>
 
@@ -173,29 +141,41 @@ export const CadastroAlunoModal = ({ onClose, aluno }: CadastroAlunoModalProps) 
 
             <div>
               <label className="block text-sm font-medium text-white mb-2">
-                Data de Início *
+                Dia de Pagamento *
               </label>
               <input
-                type="date"
+                type="number"
+                min="1"
+                max="31"
                 required
-                value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                value={formData.payment_day}
+                onChange={(e) => setFormData({ ...formData, payment_day: e.target.value })}
                 className="input-core w-full"
+                placeholder="5"
               />
+              <p className="text-xs text-gray-light mt-1">Dia do mês (1-31)</p>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-white mb-2">
-              Observações
-            </label>
-            <textarea
-              value={formData.observations}
-              onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
-              className="input-core w-full"
-              rows={3}
-              placeholder="Observações sobre o aluno..."
-            />
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Status de Pagamento *
+              </label>
+              <select
+                required
+                value={formData.payment_status}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    payment_status: e.target.value as 'pago' | 'pendente' | 'atrasado',
+                  })
+                }
+                className="input-core w-full"
+              >
+                <option value="pendente">Pendente</option>
+                <option value="pago">Pago</option>
+                <option value="atrasado">Atrasado</option>
+              </select>
+            </div>
           </div>
 
           <div className="flex justify-end gap-4 pt-4 border-t border-gray-dark">
