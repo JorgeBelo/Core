@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { getAlunoIdsInativosNoMes } from './alunoInativoPeriodosService';
 
 export interface MensalidadeRow {
   id: string;
@@ -25,23 +26,23 @@ export function getLastDayOfMonth(year: number, month: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Garante que todos os alunos que estavam ativos naquele mês tenham mensalidade. Cria as que faltam com status pendente. */
+/** Garante que todos os alunos que estavam ativos naquele mês tenham mensalidade. Cria as que faltam com status pendente. Usa histórico de períodos de inatividade. */
 export async function ensureMensalidadesForMonth(
   personalId: string,
   year: number,
   month: number
 ): Promise<void> {
   const dueDate = getFirstDayOfMonth(year, month);
-  const lastDay = getLastDayOfMonth(year, month);
+  const idsInativosNoMes = await getAlunoIdsInativosNoMes(personalId, year, month);
 
-  const { data: alunos, error: alunosError } = await supabase
+  const { data: todosAlunos, error: alunosError } = await supabase
     .from('alunos')
-    .select('id, monthly_fee, data_inativacao')
-    .eq('personal_id', personalId)
-    .or(`data_inativacao.is.null,data_inativacao.gt.${lastDay}`);
+    .select('id, monthly_fee')
+    .eq('personal_id', personalId);
 
   if (alunosError) throw alunosError;
-  if (!alunos?.length) return;
+  const alunos = (todosAlunos || []).filter((a: { id: string }) => !idsInativosNoMes.has(a.id));
+  if (!alunos.length) return;
 
   const { data: existentes, error: existError } = await supabase
     .from('mensalidades')
