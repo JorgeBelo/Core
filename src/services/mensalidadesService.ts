@@ -13,16 +13,18 @@ export interface MensalidadeRow {
   updated_at: string;
 }
 
-/** Primeiro dia do mês em YYYY-MM-DD */
+/** Primeiro dia do mês em YYYY-MM-DD (data local, sem fuso) */
 export function getFirstDayOfMonth(year: number, month: number): string {
-  const d = new Date(year, month - 1, 1);
-  return d.toISOString().slice(0, 10);
+  const m = String(month).padStart(2, '0');
+  return `${year}-${m}-01`;
 }
 
-/** Último dia do mês em YYYY-MM-DD */
+/** Último dia do mês em YYYY-MM-DD (data local; month 1-12) */
 export function getLastDayOfMonth(year: number, month: number): string {
-  const d = new Date(year, month, 0);
-  return d.toISOString().slice(0, 10);
+  const lastDay = new Date(year, month, 0).getDate();
+  const m = String(month).padStart(2, '0');
+  const d = String(lastDay).padStart(2, '0');
+  return `${year}-${m}-${d}`;
 }
 
 /** Garante que todos os alunos que estavam ativos naquele mês tenham mensalidade. Cria as que faltam com status pendente. */

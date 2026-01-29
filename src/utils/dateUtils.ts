@@ -11,8 +11,16 @@ export function parseLocalDate(dateStr: string): Date {
   return new Date(y, m - 1, d);
 }
 
-/** Retorna YYYY-MM-DD da string (aceita ISO); útil para comparação sem fuso. */
-export function toDateOnlyString(dateStr: string): string {
-  if (!dateStr) return '';
-  return typeof dateStr === 'string' && dateStr.length >= 10 ? dateStr.slice(0, 10) : dateStr;
+/** Retorna YYYY-MM-DD para comparação sem fuso. Aceita string (YYYY-MM-DD ou ISO), Date, null, undefined. */
+export function toDateOnlyString(value: string | Date | null | undefined): string {
+  if (value == null) return '';
+  if (value instanceof Date) {
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, '0');
+    const d = String(value.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  const s = String(value).trim();
+  if (s.length >= 10) return s.slice(0, 10);
+  return s;
 }

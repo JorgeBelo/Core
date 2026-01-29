@@ -112,11 +112,13 @@ export const Alunos = () => {
   const getMensalidadeAluno = (alunoId: string): MensalidadeRow | undefined =>
     mensalidadesMes.find((x) => x.aluno_id === alunoId);
 
-  /** Aluno considerado ativo no mês selecionado: sem data_inativacao ou inativado depois do fim do mês (compara só YYYY-MM-DD para evitar fuso) */
+  /** Aluno ativo no mês: sem data_inativacao ou data de inativação DEPOIS do último dia do mês (compara só YYYY-MM-DD). */
   const activeForThisMonth = (aluno: Aluno): boolean => {
-    if (!aluno.data_inativacao) return true;
+    const dataInativacao = aluno.data_inativacao;
+    if (dataInativacao == null || String(dataInativacao).trim() === '') return true;
     const ultimoDiaMesStr = format(endOfMonth(mesRef), 'yyyy-MM-dd');
-    const dataInativacaoStr = toDateOnlyString(aluno.data_inativacao);
+    const dataInativacaoStr = toDateOnlyString(dataInativacao);
+    if (!dataInativacaoStr || dataInativacaoStr.length < 10) return true;
     return dataInativacaoStr > ultimoDiaMesStr;
   };
 
