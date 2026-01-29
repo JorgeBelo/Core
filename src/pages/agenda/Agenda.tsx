@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, UserMinus, Trash2 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { supabase } from '../../lib/supabaseClient';
@@ -42,6 +42,15 @@ export const Agenda = () => {
   const [selectedAlunoIds, setSelectedAlunoIds] = useState<string[]>([]);
   const [horaInicio, setHoraInicio] = useState('08:00');
   const [horaFim, setHoraFim] = useState('09:00');
+
+  /** Modal de edição: ao clicar em horário ocupado */
+  const [editingSlot, setEditingSlot] = useState<{ dia: number; hora: string } | null>(null);
+  const [editForm, setEditForm] = useState<{
+    horaInicio: string;
+    horaFim: string;
+    removedIds: string[];
+    newAlunoIds: string[];
+  } | null>(null);
 
   // Gerar horários de 6h às 23h com intervalos de 30 minutos
   const generateTimeSlots = () => {
@@ -146,9 +155,14 @@ export const Agenda = () => {
     const items = getAgendaForSlot(dia, hora);
 
     if (items.length > 0) {
-      if (confirm('Remover todos os agendamentos deste horário?')) {
-        deleteAgendaItemsForSlot(dia, hora);
-      }
+      const first = items[0];
+      setEditingSlot({ dia, hora });
+      setEditForm({
+        horaInicio: normalizeHora(String(first.hora_inicio)),
+        horaFim: normalizeHora(String(first.hora_fim)),
+        removedIds: [],
+        newAlunoIds: [],
+      });
     } else {
       setSelectedSlot({ dia, hora });
       setHoraInicio(hora);
@@ -226,6 +240,74 @@ export const Agenda = () => {
     } catch (error: any) {
       console.error('Erro ao remover agendamentos:', error);
       toast.error('Erro ao remover agendamentos');
+    }
+  };
+
+  const handleSaveEditModal = async () => {
+    if (!user || !editingSlot || !editForm) return;
+
+    const items = getAgendaForSlot(editingSlot.dia, editingSlot.hora);
+    const remaining = items.filter((i) => !editForm.removedIds.includes(i.id));
+    const totalAfter = remaining.length + editForm.newAlunoIds.length;
+    if (totalAfter === 0) {
+      toast.error('O horário precisa ter pelo menos um aluno. Use "Remover todos" para apagar o horário.');
+      return;
+    }
+    if (totalAfter > 4) {
+      toast.error('Máximo de 4 alunos por horário.');
+      return;
+    }
+
+    try {
+      for (const id of editForm.removedIds) {
+        const { error } = await supabase.from('agenda_personal').delete().eq('id', id);
+        if (error) throw error;
+      }
+
+      if (editForm.newAlunoIds.length > 0) {
+        const rows = editForm.newAlunoIds.map((aluno_id) => ({
+          personal_id: user.id,
+          aluno_id,
+          dia_semana: editingSlot.dia,
+          hora_inicio: editForm.horaInicio,
+          hora_fim: editForm.horaFim,
+        }));
+        const { error } = await supabase.from('agenda_personal').insert(rows);
+        if (error) throw error;
+      }
+
+      const horaChanged =
+        editForm.horaInicio !== normalizeHora(String(items[0]?.hora_inicio)) ||
+        editForm.horaFim !== normalizeHora(String(items[0]?.hora_fim));
+      if (horaChanged && remaining.length > 0) {
+        for (const item of remaining) {
+          const { error } = await supabase
+            .from('agenda_personal')
+            .update({
+              hora_inicio: editForm.horaInicio,
+              hora_fim: editForm.horaFim,
+            })
+            .eq('id', item.id);
+          if (error) throw error;
+        }
+      }
+
+      toast.success('Alterações salvas!');
+      setEditingSlot(null);
+      setEditForm(null);
+      loadAgenda();
+    } catch (error: any) {
+      console.error('Erro ao salvar edição:', error);
+      toast.error(error.message || 'Erro ao salvar alterações');
+    }
+  };
+
+  const handleRemoveAllInEdit = () => {
+    if (!editingSlot) return;
+    if (confirm('Remover todos os agendamentos deste horário?')) {
+      deleteAgendaItemsForSlot(editingSlot.dia, editingSlot.hora);
+      setEditingSlot(null);
+      setEditForm(null);
     }
   };
 
@@ -458,6 +540,180 @@ export const Agenda = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de visualização/edição de horário ocupado */}
+      {editingSlot && editForm && (() => {
+        const items = getAgendaForSlot(editingSlot.dia, editingSlot.hora);
+        const currentItems = items.filter((i) => !editForm.removedIds.includes(i.id));
+        const currentAlunoIds = currentItems.map((i) => i.aluno_id).filter(Boolean) as string[];
+        const totalAlunos = currentAlunoIds.length + editForm.newAlunoIds.length;
+        const alunosDisponiveisParaAdd = alunos.filter(
+          (a) => !currentAlunoIds.includes(a.id) && !editForm.newAlunoIds.includes(a.id)
+        );
+        const podeAddMais = totalAlunos < 4 && alunosDisponiveisParaAdd.length > 0;
+
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-dark-soft border border-gray-dark rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-gray-dark">
+                <h2 className="text-xl font-sans font-semibold text-white">
+                  Detalhes do horário
+                </h2>
+                <button
+                  onClick={() => {
+                    setEditingSlot(null);
+                    setEditForm(null);
+                  }}
+                  className="text-gray-light hover:text-white transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <p className="text-gray-light text-sm">
+                  Visualize os alunos deste horário. Você pode editar o horário, remover ou adicionar alunos individualmente, ou remover todos os agendamentos.
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-white mb-1">Dia</label>
+                  <p className="text-gray-light">
+                    {diasSemana.find((d) => d.id === editingSlot.dia)?.nome}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Hora início</label>
+                    <input
+                      type="time"
+                      value={editForm.horaInicio}
+                      onChange={(e) =>
+                        setEditForm((prev) => prev ? { ...prev, horaInicio: e.target.value } : null)
+                      }
+                      className="input-core w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Hora fim</label>
+                    <input
+                      type="time"
+                      value={editForm.horaFim}
+                      onChange={(e) =>
+                        setEditForm((prev) => prev ? { ...prev, horaFim: e.target.value } : null)
+                      }
+                      className="input-core w-full"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Alunos neste horário
+                  </label>
+                  {currentItems.length === 0 ? (
+                    <p className="text-gray-light text-sm">Nenhum aluno (adicione abaixo ou remova o horário).</p>
+                  ) : (
+                    <ul className="space-y-2 border border-gray-dark rounded-lg p-3 bg-dark">
+                      {currentItems.map((item) => (
+                        <li
+                          key={item.id}
+                          className="flex items-center justify-between gap-2 py-2 px-3 rounded-lg bg-dark-soft"
+                        >
+                          <span className="text-white text-sm">
+                            {getAlunoNome(item)}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditForm((prev) =>
+                                prev ? { ...prev, removedIds: [...prev.removedIds, item.id] } : null
+                              )
+                            }
+                            className="text-primary hover:text-primary-light flex items-center gap-1 min-h-[44px] px-2"
+                            title="Remover deste horário"
+                          >
+                            <UserMinus size={18} />
+                            <span className="text-xs">Remover</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                {podeAddMais && (
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">
+                      Adicionar mais alunos (até 4 no total)
+                    </label>
+                    <div className="max-h-40 overflow-y-auto space-y-2 border border-gray-dark rounded-lg p-3 bg-dark">
+                      {alunosDisponiveisParaAdd.map((aluno) => {
+                        const checked = editForm.newAlunoIds.includes(aluno.id);
+                        const disabled = !checked && totalAlunos >= 4;
+                        return (
+                          <label
+                            key={aluno.id}
+                            className={`flex items-center gap-3 cursor-pointer p-2 rounded-lg border transition-colors ${
+                              disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-dark-soft'
+                            } ${checked ? 'border-primary bg-primary/10' : 'border-gray-dark'}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              disabled={disabled}
+                              onChange={() => {
+                                if (checked) {
+                                  setEditForm((prev) =>
+                                    prev
+                                      ? { ...prev, newAlunoIds: prev.newAlunoIds.filter((x) => x !== aluno.id) }
+                                      : null
+                                  );
+                                } else if (totalAlunos < 4) {
+                                  setEditForm((prev) =>
+                                    prev ? { ...prev, newAlunoIds: [...prev.newAlunoIds, aluno.id] } : null
+                                  );
+                                }
+                              }}
+                              className="w-4 h-4 text-primary bg-dark-soft border-gray-dark rounded focus:ring-primary"
+                            />
+                            <span className="text-white text-sm">
+                              {aluno.nome || aluno.name || 'Sem nome'}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-dark">
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setEditingSlot(null);
+                      setEditForm(null);
+                    }}
+                    className="min-h-[44px]"
+                  >
+                    Fechar
+                  </Button>
+                  <Button onClick={handleSaveEditModal} className="min-h-[44px]">
+                    Salvar alterações
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={handleRemoveAllInEdit}
+                    className="min-h-[44px] px-4 rounded-lg border border-red-500/50 text-red-400 hover:bg-red-500/20 transition-colors flex items-center gap-2"
+                  >
+                    <Trash2 size={18} />
+                    Remover todos
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
