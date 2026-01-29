@@ -37,6 +37,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
       toast.error('Usuário não autenticado');
       return;
     }
+    if (loading) return;
 
     setLoading(true);
     try {

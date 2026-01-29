@@ -51,10 +51,22 @@ export const Financeiro = () => {
   const inicioMes = startOfMonth(mesRef);
   const fimMes = endOfMonth(mesRef);
 
-  const contasMes = contas.filter((conta) => {
+  const contasDoMesFiltradas = contas.filter((conta) => {
     const dataVenc = new Date(conta.data_vencimento);
     return isWithinInterval(dataVenc, { start: inicioMes, end: fimMes });
   });
+
+  // Deduplica contas FIXA: mesmo (descricao, valor, tipo) no mesmo mês = 1 linha (evita duplicação por duplo cadastro)
+  const contasMes = (() => {
+    const seen = new Set<string>();
+    return contasDoMesFiltradas.filter((conta) => {
+      if (!conta.conta_fixa) return true;
+      const key = `${conta.descricao}|${conta.valor}|${conta.tipo}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
 
   const totalRecebido = contasMes
     .filter((c) => c.tipo === 'receber' && c.pago)
