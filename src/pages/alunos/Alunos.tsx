@@ -15,21 +15,14 @@ import {
   updateMensalidadeStatus,
   type MensalidadeRow,
 } from '../../services/mensalidadesService';
-import {
-  getPeriodosInativos,
-  periodoCobreMes,
-  criarPeriodoInativo,
-  encerrarPeriodoInativo,
-  type PeriodoInativo,
-} from '../../services/alunoInativoPeriodosService';
-import { format, subMonths, addMonths, endOfMonth, startOfMonth } from 'date-fns';
+import { format, subMonths, addMonths, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseLocalDate } from '../../utils/dateUtils';
 
 export const Alunos = () => {
   const { user } = useAuth();
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [mensalidadesMes, setMensalidadesMes] = useState<MensalidadeRow[]>([]);
-  const [periodosInativos, setPeriodosInativos] = useState<PeriodoInativo[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'todos' | 'ativo' | 'inativo'>('todos');
   const [showModal, setShowModal] = useState(false);
@@ -66,16 +59,6 @@ export const Alunos = () => {
     }
   };
 
-  const loadPeriodosInativos = async () => {
-    if (!user) return;
-    try {
-      const periodos = await getPeriodosInativos(user.id);
-      setPeriodosInativos(periodos);
-    } catch (e) {
-      console.error('Erro ao carregar períodos de inatividade:', e);
-    }
-  };
-
   const loadAlunos = async () => {
     if (!user) return;
 
@@ -91,9 +74,6 @@ export const Alunos = () => {
 
       const lista = (data || []) as Aluno[];
       setAlunos(lista);
-
-      const periodos = await getPeriodosInativos(user.id);
-      setPeriodosInativos(periodos);
 
       await ensureMensalidadesForMonth(user.id, anoAtual, mesAtual);
       const mens = await getMensalidadesForMonth(user.id, anoAtual, mesAtual);
@@ -132,13 +112,11 @@ export const Alunos = () => {
   const getMensalidadeAluno = (alunoId: string): MensalidadeRow | undefined =>
     mensalidadesMes.find((x) => x.aluno_id === alunoId);
 
-  /** Aluno considerado ativo no mês selecionado: nenhum período de inatividade cobre o mês */
+  /** Aluno considerado ativo no mês selecionado: sem data_inativacao ou inativado depois do fim do mês */
   const activeForThisMonth = (aluno: Aluno): boolean => {
-    const firstDay = format(startOfMonth(mesRef), 'yyyy-MM-dd');
-    const lastDay = format(endOfMonth(mesRef), 'yyyy-MM-dd');
-    const periodosDoAluno = periodosInativos.filter((p) => p.aluno_id === aluno.id);
-    const algumCobre = periodosDoAluno.some((p) => periodoCobreMes(p, firstDay, lastDay));
-    return !algumCobre;
+    if (!aluno.data_inativacao) return true;
+    const fimMes = endOfMonth(mesRef);
+    return parseLocalDate(aluno.data_inativacao) > fimMes;
   };
 
   const handleDelete = async (id: string, nome: string) => {
@@ -453,8 +431,6 @@ export const Alunos = () => {
                         } else {
                           (async () => {
                             try {
-                                  const ultimoDiaMesAnterior = format(endOfMonth(subMonths(mesRef, 1)), 'yyyy-MM-dd');
-                                  await encerrarPeriodoInativo(aluno.id, ultimoDiaMesAnterior);
                                   const { error } = await supabase
                                     .from('alunos')
                                     .update({ active: true, data_inativacao: null })
@@ -465,7 +441,6 @@ export const Alunos = () => {
                                       a.id === aluno.id ? { ...a, active: true, data_inativacao: null } : a
                                     )
                                   );
-                                  await loadPeriodosInativos();
                                   toast.success(`${alunoNome} reativado(a) com sucesso.`);
                                   loadMensalidadesDoMes();
                                 } catch (err: any) {
@@ -555,8 +530,6 @@ export const Alunos = () => {
                         } else {
                           (async () => {
                             try {
-                              const ultimoDiaMesAnterior = format(endOfMonth(subMonths(mesRef, 1)), 'yyyy-MM-dd');
-                              await encerrarPeriodoInativo(aluno.id, ultimoDiaMesAnterior);
                               const { error } = await supabase
                                 .from('alunos')
                                 .update({ active: true, data_inativacao: null })
@@ -567,7 +540,6 @@ export const Alunos = () => {
                                   a.id === aluno.id ? { ...a, active: true, data_inativacao: null } : a
                                 )
                               );
-                              await loadPeriodosInativos();
                               toast.success(`${alunoNome} reativado(a) com sucesso.`);
                               loadMensalidadesDoMes();
                             } catch (err: any) {
@@ -753,7 +725,6 @@ export const Alunos = () => {
                   }
                   const primeiroDiaMes = format(mesRef, 'yyyy-MM-dd');
                   try {
-                    await criarPeriodoInativo(aluno.id, user.id, primeiroDiaMes);
                     const { error } = await supabase
                       .from('alunos')
                       .update({ active: false, data_inativacao: primeiroDiaMes })
@@ -764,7 +735,6 @@ export const Alunos = () => {
                         a.id === aluno.id ? { ...a, active: false, data_inativacao: primeiroDiaMes } : a
                       )
                     );
-                    await loadPeriodosInativos();
                     toast.success(`${aluno.nome || aluno.name || 'Aluno'} marcado como inativo a partir de ${format(mesRef, 'MMMM/yyyy', { locale: ptBR })}.`);
                     loadMensalidadesDoMes();
                   } catch (err: any) {
