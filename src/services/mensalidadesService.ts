@@ -19,19 +19,26 @@ export function getFirstDayOfMonth(year: number, month: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Garante que todos os alunos ativos tenham uma mensalidade para o mês. Cria as que faltam com status pendente. */
+/** Último dia do mês em YYYY-MM-DD */
+export function getLastDayOfMonth(year: number, month: number): string {
+  const d = new Date(year, month, 0);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Garante que todos os alunos que estavam ativos naquele mês tenham mensalidade. Cria as que faltam com status pendente. */
 export async function ensureMensalidadesForMonth(
   personalId: string,
   year: number,
   month: number
 ): Promise<void> {
   const dueDate = getFirstDayOfMonth(year, month);
+  const lastDay = getLastDayOfMonth(year, month);
 
   const { data: alunos, error: alunosError } = await supabase
     .from('alunos')
-    .select('id, monthly_fee')
+    .select('id, monthly_fee, data_inativacao')
     .eq('personal_id', personalId)
-    .eq('active', true);
+    .or(`data_inativacao.is.null,data_inativacao.gt.${lastDay}`);
 
   if (alunosError) throw alunosError;
   if (!alunos?.length) return;

@@ -32,6 +32,8 @@ export interface Aluno {
   payment_day: number; // Dia do mês para pagamento (1-31)
   payment_status: 'pago' | 'pendente' | 'atrasado';
   active: boolean;
+  /** Data a partir da qual o aluno ficou inativo (null = ativo). Meses anteriores constam como ativo no histórico. */
+  data_inativacao?: string | null;
   created_at: string;
   updated_at: string;
 }

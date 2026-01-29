@@ -15,8 +15,9 @@ import {
   updateMensalidadeStatus,
   type MensalidadeRow,
 } from '../../services/mensalidadesService';
-import { format, subMonths, addMonths } from 'date-fns';
+import { format, subMonths, addMonths, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseLocalDate } from '../../utils/dateUtils';
 
 export const Alunos = () => {
   const { user } = useAuth();
@@ -111,6 +112,13 @@ export const Alunos = () => {
   const getMensalidadeAluno = (alunoId: string): MensalidadeRow | undefined =>
     mensalidadesMes.find((x) => x.aluno_id === alunoId);
 
+  /** Aluno considerado ativo no mês selecionado: sem data_inativacao ou inativado depois do fim do mês */
+  const activeForThisMonth = (aluno: Aluno): boolean => {
+    if (!aluno.data_inativacao) return true;
+    const fimMes = endOfMonth(mesRef);
+    return parseLocalDate(aluno.data_inativacao) > fimMes;
+  };
+
   const handleDelete = async (id: string, nome: string) => {
     if (!confirm(`Tem certeza que deseja excluir o aluno "${nome}"?`)) {
       return;
@@ -138,13 +146,13 @@ export const Alunos = () => {
   };
 
   const filteredAlunos = alunos.filter((aluno) => {
-    // Usa 'nome' (coluna do banco) se existir, senão usa 'name' (compatibilidade)
     const alunoNome = aluno.nome || aluno.name || '';
     const matchesSearch = alunoNome.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = 
-      statusFilter === 'todos' || 
-      (statusFilter === 'ativo' && aluno.active) ||
-      (statusFilter === 'inativo' && !aluno.active);
+    const ativoNoMes = activeForThisMonth(aluno);
+    const matchesStatus =
+      statusFilter === 'todos' ||
+      (statusFilter === 'ativo' && ativoNoMes) ||
+      (statusFilter === 'inativo' && !ativoNoMes);
     return matchesSearch && matchesStatus;
   });
 
@@ -328,12 +336,12 @@ export const Alunos = () => {
                   return (
                     <tr key={aluno.id} className="border-b border-gray-dark hover:bg-dark-soft transition-colors">
                       <td className="py-4 px-4 text-white">
-                        {aluno.active && (
+                        {activeForThisMonth(aluno) && (
                           <span
                             className={`inline-block w-2 h-2 rounded-full mr-2 ${
                               getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500' : 'bg-primary'
                             }`}
-                          ></span>
+                          />
                         )}
                         {alunoNome}
                       </td>
@@ -341,7 +349,7 @@ export const Alunos = () => {
                         {aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}
                       </td>
                       <td className="py-4 px-4 text-white font-semibold">
-                        {aluno.active ? (
+                        {activeForThisMonth(aluno) ? (
                           currencyFormatter.format(
                             typeof aluno.monthly_fee === 'number'
                               ? aluno.monthly_fee
@@ -352,21 +360,21 @@ export const Alunos = () => {
                         )}
                       </td>
                       <td className="py-4 px-4 text-gray-light">
-                        {aluno.active
+                        {activeForThisMonth(aluno)
                           ? (aluno.frequency_per_week
                               ? `${aluno.frequency_per_week}x/semana`
                               : '-')
                           : '-'}
                       </td>
                       <td className="py-4 px-4 text-gray-light">
-                        {aluno.active
+                        {activeForThisMonth(aluno)
                           ? (aluno.payment_day
                               ? `Todo dia ${aluno.payment_day}`
                               : '-')
                           : '-'}
                       </td>
                       <td className="py-4 px-4">
-                        {aluno.active ? (
+                        {activeForThisMonth(aluno) ? (
                           <button
                             type="button"
                             onClick={async () => {
@@ -415,25 +423,26 @@ export const Alunos = () => {
                         )}
                       </td>
                       <td className="py-4 px-4">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (aluno.active) {
-                              setConfirmInativarAluno(aluno);
-                            } else {
-                              (async () => {
-                                try {
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (activeForThisMonth(aluno)) {
+                          setConfirmInativarAluno(aluno);
+                        } else {
+                          (async () => {
+                            try {
                                   const { error } = await supabase
                                     .from('alunos')
-                                    .update({ active: true })
+                                    .update({ active: true, data_inativacao: null })
                                     .eq('id', aluno.id);
                                   if (error) throw error;
                                   setAlunos((prev) =>
                                     prev.map((a) =>
-                                      a.id === aluno.id ? { ...a, active: true } : a
+                                      a.id === aluno.id ? { ...a, active: true, data_inativacao: null } : a
                                     )
                                   );
                                   toast.success(`${alunoNome} reativado(a) com sucesso.`);
+                                  loadMensalidadesDoMes();
                                 } catch (err: any) {
                                   console.error('Erro ao reativar aluno:', err);
                                   toast.error('Não foi possível reativar o aluno.');
@@ -445,12 +454,12 @@ export const Alunos = () => {
                         >
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              aluno.active
+                              activeForThisMonth(aluno)
                                 ? 'bg-green-500/20 text-green-500'
                                 : 'bg-gray-light/20 text-gray-light'
                             }`}
                           >
-                            {aluno.active ? 'Ativo' : 'Inativo'}
+                            {activeForThisMonth(aluno) ? 'Ativo' : 'Inativo'}
                           </span>
                         </button>
                       </td>
@@ -504,34 +513,35 @@ export const Alunos = () => {
                   {/* Header: Nome e Status */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      {aluno.active && (
+                      {activeForThisMonth(aluno) && (
                         <span
                           className={`flex-shrink-0 w-3 h-3 rounded-full ${
                             getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500' : 'bg-primary'
                           }`}
-                        ></span>
+                        />
                       )}
                       <h3 className="text-white font-semibold truncate">{alunoNome}</h3>
                     </div>
                     <button
                       type="button"
                       onClick={() => {
-                        if (aluno.active) {
+                        if (activeForThisMonth(aluno)) {
                           setConfirmInativarAluno(aluno);
                         } else {
                           (async () => {
                             try {
                               const { error } = await supabase
                                 .from('alunos')
-                                .update({ active: true })
+                                .update({ active: true, data_inativacao: null })
                                 .eq('id', aluno.id);
                               if (error) throw error;
                               setAlunos((prev) =>
                                 prev.map((a) =>
-                                  a.id === aluno.id ? { ...a, active: true } : a
+                                  a.id === aluno.id ? { ...a, active: true, data_inativacao: null } : a
                                 )
                               );
                               toast.success(`${alunoNome} reativado(a) com sucesso.`);
+                              loadMensalidadesDoMes();
                             } catch (err: any) {
                               console.error('Erro ao reativar aluno:', err);
                               toast.error('Não foi possível reativar o aluno.');
@@ -543,12 +553,12 @@ export const Alunos = () => {
                     >
                       <span
                         className={`px-3 py-2 rounded-full text-xs font-medium ${
-                          aluno.active
+                          activeForThisMonth(aluno)
                             ? 'bg-green-500/20 text-green-500'
                             : 'bg-gray-light/20 text-gray-light'
                         }`}
                       >
-                        {aluno.active ? 'Ativo' : 'Inativo'}
+                        {activeForThisMonth(aluno) ? 'Ativo' : 'Inativo'}
                       </span>
                     </button>
                   </div>
@@ -558,7 +568,7 @@ export const Alunos = () => {
                     <div>
                       <p className="text-gray-light text-xs mb-1">Mensalidade</p>
                       <p className="text-white font-semibold">
-                        {aluno.active ? (
+                        {activeForThisMonth(aluno) ? (
                           currencyFormatter.format(
                             typeof aluno.monthly_fee === 'number'
                               ? aluno.monthly_fee
@@ -571,7 +581,7 @@ export const Alunos = () => {
                     </div>
                     <div>
                       <p className="text-gray-light text-xs mb-1">Status Pagamento</p>
-                      {aluno.active ? (
+                      {activeForThisMonth(aluno) ? (
                         <button
                           type="button"
                           onClick={async () => {
@@ -625,7 +635,7 @@ export const Alunos = () => {
                     <div>
                       <p className="text-gray-light text-xs mb-1">Vencimento</p>
                       <p className="text-white">
-                        {aluno.active
+                        {activeForThisMonth(aluno)
                           ? (aluno.payment_day
                               ? `Dia ${aluno.payment_day}`
                               : '-')
@@ -635,7 +645,7 @@ export const Alunos = () => {
                     <div>
                       <p className="text-gray-light text-xs mb-1">Frequência</p>
                       <p className="text-white">
-                        {aluno.active
+                        {activeForThisMonth(aluno)
                           ? (aluno.frequency_per_week
                               ? `${aluno.frequency_per_week}x/semana`
                               : '-')
@@ -693,8 +703,9 @@ export const Alunos = () => {
               Confirmar inativação
             </h2>
             <p className="text-gray-light text-sm mb-4">
-              Se o aluno ficar inativo por 12 meses, ele será removido automaticamente do sistema.
-              Deseja continuar?
+              Você tem certeza que deseja inativar{' '}
+              <strong className="text-white">{confirmInativarAluno.nome || confirmInativarAluno.name || 'este aluno'}</strong>?
+              A partir de <strong className="text-white">{format(mesRef, 'MMMM/yyyy', { locale: ptBR })}</strong> ele constará como inativo.
             </p>
             <div className="flex justify-end gap-3 mt-4">
               <Button
@@ -712,18 +723,20 @@ export const Alunos = () => {
                     setConfirmInativarAluno(null);
                     return;
                   }
+                  const primeiroDiaMes = format(mesRef, 'yyyy-MM-dd');
                   try {
                     const { error } = await supabase
                       .from('alunos')
-                      .update({ active: false })
+                      .update({ active: false, data_inativacao: primeiroDiaMes })
                       .eq('id', aluno.id);
                     if (error) throw error;
                     setAlunos((prev) =>
                       prev.map((a) =>
-                        a.id === aluno.id ? { ...a, active: false } : a
+                        a.id === aluno.id ? { ...a, active: false, data_inativacao: primeiroDiaMes } : a
                       )
                     );
-                    toast.success(`${aluno.nome || aluno.name || 'Aluno'} marcado como inativo.`);
+                    toast.success(`${aluno.nome || aluno.name || 'Aluno'} marcado como inativo a partir de ${format(mesRef, 'MMMM/yyyy', { locale: ptBR })}.`);
+                    loadMensalidadesDoMes();
                   } catch (err: any) {
                     console.error('Erro ao inativar aluno:', err);
                     toast.error('Não foi possível inativar o aluno.');
