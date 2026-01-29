@@ -11,16 +11,29 @@ export function parseLocalDate(dateStr: string): Date {
   return new Date(y, m - 1, d);
 }
 
-/** Retorna YYYY-MM-DD para comparação sem fuso. Aceita string (YYYY-MM-DD ou ISO), Date, null, undefined. */
+/**
+ * Retorna YYYY-MM-DD para comparação (data de calendário, sem mudar com fuso no F5).
+ * - String "YYYY-MM-DD" → devolve igual.
+ * - String ISO com "T" → usa data UTC (o que foi gravado no servidor).
+ * - Date → usa UTC (evita 01/02 00:00 UTC virar 31/01 no Brasil e quebrar "ativo em janeiro").
+ */
 export function toDateOnlyString(value: string | Date | null | undefined): string {
   if (value == null) return '';
   if (value instanceof Date) {
-    const y = value.getFullYear();
-    const m = String(value.getMonth() + 1).padStart(2, '0');
-    const d = String(value.getDate()).padStart(2, '0');
+    const y = value.getUTCFullYear();
+    const m = String(value.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(value.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   }
   const s = String(value).trim();
-  if (s.length >= 10) return s.slice(0, 10);
-  return s;
+  if (s.length < 10) return s;
+  if (s.indexOf('T') !== -1) {
+    const date = new Date(s);
+    if (Number.isNaN(date.getTime())) return s.slice(0, 10);
+    const y = date.getUTCFullYear();
+    const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(date.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  return s.slice(0, 10);
 }
