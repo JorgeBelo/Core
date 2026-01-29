@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, DollarSign, CheckCircle, Clock, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, DollarSign, CheckCircle, Clock, Edit, Trash2, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { ContaFinanceira } from '../../types';
@@ -9,11 +9,13 @@ import { format, startOfMonth, endOfMonth, isWithinInterval, subMonths, addMonth
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { CadastroContaModal } from './CadastroContaModal';
+import { RendaExtraModal } from './RendaExtraModal';
 
 export const Financeiro = () => {
   const { user } = useAuth();
   const [contas, setContas] = useState<ContaFinanceira[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [showRendaExtraModal, setShowRendaExtraModal] = useState(false);
   const [editingConta, setEditingConta] = useState<ContaFinanceira | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -56,10 +58,13 @@ export const Financeiro = () => {
     return isWithinInterval(dataVenc, { start: inicioMes, end: fimMes });
   });
 
-  // Deduplica contas FIXA: mesmo (descricao, valor, tipo) no mesmo mês = 1 linha (evita duplicação por duplo cadastro)
+  // Apenas contas a pagar do mês
+  const contasPagarDoMes = contasDoMesFiltradas.filter((c) => c.tipo === 'pagar');
+
+  // Deduplica contas FIXA no mesmo mês
   const contasMes = (() => {
     const seen = new Set<string>();
-    return contasDoMesFiltradas.filter((conta) => {
+    return contasPagarDoMes.filter((conta) => {
       if (!conta.conta_fixa) return true;
       const key = `${conta.descricao}|${conta.valor}|${conta.tipo}`;
       if (seen.has(key)) return false;
@@ -68,15 +73,13 @@ export const Financeiro = () => {
     });
   })();
 
-  const totalRecebido = contasMes
-    .filter((c) => c.tipo === 'receber' && c.pago)
-    .reduce((sum, c) => sum + c.valor, 0);
+  const totalPendente = contasMes.filter((c) => !c.pago).reduce((sum, c) => sum + c.valor, 0);
+  const totalPago = contasMes.filter((c) => c.pago).reduce((sum, c) => sum + c.valor, 0);
+  const totalMesPagar = totalPendente + totalPago;
 
-  const totalPendente = contasMes
-    .filter((c) => !c.pago)
-    .reduce((sum, c) => sum + c.valor, 0);
-
-  const totalMes = totalRecebido + totalPendente;
+  // Rendas extras do mês (tipo receber)
+  const rendasExtrasMes = contasDoMesFiltradas.filter((c) => c.tipo === 'receber');
+  const totalRendasExtras = rendasExtrasMes.reduce((sum, c) => sum + c.valor, 0);
 
   const handleDeleteConta = async (conta: ContaFinanceira) => {
     if (!confirm(`Deseja realmente excluir a conta "${conta.descricao}"?`)) {
@@ -104,7 +107,7 @@ export const Financeiro = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Financeiro</h1>
-          <p className="text-gray-light text-sm sm:text-base">Controle de contas a pagar e receber por mês</p>
+          <p className="text-gray-light text-sm sm:text-base">Contas a pagar por mês (única, parcelada ou fixa)</p>
         </div>
         <Button
           onClick={() => {
@@ -114,7 +117,7 @@ export const Financeiro = () => {
           className="flex items-center w-full sm:w-auto justify-center min-h-[44px]"
         >
           <Plus size={20} className="mr-2" />
-          Nova Conta
+          Nova conta a pagar
         </Button>
       </div>
 
@@ -150,20 +153,8 @@ export const Financeiro = () => {
         </button>
       </Card>
 
-      {/* Cards de Resumo */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-        <Card>
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-gray-light text-xs sm:text-sm mb-1 truncate">Total Recebido</p>
-              <p className="text-lg sm:text-2xl font-bold text-green-500 truncate">
-                R$ {totalRecebido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-            <CheckCircle className="text-green-500 flex-shrink-0 hidden sm:block" size={32} />
-          </div>
-        </Card>
-
+      {/* Cards: só contas a pagar */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
         <Card>
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
@@ -175,13 +166,23 @@ export const Financeiro = () => {
             <Clock className="text-primary flex-shrink-0 hidden sm:block" size={32} />
           </div>
         </Card>
-
+        <Card>
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <p className="text-gray-light text-xs sm:text-sm mb-1 truncate">Já pago</p>
+              <p className="text-lg sm:text-2xl font-bold text-green-500 truncate">
+                R$ {totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <CheckCircle className="text-green-500 flex-shrink-0 hidden sm:block" size={32} />
+          </div>
+        </Card>
         <Card className="col-span-2 md:col-span-1">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-gray-light text-xs sm:text-sm mb-1 truncate">Total do Mês</p>
+              <p className="text-gray-light text-xs sm:text-sm mb-1 truncate">Total do mês</p>
               <p className="text-lg sm:text-2xl font-bold text-white truncate">
-                R$ {totalMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {totalMesPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
             </div>
             <DollarSign className="text-white flex-shrink-0 hidden sm:block" size={32} />
@@ -189,8 +190,8 @@ export const Financeiro = () => {
         </Card>
       </div>
 
-      {/* Histórico Financeiro */}
-      <Card title="Histórico Financeiro">
+      {/* Contas a pagar do mês */}
+      <Card title="Contas a pagar do mês">
         {/* Desktop Table */}
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
@@ -214,7 +215,7 @@ export const Financeiro = () => {
               ) : contasMes.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="text-center py-8 text-gray-light">
-                    Nenhuma conta encontrada
+                    Nenhuma conta a pagar neste mês
                   </td>
                 </tr>
               ) : (
@@ -228,13 +229,11 @@ export const Financeiro = () => {
                     }`}
                   >
                     <td className="py-4 px-4 text-white">
-                      {conta.tipo === 'pagar' && (
-                        <span
-                          className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                            conta.pago ? 'bg-green-500' : 'bg-primary'
-                          }`}
-                        ></span>
-                      )}
+                      <span
+                        className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                          conta.pago ? 'bg-green-500' : 'bg-primary'
+                        }`}
+                      />
                       {String(conta.descricao).split(' - Parcela')[0]}
                     </td>
                     <td className="py-4 px-4 text-gray-light">
@@ -277,17 +276,8 @@ export const Financeiro = () => {
                               )
                             );
 
-                            const label =
-                              conta.tipo === 'receber'
-                                ? nextPago
-                                  ? 'Recebido'
-                                  : 'Pendente'
-                                : nextPago
-                                ? 'Pago'
-                                : 'Pendente';
-
                             toast.success(
-                              `Status da conta "${conta.descricao}" atualizado para "${label}".`
+                              `Status atualizado para ${nextPago ? 'Pago' : 'Pendente'}.`
                             );
                           } catch (err: any) {
                             console.error('Erro ao atualizar status da conta:', err);
@@ -303,13 +293,7 @@ export const Financeiro = () => {
                               : 'bg-primary/20 text-primary'
                           }`}
                         >
-                          {conta.tipo === 'receber'
-                            ? conta.pago
-                              ? 'Recebido'
-                              : 'Pendente'
-                            : conta.pago
-                            ? 'Pago'
-                            : 'Pendente'}
+                          {conta.pago ? 'Pago' : 'Pendente'}
                         </span>
                       </button>
                     </td>
@@ -346,7 +330,7 @@ export const Financeiro = () => {
           {loading ? (
             <div className="text-center py-8 text-gray-light">Carregando...</div>
           ) : contasMes.length === 0 ? (
-            <div className="text-center py-8 text-gray-light">Nenhuma conta encontrada</div>
+            <div className="text-center py-8 text-gray-light">Nenhuma conta a pagar neste mês</div>
           ) : (
             contasMes.map((conta) => (
               <div
@@ -357,16 +341,13 @@ export const Financeiro = () => {
                     : ''
                 }`}
               >
-                {/* Header: Descrição e Status */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {conta.tipo === 'pagar' && (
-                      <span
-                        className={`flex-shrink-0 w-3 h-3 rounded-full ${
-                          conta.pago ? 'bg-green-500' : 'bg-primary'
-                        }`}
-                      ></span>
-                    )}
+                    <span
+                      className={`flex-shrink-0 w-3 h-3 rounded-full ${
+                        conta.pago ? 'bg-green-500' : 'bg-primary'
+                      }`}
+                    />
                     <h3 className="text-white font-semibold truncate">
                       {String(conta.descricao).split(' - Parcela')[0]}
                     </h3>
@@ -392,18 +373,7 @@ export const Financeiro = () => {
                           )
                         );
 
-                          const label =
-                            conta.tipo === 'receber'
-                              ? nextPago
-                                ? 'Recebido'
-                                : 'Pendente'
-                              : nextPago
-                              ? 'Pago'
-                              : 'Pendente';
-
-                        toast.success(
-                            `Status da conta "${conta.descricao}" atualizado para "${label}".`
-                        );
+                        toast.success(`Status atualizado para ${nextPago ? 'Pago' : 'Pendente'}.`);
                       } catch (err: any) {
                         console.error('Erro ao atualizar status da conta:', err);
                         toast.error('Não foi possível atualizar o status da conta.');
@@ -418,13 +388,7 @@ export const Financeiro = () => {
                           : 'bg-primary/20 text-primary'
                       }`}
                     >
-                      {conta.tipo === 'receber'
-                        ? conta.pago
-                          ? 'Recebido'
-                          : 'Pendente'
-                        : conta.pago
-                        ? 'Pago'
-                        : 'Pendente'}
+                      {conta.pago ? 'Pago' : 'Pendente'}
                     </span>
                   </button>
                 </div>
@@ -487,12 +451,76 @@ export const Financeiro = () => {
         </div>
       </Card>
 
+      {/* Rendas extras: receitas do mês (ex: venda de suplemento, consultoria) */}
+      <Card
+        title="Rendas extras"
+      >
+        <p className="text-gray-light text-sm mb-4">
+          Receitas extras do mês (ex: venda de suplemento, consultoria, aula extra). Cadastre e some aqui.
+        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <Button
+            variant="secondary"
+            onClick={() => setShowRendaExtraModal(true)}
+            className="flex items-center justify-center gap-2 min-h-[44px] w-full sm:w-auto"
+          >
+            <TrendingUp size={20} />
+            Adicionar renda extra
+          </Button>
+          <p className="text-white font-semibold text-lg">
+            Total do mês: R$ {totalRendasExtras.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </p>
+        </div>
+        {rendasExtrasMes.length === 0 ? (
+          <p className="text-gray-light text-sm py-4">Nenhuma renda extra neste mês.</p>
+        ) : (
+          <ul className="space-y-2 border border-gray-dark rounded-lg divide-y divide-gray-dark">
+            {rendasExtrasMes.map((conta) => (
+              <li
+                key={conta.id}
+                className="flex flex-wrap items-center justify-between gap-2 py-3 px-4 hover:bg-dark-soft"
+              >
+                <div>
+                  <p className="text-white font-medium">{conta.descricao}</p>
+                  <p className="text-gray-light text-sm">
+                    {format(new Date(conta.data_vencimento), "d 'de' MMM", { locale: ptBR })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-green-500 font-semibold">
+                    R$ {conta.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteConta(conta)}
+                    className="text-primary hover:text-primary-light text-sm min-h-[44px] px-2"
+                    title="Excluir"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
+
       {showModal && (
         <CadastroContaModal
           conta={editingConta}
           onClose={() => {
             setShowModal(false);
             setEditingConta(null);
+            loadContas();
+          }}
+        />
+      )}
+
+      {showRendaExtraModal && (
+        <RendaExtraModal
+          mesRef={mesRef}
+          onClose={() => {
+            setShowRendaExtraModal(false);
             loadContas();
           }}
         />

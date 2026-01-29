@@ -21,7 +21,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
     valor: conta ? maskCurrencyBRL(conta.valor.toString()) : '',
     data_vencimento: conta?.data_vencimento ?? '',
     // Tipo não é mais escolhido na interface; padrão: 'pagar'
-    tipo: (conta?.tipo as 'pagar' | 'receber') ?? 'pagar',
+    tipo: 'pagar' as const,
     recorrencia: (conta?.conta_fixa
       ? 'fixa'
       : conta?.parcelada
@@ -50,7 +50,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
           descricao: formData.descricao,
           valor,
           data_vencimento: formData.data_vencimento,
-          tipo: formData.tipo,
+          tipo: 'pagar' as const,
         };
 
         const { error } = await supabase
@@ -75,7 +75,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
             descricao: formData.descricao,
             valor,
             data_vencimento: format(dataParcela, 'yyyy-MM-dd'),
-            tipo: formData.tipo,
+            tipo: 'pagar',
             parcelada: false,
             conta_fixa: true,
             pago: false,
@@ -98,10 +98,9 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
           contas.push({
             personal_id: user.id,
             descricao: `${formData.descricao} - Parcela ${i + 1}/${formData.numero_parcelas}`,
-            // IMPORTANTE: valor é o valor de CADA parcela, não o total dividido
             valor,
             data_vencimento: format(dataParcela, 'yyyy-MM-dd'),
-            tipo: formData.tipo,
+            tipo: 'pagar',
             parcelada: true,
             numero_parcelas: formData.numero_parcelas,
             parcela_atual: i + 1,
@@ -124,7 +123,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
         descricao: formData.descricao,
         valor,
         data_vencimento: formData.data_vencimento,
-        tipo: formData.tipo,
+        tipo: 'pagar',
         parcelada: false,
         conta_fixa: false,
         pago: false,
@@ -159,24 +158,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-white mb-2">
-                Tipo *
-              </label>
-              <select
-                required
-                value={formData.tipo}
-                onChange={(e) =>
-                  setFormData({ ...formData, tipo: e.target.value as 'pagar' | 'receber' })
-                }
-                className="input-core w-full"
-              >
-                <option value="pagar">Conta a Pagar</option>
-                <option value="receber">Conta a Receber</option>
-              </select>
-            </div>
-
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-white mb-2">
                 Descrição *
               </label>
@@ -186,7 +168,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
                 value={formData.descricao}
                 onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
                 className="input-core w-full"
-                placeholder="Ex: Aluguel, Mensalidade, Venda de bicicleta, etc"
+                placeholder="Ex: Aluguel, Mensalidade academia, Material, etc"
               />
             </div>
 
@@ -211,7 +193,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
 
             <div>
               <label className="block text-sm font-medium text-white mb-2">
-                {formData.tipo === 'receber' ? 'Data de Recebimento *' : 'Data de Vencimento *'}
+                Data de Vencimento *
               </label>
               <input
                 type="date"
