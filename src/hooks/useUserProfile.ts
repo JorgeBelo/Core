@@ -25,6 +25,21 @@ export const useUserProfile = () => {
         if (error && error.code !== 'PGRST116') throw error;
 
         if (data) {
+          const rawDays = data.agenda_working_days;
+          let agendaWorkingDays: number[] | undefined;
+          if (rawDays == null) {
+            agendaWorkingDays = undefined;
+          } else if (Array.isArray(rawDays)) {
+            agendaWorkingDays = rawDays;
+          } else if (typeof rawDays === 'string') {
+            try {
+              agendaWorkingDays = JSON.parse(rawDays || '[]') as number[];
+            } catch {
+              agendaWorkingDays = undefined;
+            }
+          } else {
+            agendaWorkingDays = undefined;
+          }
           setUserProfile({
             id: data.id,
             name: data.name || data.full_name || authUser.name || 'Personal Trainer',
@@ -34,6 +49,9 @@ export const useUserProfile = () => {
             avatar_url: data.avatar_url || data.avatar || authUser.avatar_url,
             created_at: data.created_at || authUser.created_at,
             updated_at: data.updated_at || authUser.updated_at,
+            agenda_working_days: agendaWorkingDays,
+            agenda_hora_inicio: data.agenda_hora_inicio ?? undefined,
+            agenda_hora_fim: data.agenda_hora_fim ?? undefined,
           });
         } else {
           // Se não existe no banco, usa dados do auth

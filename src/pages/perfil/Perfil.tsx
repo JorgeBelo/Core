@@ -1,11 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
-import { Save, Camera, Link as LinkIcon } from 'lucide-react';
+import { Save, Camera, Link as LinkIcon, Calendar } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import toast from 'react-hot-toast';
 import { maskWhatsApp, unmaskWhatsApp } from '../../utils/masks';
 import { supabase } from '../../lib/supabaseClient';
+
+const DIAS_SEMANA_AGENDA = [
+  { id: 0, label: 'Segunda-feira' },
+  { id: 1, label: 'Terça-feira' },
+  { id: 2, label: 'Quarta-feira' },
+  { id: 3, label: 'Quinta-feira' },
+  { id: 4, label: 'Sexta-feira' },
+  { id: 5, label: 'Sábado' },
+  { id: 6, label: 'Domingo' },
+];
 
 export const Perfil = () => {
   const { userProfile, updateProfile } = useUserProfile();
@@ -19,6 +29,10 @@ export const Perfil = () => {
     avatarUrl: '',
   });
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [agendaWorkingDays, setAgendaWorkingDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
+  const [agendaHoraInicio, setAgendaHoraInicio] = useState('06:00');
+  const [agendaHoraFim, setAgendaHoraFim] = useState('22:00');
+  const [savingAgenda, setSavingAgenda] = useState(false);
 
   useEffect(() => {
     if (userProfile) {
@@ -29,6 +43,14 @@ export const Perfil = () => {
         cref: userProfile.cref || '',
         avatarUrl: userProfile.avatar_url || '',
       });
+      const days = userProfile.agenda_working_days;
+      if (days != null && days.length > 0) {
+        setAgendaWorkingDays(days);
+      } else {
+        setAgendaWorkingDays([0, 1, 2, 3, 4, 5, 6]);
+      }
+      setAgendaHoraInicio(userProfile.agenda_hora_inicio || '06:00');
+      setAgendaHoraFim(userProfile.agenda_hora_fim || '22:00');
     }
   }, [userProfile]);
 
@@ -102,6 +124,37 @@ export const Perfil = () => {
       // Reseta o input para permitir re-upload do mesmo arquivo depois
       e.target.value = '';
     }
+  };
+
+  const handleSaveAgendaSettings = async () => {
+    if (agendaWorkingDays.length === 0) {
+      toast.error('Selecione pelo menos um dia de atendimento.');
+      return;
+    }
+    if (agendaHoraInicio >= agendaHoraFim) {
+      toast.error('O horário de fim deve ser depois do horário de início.');
+      return;
+    }
+    setSavingAgenda(true);
+    try {
+      await updateProfile({
+        agenda_working_days: agendaWorkingDays,
+        agenda_hora_inicio: agendaHoraInicio,
+        agenda_hora_fim: agendaHoraFim,
+      });
+      toast.success('Horários da agenda salvos! A grade será exibida conforme sua configuração.');
+    } catch (error: any) {
+      console.error('Erro ao salvar horários da agenda:', error);
+      toast.error('Erro ao salvar horários da agenda');
+    } finally {
+      setSavingAgenda(false);
+    }
+  };
+
+  const toggleAgendaDay = (id: number) => {
+    setAgendaWorkingDays((prev) =>
+      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id].sort((a, b) => a - b)
+    );
   };
 
   return (
@@ -272,6 +325,76 @@ export const Perfil = () => {
           </form>
         </Card>
       </div>
+
+      {/* Horários para a Agenda - personalização da grade semanal */}
+      <Card
+        title="Horários para a Agenda"
+        className="max-w-2xl"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-light text-sm">
+            Defina em quais dias você atende e o intervalo de horários que aparece na grade da Agenda. Quem atende em academia 24h pode incluir madrugada; quem atende até 22h pode limitar o horário. A agenda exibirá apenas os dias e horários configurados.
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-white mb-2">
+              Dias que atendo
+            </label>
+            <div className="flex flex-wrap gap-3">
+              {DIAS_SEMANA_AGENDA.map((dia) => {
+                const checked = agendaWorkingDays.includes(dia.id);
+                return (
+                  <label
+                    key={dia.id}
+                    className="flex items-center gap-2 cursor-pointer p-2 rounded-lg border border-gray-dark hover:bg-dark-soft transition-colors min-h-[44px]"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleAgendaDay(dia.id)}
+                      className="w-4 h-4 text-primary bg-dark-soft border-gray-dark rounded focus:ring-primary"
+                    />
+                    <span className="text-white text-sm">{dia.label.split('-')[0]}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Horário de início da grade
+              </label>
+              <input
+                type="time"
+                value={agendaHoraInicio}
+                onChange={(e) => setAgendaHoraInicio(e.target.value)}
+                className="input-core w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Horário de fim da grade
+              </label>
+              <input
+                type="time"
+                value={agendaHoraFim}
+                onChange={(e) => setAgendaHoraFim(e.target.value)}
+                className="input-core w-full"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end pt-4 border-t border-gray-dark">
+            <Button
+              onClick={handleSaveAgendaSettings}
+              disabled={savingAgenda}
+              className="min-h-[44px] w-full sm:w-auto"
+            >
+              <Calendar size={18} className="mr-2" />
+              {savingAgenda ? 'Salvando...' : 'Salvar horários da agenda'}
+            </Button>
+          </div>
+        </div>
+      </Card>
 
       {/* Configurações Adicionais */}
       <Card title="Configurações">

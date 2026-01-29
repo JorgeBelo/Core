@@ -10,6 +10,12 @@ export interface User {
   avatar_url?: string;
   created_at: string;
   updated_at: string;
+  /** Dias que atende (0=Segunda .. 6=Domingo). Se vazio/null, agenda usa todos os dias. */
+  agenda_working_days?: number[] | null;
+  /** Horário de início da grade (ex: "06:00"). Se não definido, 06:00. */
+  agenda_hora_inicio?: string | null;
+  /** Horário de fim da grade (ex: "22:00"). Se não definido, 23:00. */
+  agenda_hora_fim?: string | null;
 }
 
 export interface Aluno {

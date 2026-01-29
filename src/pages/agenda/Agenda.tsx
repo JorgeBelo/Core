@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, UserMinus, Trash2 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
+import { useUserProfile } from '../../hooks/useUserProfile';
 import toast from 'react-hot-toast';
 import type { Aluno } from '../../types';
 
@@ -29,8 +30,24 @@ const diasSemana = [
   { id: 6, nome: 'Domingo' },
 ];
 
+/** Gera horários a cada 30 min entre inicio e fim (formato HH:mm). Fim é exclusivo. */
+function generateTimeSlotsBetween(horaInicio: string, horaFim: string): string[] {
+  const [hStart, mStart] = horaInicio.split(':').map(Number);
+  const [hEnd, mEnd] = horaFim.split(':').map(Number);
+  const startMinutes = hStart * 60 + mStart;
+  const endMinutes = hEnd * 60 + mEnd;
+  const slots: string[] = [];
+  for (let min = startMinutes; min < endMinutes; min += 30) {
+    const h = Math.floor(min / 60) % 24;
+    const m = min % 60;
+    slots.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+  }
+  return slots;
+}
+
 export const Agenda = () => {
   const { user } = useAuth();
+  const { userProfile } = useUserProfile();
   const [agendaItems, setAgendaItems] = useState<AgendaItem[]>([]);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,18 +69,20 @@ export const Agenda = () => {
     newAlunoIds: string[];
   } | null>(null);
 
-  // Gerar horários de 6h às 23h com intervalos de 30 minutos
-  const generateTimeSlots = () => {
-    const slots: string[] = [];
-    for (let hour = 6; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        slots.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`);
-      }
-    }
-    return slots;
-  };
+  const workingDays = userProfile?.agenda_working_days != null && userProfile.agenda_working_days.length > 0
+    ? userProfile.agenda_working_days
+    : [0, 1, 2, 3, 4, 5, 6];
+  const agendaHoraInicio = userProfile?.agenda_hora_inicio || '06:00';
+  const agendaHoraFim = userProfile?.agenda_hora_fim || '23:00';
 
-  const timeSlots = generateTimeSlots();
+  const diasSemanaFiltered = useMemo(
+    () => diasSemana.filter((d) => workingDays.includes(d.id)),
+    [workingDays]
+  );
+  const timeSlots = useMemo(
+    () => generateTimeSlotsBetween(agendaHoraInicio, agendaHoraFim),
+    [agendaHoraInicio, agendaHoraFim]
+  );
 
   useEffect(() => {
     if (user) {
@@ -335,10 +354,18 @@ export const Agenda = () => {
     <div className="space-y-4 sm:space-y-6">
       <div>
         <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Agenda Semanal</h1>
-        <p className="text-gray-light text-sm sm:text-base">Grade semanal fixa - Clique para agendar alunos</p>
+        <p className="text-gray-light text-sm sm:text-base">
+          Grade personalizada conforme seus dias e horários de atendimento. Configure em Perfil → Horários para a Agenda.
+        </p>
       </div>
 
-      {loading ? (
+      {diasSemanaFiltered.length === 0 ? (
+        <Card>
+          <p className="text-gray-light text-center py-8">
+            Nenhum dia de atendimento configurado. Vá em <strong className="text-white">Perfil</strong> → <strong className="text-white">Horários para a Agenda</strong> e selecione os dias e horários em que você atende.
+          </p>
+        </Card>
+      ) : loading ? (
         <div className="text-center py-12 text-gray-light">Carregando...</div>
       ) : (
         <Card>
@@ -349,7 +376,7 @@ export const Agenda = () => {
                     <th className="text-left py-3 px-2 sm:px-4 text-gray-light font-medium w-16 sm:w-24 border-b border-gray-dark sticky left-0 bg-dark-soft z-10">
                       <span className="text-xs sm:text-sm">Horário</span>
                     </th>
-                    {diasSemana.map((dia) => (
+                    {diasSemanaFiltered.map((dia) => (
                       <th
                         key={dia.id}
                         className="text-center py-3 px-2 sm:px-4 text-gray-light font-medium min-w-[100px] sm:min-w-[150px] border-b border-gray-dark"
@@ -367,7 +394,7 @@ export const Agenda = () => {
                     <td className="py-2 px-2 sm:px-4 text-gray-light font-medium text-xs sm:text-sm sticky left-0 bg-dark-soft z-10 border-r border-gray-dark">
                       {hora}
                     </td>
-                    {diasSemana.map((dia) => {
+                    {diasSemanaFiltered.map((dia) => {
                       const items = getAgendaForSlot(dia.id, hora);
                       const firstItem = items[0];
                       const isFirstSlot =
