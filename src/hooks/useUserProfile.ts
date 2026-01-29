@@ -72,9 +72,34 @@ export const useUserProfile = () => {
   const updateProfile = async (updates: Partial<User>) => {
     if (!authUser?.id) return;
 
+    const isAgendaOnly =
+      updates.agenda_working_days !== undefined &&
+      updates.agenda_hora_inicio !== undefined &&
+      updates.agenda_hora_fim !== undefined &&
+      Object.keys(updates).every((k) =>
+        ['agenda_working_days', 'agenda_hora_inicio', 'agenda_hora_fim'].includes(k)
+      );
+
     try {
-      // Garante que nunca enviamos name/email nulos para a tabela `users`,
-      // que exige esses campos como NOT NULL.
+      if (isAgendaOnly) {
+        const { error } = await supabase
+          .from('users')
+          .update({
+            agenda_working_days: updates.agenda_working_days,
+            agenda_hora_inicio: updates.agenda_hora_inicio,
+            agenda_hora_fim: updates.agenda_hora_fim,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', authUser.id);
+
+        if (error) throw error;
+
+        setUserProfile((prev) =>
+          prev ? { ...prev, ...updates } : null
+        );
+        return true;
+      }
+
       const safeName =
         updates.name ||
         userProfile?.name ||
@@ -111,7 +136,6 @@ export const useUserProfile = () => {
           phone: safePhone,
           cref: safeCref,
           avatar_url: safeAvatarUrl,
-          // Mantém compatibilidade com possíveis colunas extras
           ...updates,
           updated_at: new Date().toISOString(),
         }, {

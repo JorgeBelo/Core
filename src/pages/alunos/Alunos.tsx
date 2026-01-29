@@ -9,10 +9,17 @@ import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
 import { maskWhatsApp } from '../../utils/masks';
 import toast from 'react-hot-toast';
+import {
+  ensureMensalidadesForMonth,
+  getMensalidadesForMonth,
+  updateMensalidadeStatus,
+  type MensalidadeRow,
+} from '../../services/mensalidadesService';
 
 export const Alunos = () => {
   const { user } = useAuth();
   const [alunos, setAlunos] = useState<Aluno[]>([]);
+  const [mensalidadesMes, setMensalidadesMes] = useState<MensalidadeRow[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'todos' | 'ativo' | 'inativo'>('todos');
   const [showModal, setShowModal] = useState(false);
@@ -20,6 +27,10 @@ export const Alunos = () => {
   const [loading, setLoading] = useState(true);
   const [confirmInativarAluno, setConfirmInativarAluno] = useState<Aluno | null>(null);
   const navigate = useNavigate();
+
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  const mesAtual = hoje.getMonth() + 1;
 
   useEffect(() => {
     if (user) {
@@ -29,7 +40,7 @@ export const Alunos = () => {
 
   const loadAlunos = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -43,28 +54,24 @@ export const Alunos = () => {
       const lista = (data || []) as Aluno[];
       setAlunos(lista);
 
-      // Notificações de vencimento e aniversário (somente ao carregar)
-      const hoje = new Date();
+      await ensureMensalidadesForMonth(user.id, anoAtual, mesAtual);
+      const mens = await getMensalidadesForMonth(user.id, anoAtual, mesAtual);
+      setMensalidadesMes(mens);
+
       const diaHoje = hoje.getDate();
       const mesHoje = hoje.getMonth();
 
       lista.forEach((aluno) => {
         const nome = aluno.nome || aluno.name || 'Aluno';
+        const mensAluno = mens.find((m: MensalidadeRow) => m.aluno_id === aluno.id);
 
-        // Vencimento hoje e ainda não pago
-        if (aluno.payment_day === diaHoje && aluno.payment_status !== 'pago') {
-          toast(`Hoje vence a mensalidade de ${nome}.`, {
-            icon: '💰',
-          });
+        if (aluno.payment_day === diaHoje && mensAluno?.status !== 'pago') {
+          toast(`Hoje vence a mensalidade de ${nome}.`, { icon: '💰' });
         }
-
-        // Aniversário hoje
         if (aluno.birth_date) {
           const dt = new Date(aluno.birth_date);
           if (dt.getDate() === diaHoje && dt.getMonth() === mesHoje) {
-            toast(`Hoje é aniversário de ${nome}! 🎉`, {
-              icon: '🎂',
-            });
+            toast(`Hoje é aniversário de ${nome}! 🎉`, { icon: '🎂' });
           }
         }
       });
@@ -75,6 +82,14 @@ export const Alunos = () => {
       setLoading(false);
     }
   };
+
+  const getStatusAluno = (alunoId: string): 'pago' | 'pendente' | 'atrasado' => {
+    const m = mensalidadesMes.find((x) => x.aluno_id === alunoId);
+    return m?.status || 'pendente';
+  };
+
+  const getMensalidadeAluno = (alunoId: string): MensalidadeRow | undefined =>
+    mensalidadesMes.find((x) => x.aluno_id === alunoId);
 
   const handleDelete = async (id: string, nome: string) => {
     if (!confirm(`Tem certeza que deseja excluir o aluno "${nome}"?`)) {
@@ -121,31 +136,27 @@ export const Alunos = () => {
 
   const alunosAtivos = alunos.filter((a) => a.active);
 
-  const totalRecebido = alunosAtivos
-    .filter((a) => a.payment_status === 'pago')
-    .reduce((sum, a) => {
-      const v = typeof a.monthly_fee === 'number' ? a.monthly_fee : parseFloat(String(a.monthly_fee)) || 0;
-      return sum + v;
-    }, 0);
+  const totalRecebido = mensalidadesMes
+    .filter((m) => m.status === 'pago')
+    .reduce((sum, m) => sum + (typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0), 0);
 
-  const totalPendentes = alunosAtivos
-    .filter((a) => a.payment_status !== 'pago')
-    .reduce((sum, a) => {
-      const v = typeof a.monthly_fee === 'number' ? a.monthly_fee : parseFloat(String(a.monthly_fee)) || 0;
-      return sum + v;
-    }, 0);
+  const totalPendentes = mensalidadesMes
+    .filter((m) => m.status !== 'pago')
+    .reduce((sum, m) => sum + (typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0), 0);
 
-  const totalMes = alunosAtivos.reduce((sum, a) => {
-    const v = typeof a.monthly_fee === 'number' ? a.monthly_fee : parseFloat(String(a.monthly_fee)) || 0;
-    return sum + v;
-  }, 0);
+  const totalMes = mensalidadesMes.reduce(
+    (sum, m) => sum + (typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0),
+    0
+  );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Alunos</h1>
-          <p className="text-gray-light text-sm sm:text-base">Gerencie seus alunos e seus dados</p>
+          <p className="text-gray-light text-sm sm:text-base">
+            Gerencie seus alunos e status de pagamento do mês (referência: {new Date(anoAtual, mesAtual - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })})
+          </p>
         </div>
         <Button 
           onClick={() => {
@@ -268,7 +279,7 @@ export const Alunos = () => {
                         {aluno.active && (
                           <span
                             className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                              aluno.payment_status === 'pago' ? 'bg-green-500' : 'bg-primary'
+                              getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500' : 'bg-primary'
                             }`}
                           ></span>
                         )}
@@ -308,24 +319,23 @@ export const Alunos = () => {
                             type="button"
                             onClick={async () => {
                               if (!user) return;
-                              const current = aluno.payment_status || 'pendente';
-                              const ordem: Array<Aluno['payment_status']> = ['pendente', 'pago'];
+                              const mensAluno = getMensalidadeAluno(aluno.id);
+                              if (!mensAluno) {
+                                toast.error('Mensalidade do mês não encontrada. Recarregue a página.');
+                                return;
+                              }
+                              const current = mensAluno.status || 'pendente';
+                              const ordem: Array<'pendente' | 'pago'> = ['pendente', 'pago'];
                               const idx = ordem.indexOf(current);
                               const next = ordem[(idx + 1) % ordem.length];
 
                               try {
-                                const { error } = await supabase
-                                  .from('alunos')
-                                  .update({ payment_status: next })
-                                  .eq('id', aluno.id);
-                                if (error) throw error;
-
-                                setAlunos((prev) =>
-                                  prev.map((a) =>
-                                    a.id === aluno.id ? { ...a, payment_status: next } : a
+                                await updateMensalidadeStatus(mensAluno.id, next);
+                                setMensalidadesMes((prev) =>
+                                  prev.map((m) =>
+                                    m.id === mensAluno.id ? { ...m, status: next, paid_date: next === 'pago' ? new Date().toISOString().slice(0, 10) : null } : m
                                   )
                                 );
-
                                 toast.success(`Status de pagamento de ${alunoNome} atualizado para "${next}".`);
                               } catch (err: any) {
                                 console.error('Erro ao atualizar status de pagamento:', err);
@@ -336,14 +346,14 @@ export const Alunos = () => {
                           >
                             <span
                               className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                aluno.payment_status === 'pago'
+                                getStatusAluno(aluno.id) === 'pago'
                                   ? 'bg-green-500/20 text-green-500'
                                   : 'bg-primary/20 text-primary'
                               }`}
                             >
-                              {aluno.payment_status === 'pago'
+                              {getStatusAluno(aluno.id) === 'pago'
                                 ? 'Pago'
-                                : aluno.payment_status === 'atrasado'
+                                : getStatusAluno(aluno.id) === 'atrasado'
                                 ? 'Atrasado'
                                 : 'Pendente'}
                             </span>
@@ -445,7 +455,7 @@ export const Alunos = () => {
                       {aluno.active && (
                         <span
                           className={`flex-shrink-0 w-3 h-3 rounded-full ${
-                            aluno.payment_status === 'pago' ? 'bg-green-500' : 'bg-primary'
+                            getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500' : 'bg-primary'
                           }`}
                         ></span>
                       )}
@@ -514,24 +524,22 @@ export const Alunos = () => {
                           type="button"
                           onClick={async () => {
                             if (!user) return;
-                            const current = aluno.payment_status || 'pendente';
-                            const ordem: Array<Aluno['payment_status']> = ['pendente', 'pago'];
+                            const mensAluno = getMensalidadeAluno(aluno.id);
+                            if (!mensAluno) {
+                              toast.error('Mensalidade do mês não encontrada. Recarregue a página.');
+                              return;
+                            }
+                            const current = mensAluno.status || 'pendente';
+                            const ordem: Array<'pendente' | 'pago'> = ['pendente', 'pago'];
                             const idx = ordem.indexOf(current);
                             const next = ordem[(idx + 1) % ordem.length];
-
                             try {
-                              const { error } = await supabase
-                                .from('alunos')
-                                .update({ payment_status: next })
-                                .eq('id', aluno.id);
-                              if (error) throw error;
-
-                              setAlunos((prev) =>
-                                prev.map((a) =>
-                                  a.id === aluno.id ? { ...a, payment_status: next } : a
+                              await updateMensalidadeStatus(mensAluno.id, next);
+                              setMensalidadesMes((prev) =>
+                                prev.map((m) =>
+                                  m.id === mensAluno.id ? { ...m, status: next, paid_date: next === 'pago' ? new Date().toISOString().slice(0, 10) : null } : m
                                 )
                               );
-
                               toast.success(`Status de pagamento de ${alunoNome} atualizado para "${next}".`);
                             } catch (err: any) {
                               console.error('Erro ao atualizar status de pagamento:', err);
@@ -542,14 +550,14 @@ export const Alunos = () => {
                         >
                           <span
                             className={`px-3 py-2 rounded-full text-xs font-medium block text-center ${
-                              aluno.payment_status === 'pago'
+                              getStatusAluno(aluno.id) === 'pago'
                                 ? 'bg-green-500/20 text-green-500'
                                 : 'bg-primary/20 text-primary'
                             }`}
                           >
-                            {aluno.payment_status === 'pago'
+                            {getStatusAluno(aluno.id) === 'pago'
                               ? 'Pago'
-                              : aluno.payment_status === 'atrasado'
+                              : getStatusAluno(aluno.id) === 'atrasado'
                               ? 'Atrasado'
                               : 'Pendente'}
                           </span>

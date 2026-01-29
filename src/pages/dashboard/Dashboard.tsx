@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Users, DollarSign, CheckCircle, Clock, TrendingUp, TrendingDown, ArrowUpCircle } from 'lucide-react';
+import { Users, DollarSign, CheckCircle, Clock, TrendingUp, TrendingDown, ArrowUpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
-import { startOfMonth, endOfMonth, isWithinInterval, format, subMonths } from 'date-fns';
+import { startOfMonth, endOfMonth, isWithinInterval, format, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { getMensalidadesForMonth, ensureMensalidadesForMonth } from '../services/mensalidadesService';
 import {
   LineChart,
   Line,
@@ -28,6 +29,8 @@ const currencyFormatter = new Intl.NumberFormat('pt-BR', {
 export const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const hoje = new Date();
+  const [mesRef, setMesRef] = useState<Date>(() => new Date(hoje.getFullYear(), hoje.getMonth(), 1));
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     alunosTotal: 0,
@@ -59,16 +62,17 @@ export const Dashboard = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (user) {
+      loadMonthData();
+    }
+  }, [user, mesRef]);
+
   const loadDashboardData = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      const hoje = new Date();
-      const inicioMes = startOfMonth(hoje);
-      const fimMes = endOfMonth(hoje);
-
-      // Alunos
       const { data: alunos, error: alunosError } = await supabase
         .from('alunos')
         .select('*')
@@ -79,34 +83,91 @@ export const Dashboard = () => {
       const alunosList = alunos || [];
       const alunosAtivos = alunosList.filter((a: any) => a.active).length;
 
-      const mensalidadesRecebidas = alunosList
-        .filter((a: any) => a.active && a.payment_status === 'pago')
-        .reduce((sum: number, a: any) => {
-          const v =
-            typeof a.monthly_fee === 'number'
-              ? a.monthly_fee
-              : parseFloat(String(a.monthly_fee)) || 0;
-          return sum + v;
-        }, 0);
+      const { data: contas, error: contasError } = await supabase
+        .from('contas_financeiras')
+        .select('*')
+        .eq('personal_id', user.id);
 
-      const mensalidadesPendentes = alunosList
-        .filter((a: any) => a.active && a.payment_status !== 'pago')
-        .reduce((sum: number, a: any) => {
-          const v =
-            typeof a.monthly_fee === 'number'
-              ? a.monthly_fee
-              : parseFloat(String(a.monthly_fee)) || 0;
-          return sum + v;
-        }, 0);
+      if (contasError) throw contasError;
 
+      const contasList = contas || [];
+
+      const chartDataArray = [];
+      for (let i = 5; i >= 0; i--) {
+        const mes = subMonths(hoje, i);
+        const y = mes.getFullYear();
+        const m = mes.getMonth() + 1;
+        const inicioMesChart = startOfMonth(mes);
+        const fimMesChart = endOfMonth(mes);
+
+        await ensureMensalidadesForMonth(user.id, y, m);
+        const mensMes = await getMensalidadesForMonth(user.id, y, m);
+        const mensalidadesRecebidasMes = mensMes
+          .filter((x: any) => x.status === 'pago')
+          .reduce((sum: number, x: any) => sum + (typeof x.amount === 'number' ? x.amount : parseFloat(String(x.amount)) || 0), 0);
+        const mensalidadesPendentesMes = mensMes
+          .filter((x: any) => x.status !== 'pago')
+          .reduce((sum: number, x: any) => sum + (typeof x.amount === 'number' ? x.amount : parseFloat(String(x.amount)) || 0), 0);
+
+        const contasMesChart = contasList.filter((conta: any) => {
+          const dataVenc = new Date(conta.data_vencimento);
+          return isWithinInterval(dataVenc, { start: inicioMesChart, end: fimMesChart });
+        });
+        const contasReceberMes = contasMesChart
+          .filter((c: any) => c.tipo === 'receber' && c.pago)
+          .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
+
+        const faturamentoTotal = mensalidadesRecebidasMes + contasReceberMes;
+
+        chartDataArray.push({
+          mes: format(mes, 'MMM', { locale: ptBR }),
+          faturamento: faturamentoTotal,
+          recebido: mensalidadesRecebidasMes + contasReceberMes,
+          pendente: mensalidadesPendentesMes,
+        });
+      }
+
+      setStats((prev) => ({ ...prev, alunosTotal: alunosList.length, alunosAtivos }));
+      setChartData(chartDataArray);
+    } catch (error: any) {
+      console.error('Erro ao carregar dados do dashboard:', error);
+      toast.error('Erro ao carregar dados do dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMonthData = async () => {
+    if (!user) return;
+
+    try {
+      const y = mesRef.getFullYear();
+      const m = mesRef.getMonth() + 1;
+      const inicioMes = startOfMonth(mesRef);
+      const fimMes = endOfMonth(mesRef);
+
+      await ensureMensalidadesForMonth(user.id, y, m);
+      const mensMes = await getMensalidadesForMonth(user.id, y, m);
+      const mensalidadesRecebidas = mensMes
+        .filter((x: any) => x.status === 'pago')
+        .reduce((sum: number, x: any) => sum + (typeof x.amount === 'number' ? x.amount : parseFloat(String(x.amount)) || 0), 0);
+      const mensalidadesPendentes = mensMes
+        .filter((x: any) => x.status !== 'pago')
+        .reduce((sum: number, x: any) => sum + (typeof x.amount === 'number' ? x.amount : parseFloat(String(x.amount)) || 0), 0);
+
+      const { data: alunos, error: alunosError } = await supabase
+        .from('alunos')
+        .select('id, nome, name')
+        .eq('personal_id', user.id)
+        .eq('active', true);
+
+      if (alunosError) throw alunosError;
+      const alunosList = alunos || [];
+      const idsPendentes = new Set(mensMes.filter((x: any) => x.status !== 'pago').map((x: any) => x.aluno_id));
       const alunosPendentes = alunosList
-        .filter((a: any) => a.active && a.payment_status !== 'pago')
-        .map((a: any) => ({
-          id: a.id,
-          nome: a.nome || a.name || 'Aluno',
-        }));
+        .filter((a: any) => idsPendentes.has(a.id))
+        .map((a: any) => ({ id: a.id, nome: a.nome || a.name || 'Aluno' }));
 
-      // Contas financeiras
       const { data: contas, error: contasError } = await supabase
         .from('contas_financeiras')
         .select('*')
@@ -122,15 +183,12 @@ export const Dashboard = () => {
       const contasPagarPendentes = contasMes
         .filter((c: any) => c.tipo === 'pagar' && !c.pago)
         .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
-
       const contasPagarPagas = contasMes
         .filter((c: any) => c.tipo === 'pagar' && c.pago)
         .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
-
       const contasReceberPendentes = contasMes
         .filter((c: any) => c.tipo === 'receber' && !c.pago)
         .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
-
       const contasReceberPagas = contasMes
         .filter((c: any) => c.tipo === 'receber' && c.pago)
         .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
@@ -148,75 +206,18 @@ export const Dashboard = () => {
           tipo: c.tipo as 'pagar' | 'receber',
         }));
 
-      // Preparar dados para gráfico de evolução do faturamento (últimos 6 meses)
-      const chartDataArray = [];
-      for (let i = 5; i >= 0; i--) {
-        const mes = subMonths(hoje, i);
-        const inicioMesChart = startOfMonth(mes);
-        const fimMesChart = endOfMonth(mes);
-
-        const alunosMesChart = alunosList.filter((a: any) => a.active);
-        const mensalidadesRecebidasMes = alunosMesChart
-          .filter((a: any) => a.payment_status === 'pago')
-          .reduce((sum: number, a: any) => {
-            const v =
-              typeof a.monthly_fee === 'number'
-                ? a.monthly_fee
-                : parseFloat(String(a.monthly_fee)) || 0;
-            return sum + v;
-          }, 0);
-
-        const mensalidadesPendentesMes = alunosMesChart
-          .filter((a: any) => a.payment_status !== 'pago')
-          .reduce((sum: number, a: any) => {
-            const v =
-              typeof a.monthly_fee === 'number'
-                ? a.monthly_fee
-                : parseFloat(String(a.monthly_fee)) || 0;
-            return sum + v;
-          }, 0);
-
-        const contasMesChart = (contas || []).filter((conta: any) => {
-          const dataVenc = new Date(conta.data_vencimento);
-          return isWithinInterval(dataVenc, { start: inicioMesChart, end: fimMesChart });
-        });
-
-        const contasReceberMes = contasMesChart
-          .filter((c: any) => c.tipo === 'receber' && c.pago)
-          .reduce((sum: number, c: any) => sum + (c.valor || 0), 0);
-
-        const faturamentoTotal = mensalidadesRecebidasMes + contasReceberMes;
-
-        chartDataArray.push({
-          mes: format(mes, 'MMM', { locale: ptBR }),
-          faturamento: faturamentoTotal,
-          recebido: mensalidadesRecebidasMes + contasReceberMes,
-          pendente: mensalidadesPendentesMes,
-        });
-      }
-
-      setStats({
-        alunosTotal: alunosList.length,
-        alunosAtivos,
+      setStats((prev) => ({
+        ...prev,
         mensalidadesRecebidas,
         mensalidadesPendentes,
         contasPagarPendentes,
         contasPagarPagas,
         contasReceberPendentes,
         contasReceberPagas,
-      });
-
-      setHighlights({
-        proximosVencimentos,
-        alunosPendentes,
-      });
-
-      setChartData(chartDataArray);
+      }));
+      setHighlights({ proximosVencimentos, alunosPendentes });
     } catch (error: any) {
-      console.error('Erro ao carregar dados do dashboard:', error);
-      toast.error('Erro ao carregar dados do dashboard');
-    } finally {
-      setLoading(false);
+      console.error('Erro ao carregar dados do mês:', error);
     }
   };
 
@@ -232,9 +233,41 @@ export const Dashboard = () => {
       <div>
         <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Dashboard</h1>
         <p className="text-gray-light text-sm sm:text-base">
-          Controle financeiro simples e direto do seu negócio
+          Controle financeiro por mês. Todo mês inicia com alunos pendentes; histórico preservado.
         </p>
       </div>
+
+      {/* Seletor de mês: histórico dos meses anteriores */}
+      <Card className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setMesRef((d) => subMonths(d, 1))}
+            className="min-h-[44px] min-w-[44px] rounded-lg border border-gray-dark text-gray-light hover:bg-dark-soft hover:text-white transition-colors flex items-center justify-center"
+            aria-label="Mês anterior"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <span className="text-white font-semibold min-w-[160px] text-center">
+            {format(mesRef, 'MMMM yyyy', { locale: ptBR })}
+          </span>
+          <button
+            type="button"
+            onClick={() => setMesRef((d) => addMonths(d, 1))}
+            className="min-h-[44px] min-w-[44px] rounded-lg border border-gray-dark text-gray-light hover:bg-dark-soft hover:text-white transition-colors flex items-center justify-center"
+            aria-label="Próximo mês"
+          >
+            <ChevronRight size={24} />
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMesRef(new Date(hoje.getFullYear(), hoje.getMonth(), 1))}
+          className="text-primary hover:text-primary-light text-sm font-medium min-h-[44px] px-3"
+        >
+          Mês atual
+        </button>
+      </Card>
 
       {loading ? (
         <div className="text-center py-12 text-gray-light">Carregando dados...</div>

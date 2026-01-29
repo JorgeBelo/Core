@@ -145,7 +145,14 @@ export const Perfil = () => {
       toast.success('Horários da agenda salvos! A grade será exibida conforme sua configuração.');
     } catch (error: any) {
       console.error('Erro ao salvar horários da agenda:', error);
-      toast.error('Erro ao salvar horários da agenda');
+      const msg = error?.message || '';
+      if (msg.includes('does not exist') || msg.includes('column')) {
+        toast.error(
+          'Colunas da agenda ainda não existem no banco. Execute o script em Supabase: SQL Editor → supabase/migrations/20250127_agenda_settings_users.sql'
+        );
+      } else {
+        toast.error(msg || 'Erro ao salvar horários da agenda');
+      }
     } finally {
       setSavingAgenda(false);
     }

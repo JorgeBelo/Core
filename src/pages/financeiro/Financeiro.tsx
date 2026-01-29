@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Plus, DollarSign, CheckCircle, Clock, Edit, Trash2 } from 'lucide-react';
+import { Plus, DollarSign, CheckCircle, Clock, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { ContaFinanceira } from '../../types';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
-import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, isWithinInterval, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { CadastroContaModal } from './CadastroContaModal';
@@ -16,6 +16,9 @@ export const Financeiro = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingConta, setEditingConta] = useState<ContaFinanceira | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const hoje = new Date();
+  const [mesRef, setMesRef] = useState<Date>(() => new Date(hoje.getFullYear(), hoje.getMonth(), 1));
 
   useEffect(() => {
     if (user) {
@@ -45,10 +48,8 @@ export const Financeiro = () => {
     }
   };
 
-  // Totais do mês atual
-  const hoje = new Date();
-  const inicioMes = startOfMonth(hoje);
-  const fimMes = endOfMonth(hoje);
+  const inicioMes = startOfMonth(mesRef);
+  const fimMes = endOfMonth(mesRef);
 
   const contasMes = contas.filter((conta) => {
     const dataVenc = new Date(conta.data_vencimento);
@@ -91,7 +92,7 @@ export const Financeiro = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Financeiro</h1>
-          <p className="text-gray-light text-sm sm:text-base">Controle de contas a pagar e receber</p>
+          <p className="text-gray-light text-sm sm:text-base">Controle de contas a pagar e receber por mês</p>
         </div>
         <Button
           onClick={() => {
@@ -104,6 +105,38 @@ export const Financeiro = () => {
           Nova Conta
         </Button>
       </div>
+
+      {/* Seletor de mês: contas do mês escolhido; conta única só aparece no mês do vencimento; parcelado mostra parcela do mês */}
+      <Card className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setMesRef((d) => subMonths(d, 1))}
+            className="min-h-[44px] min-w-[44px] rounded-lg border border-gray-dark text-gray-light hover:bg-dark-soft hover:text-white transition-colors flex items-center justify-center"
+            aria-label="Mês anterior"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <span className="text-white font-semibold min-w-[160px] text-center">
+            {format(mesRef, 'MMMM yyyy', { locale: ptBR })}
+          </span>
+          <button
+            type="button"
+            onClick={() => setMesRef((d) => addMonths(d, 1))}
+            className="min-h-[44px] min-w-[44px] rounded-lg border border-gray-dark text-gray-light hover:bg-dark-soft hover:text-white transition-colors flex items-center justify-center"
+            aria-label="Próximo mês"
+          >
+            <ChevronRight size={24} />
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMesRef(new Date(hoje.getFullYear(), hoje.getMonth(), 1))}
+          className="text-primary hover:text-primary-light text-sm font-medium min-h-[44px] px-3"
+        >
+          Voltar ao mês atual
+        </button>
+      </Card>
 
       {/* Cards de Resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
