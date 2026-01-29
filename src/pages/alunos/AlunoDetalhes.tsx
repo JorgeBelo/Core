@@ -10,12 +10,14 @@ import { maskWhatsApp } from '../../utils/masks';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getMensalidadesForMonth, ensureMensalidadesForMonth } from '../../services/mensalidadesService';
 
 export const AlunoDetalhes = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [aluno, setAluno] = useState<Aluno | null>(null);
+  const [statusMes, setStatusMes] = useState<'pago' | 'pendente' | 'atrasado'>('pendente');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,6 +25,18 @@ export const AlunoDetalhes = () => {
       loadAluno();
     }
   }, [id, user]);
+
+  useEffect(() => {
+    if (aluno?.active && user && id) {
+      const hoje = new Date();
+      ensureMensalidadesForMonth(user.id, hoje.getFullYear(), hoje.getMonth() + 1).then(() =>
+        getMensalidadesForMonth(user.id, hoje.getFullYear(), hoje.getMonth() + 1).then((mens) => {
+          const m = mens.find((x) => x.aluno_id === id);
+          setStatusMes(m?.status || 'pendente');
+        })
+      );
+    }
+  }, [aluno, user, id]);
 
   const loadAluno = async () => {
     if (!id || !user) return;
@@ -113,15 +127,15 @@ export const AlunoDetalhes = () => {
                 </p>
               </div>
               <div>
-                <p className="text-gray-light text-sm mb-1">Status de Pagamento</p>
+                <p className="text-gray-light text-sm mb-1">Status do mês (pagamento)</p>
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    aluno.payment_status === 'pago'
+                    statusMes === 'pago'
                       ? 'bg-green-500/20 text-green-500'
                       : 'bg-primary/20 text-primary'
                   }`}
                 >
-                  {aluno.payment_status === 'pago' ? 'Pago' : 'Pendente'}
+                  {statusMes === 'pago' ? 'Pago' : statusMes === 'atrasado' ? 'Atrasado' : 'Pendente'}
                 </span>
               </div>
               <div>
@@ -160,15 +174,15 @@ export const AlunoDetalhes = () => {
               <p className="text-white">Dia {aluno.payment_day || '-'} do mês</p>
             </div>
             <div>
-              <p className="text-gray-light text-sm">Status Atual</p>
+              <p className="text-gray-light text-sm">Status do mês</p>
               <p
                 className={`text-lg font-semibold ${
-                  aluno.payment_status === 'pago'
+                  statusMes === 'pago'
                     ? 'text-green-500'
                     : 'text-primary'
                 }`}
               >
-                {aluno.payment_status === 'pago' ? 'Pago' : 'Pendente'}
+                {statusMes === 'pago' ? 'Pago' : statusMes === 'atrasado' ? 'Atrasado' : 'Pendente'}
               </p>
             </div>
           </div>

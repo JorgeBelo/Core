@@ -8,7 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { startOfMonth, endOfMonth, isWithinInterval, format, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
-import { getMensalidadesForMonth, ensureMensalidadesForMonth } from '../services/mensalidadesService';
+import { getMensalidadesForMonth, ensureMensalidadesForMonth } from '../../services/mensalidadesService';
 import {
   LineChart,
   Line,
@@ -100,7 +100,6 @@ export const Dashboard = () => {
         const inicioMesChart = startOfMonth(mes);
         const fimMesChart = endOfMonth(mes);
 
-        await ensureMensalidadesForMonth(user.id, y, m);
         const mensMes = await getMensalidadesForMonth(user.id, y, m);
         const mensalidadesRecebidasMes = mensMes
           .filter((x: any) => x.status === 'pago')
