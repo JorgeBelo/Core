@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Eye, Filter, Edit, Trash2, CheckCircle, Clock, DollarSign } from 'lucide-react';
+import { Search, Plus, Eye, Filter, Edit, Trash2, CheckCircle, Clock, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { Aluno } from '../../types';
@@ -15,6 +15,8 @@ import {
   updateMensalidadeStatus,
   type MensalidadeRow,
 } from '../../services/mensalidadesService';
+import { format, subMonths, addMonths } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export const Alunos = () => {
   const { user } = useAuth();
@@ -29,14 +31,32 @@ export const Alunos = () => {
   const navigate = useNavigate();
 
   const hoje = new Date();
-  const anoAtual = hoje.getFullYear();
-  const mesAtual = hoje.getMonth() + 1;
+  const [mesRef, setMesRef] = useState<Date>(() => new Date(hoje.getFullYear(), hoje.getMonth(), 1));
+  const anoAtual = mesRef.getFullYear();
+  const mesAtual = mesRef.getMonth() + 1;
 
   useEffect(() => {
     if (user) {
       loadAlunos();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadMensalidadesDoMes();
+    }
+  }, [user, mesRef]);
+
+  const loadMensalidadesDoMes = async () => {
+    if (!user) return;
+    try {
+      await ensureMensalidadesForMonth(user.id, anoAtual, mesAtual);
+      const mens = await getMensalidadesForMonth(user.id, anoAtual, mesAtual);
+      setMensalidadesMes(mens);
+    } catch (error: any) {
+      console.error('Erro ao carregar mensalidades do mês:', error);
+    }
+  };
 
   const loadAlunos = async () => {
     if (!user) return;
@@ -155,7 +175,7 @@ export const Alunos = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Alunos</h1>
           <p className="text-gray-light text-sm sm:text-base">
-            Gerencie seus alunos e status de pagamento do mês (referência: {new Date(anoAtual, mesAtual - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })})
+            Gerencie seus alunos e status de pagamento por mês
           </p>
         </div>
         <Button 
@@ -170,6 +190,38 @@ export const Alunos = () => {
           <span className="sm:hidden">Novo Aluno</span>
         </Button>
       </div>
+
+      {/* Seletor de mês/ano */}
+      <Card className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setMesRef((d) => subMonths(d, 1))}
+            className="min-h-[44px] min-w-[44px] rounded-lg border border-gray-dark text-gray-light hover:bg-dark-soft hover:text-white transition-colors flex items-center justify-center"
+            aria-label="Mês anterior"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <span className="text-white font-semibold min-w-[160px] text-center">
+            {format(mesRef, 'MMMM yyyy', { locale: ptBR })}
+          </span>
+          <button
+            type="button"
+            onClick={() => setMesRef((d) => addMonths(d, 1))}
+            className="min-h-[44px] min-w-[44px] rounded-lg border border-gray-dark text-gray-light hover:bg-dark-soft hover:text-white transition-colors flex items-center justify-center"
+            aria-label="Próximo mês"
+          >
+            <ChevronRight size={24} />
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMesRef(new Date(hoje.getFullYear(), hoje.getMonth(), 1))}
+          className="text-primary hover:text-primary-light text-sm font-medium min-h-[44px] px-3"
+        >
+          Mês atual
+        </button>
+      </Card>
 
       {/* Cards de Resumo - estilo Financeiro */}
       {alunos.length > 0 && (

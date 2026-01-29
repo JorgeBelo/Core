@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { addMonths, format } from 'date-fns';
 import type { ContaFinanceira } from '../../types';
 import { maskCurrencyBRL, unmaskCurrencyBRLToNumber } from '../../utils/masks';
+import { parseLocalDate } from '../../utils/dateUtils';
 
 interface CadastroContaModalProps {
   onClose: () => void;
@@ -42,7 +43,7 @@ export const CadastroContaModal = ({ onClose, conta }: CadastroContaModalProps) 
     setLoading(true);
     try {
       const valor = unmaskCurrencyBRLToNumber(formData.valor);
-      const dataVencimento = new Date(formData.data_vencimento);
+      const dataVencimento = parseLocalDate(formData.data_vencimento);
 
       // Edição de conta existente (atualiza apenas campos básicos)
       if (isEditing && conta) {

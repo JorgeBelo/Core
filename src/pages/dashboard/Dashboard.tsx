@@ -9,6 +9,7 @@ import { startOfMonth, endOfMonth, isWithinInterval, format, subMonths, addMonth
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { getMensalidadesForMonth, ensureMensalidadesForMonth } from '../../services/mensalidadesService';
+import { parseLocalDate } from '../../utils/dateUtils';
 import {
   LineChart,
   Line,
@@ -109,7 +110,7 @@ export const Dashboard = () => {
           .reduce((sum: number, x: any) => sum + (typeof x.amount === 'number' ? x.amount : parseFloat(String(x.amount)) || 0), 0);
 
         const contasMesChart = contasList.filter((conta: any) => {
-          const dataVenc = new Date(conta.data_vencimento);
+          const dataVenc = parseLocalDate(conta.data_vencimento);
           return isWithinInterval(dataVenc, { start: inicioMesChart, end: fimMesChart });
         });
         const contasReceberMes = contasMesChart
@@ -175,7 +176,7 @@ export const Dashboard = () => {
       if (contasError) throw contasError;
 
       const contasMes = (contas || []).filter((conta: any) => {
-        const dataVenc = new Date(conta.data_vencimento);
+        const dataVenc = parseLocalDate(conta.data_vencimento);
         return isWithinInterval(dataVenc, { start: inicioMes, end: fimMes });
       });
 
@@ -196,7 +197,7 @@ export const Dashboard = () => {
         .filter((c: any) => !c.pago)
         .sort(
           (a: any, b: any) =>
-            new Date(a.data_vencimento).getTime() - new Date(b.data_vencimento).getTime()
+            parseLocalDate(a.data_vencimento).getTime() - parseLocalDate(b.data_vencimento).getTime()
         )
         .slice(0, 5)
         .map((c: any) => ({
@@ -486,7 +487,7 @@ export const Dashboard = () => {
                             <span className="text-white">{c.descricao}</span>
                             <span className="text-gray-light">
                               {c.tipo === 'pagar' ? 'A pagar' : 'A receber'} em{' '}
-                              {format(new Date(c.data), "d 'de' MMM", { locale: ptBR })}
+                              {format(parseLocalDate(c.data), "d 'de' MMM", { locale: ptBR })}
                             </span>
                           </div>
                         </li>

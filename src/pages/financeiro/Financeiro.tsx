@@ -8,6 +8,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { format, startOfMonth, endOfMonth, isWithinInterval, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { parseLocalDate } from '../../utils/dateUtils';
 import { CadastroContaModal } from './CadastroContaModal';
 import { RendaExtraModal } from './RendaExtraModal';
 
@@ -54,7 +55,7 @@ export const Financeiro = () => {
   const fimMes = endOfMonth(mesRef);
 
   const contasDoMesFiltradas = contas.filter((conta) => {
-    const dataVenc = new Date(conta.data_vencimento);
+    const dataVenc = parseLocalDate(conta.data_vencimento);
     return isWithinInterval(dataVenc, { start: inicioMes, end: fimMes });
   });
 
@@ -223,7 +224,7 @@ export const Financeiro = () => {
                   <tr
                     key={conta.id}
                     className={`border-b border-gray-dark hover:bg-dark-soft transition-colors ${
-                      !conta.pago && new Date(conta.data_vencimento) < new Date()
+                      !conta.pago && parseLocalDate(conta.data_vencimento) < new Date()
                         ? 'bg-primary/5'
                         : ''
                     }`}
@@ -244,7 +245,7 @@ export const Financeiro = () => {
                         : 'Única'}
                     </td>
                     <td className="py-4 px-4 text-gray-light">
-                      {format(new Date(conta.data_vencimento), "d 'de' MMM 'de' yyyy", {
+                      {format(parseLocalDate(conta.data_vencimento), "d 'de' MMM 'de' yyyy", {
                         locale: ptBR,
                       })}
                     </td>
@@ -336,7 +337,7 @@ export const Financeiro = () => {
               <div
                 key={conta.id}
                 className={`bg-dark-soft border border-gray-dark rounded-lg p-4 space-y-3 ${
-                  !conta.pago && new Date(conta.data_vencimento) < new Date()
+                  !conta.pago && parseLocalDate(conta.data_vencimento) < new Date()
                     ? 'border-primary/50 bg-primary/5'
                     : ''
                 }`}
@@ -419,7 +420,7 @@ export const Financeiro = () => {
                 <div>
                   <p className="text-gray-light text-xs mb-1">Vencimento</p>
                   <p className="text-white text-sm">
-                    {format(new Date(conta.data_vencimento), "d 'de' MMM 'de' yyyy", {
+                    {format(parseLocalDate(conta.data_vencimento), "d 'de' MMM 'de' yyyy", {
                       locale: ptBR,
                     })}
                   </p>
@@ -483,7 +484,7 @@ export const Financeiro = () => {
                 <div>
                   <p className="text-white font-medium">{conta.descricao}</p>
                   <p className="text-gray-light text-sm">
-                    {format(new Date(conta.data_vencimento), "d 'de' MMM", { locale: ptBR })}
+                    {format(parseLocalDate(conta.data_vencimento), "d 'de' MMM", { locale: ptBR })}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
