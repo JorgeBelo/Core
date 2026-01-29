@@ -39,7 +39,7 @@ export const Agenda = () => {
     hora: string;
   } | null>(null);
   const [showAlunoModal, setShowAlunoModal] = useState(false);
-  const [selectedAlunoId, setSelectedAlunoId] = useState<string>('');
+  const [selectedAlunoIds, setSelectedAlunoIds] = useState<string[]>([]);
   const [horaInicio, setHoraInicio] = useState('08:00');
   const [horaFim, setHoraFim] = useState('09:00');
 
@@ -117,75 +117,84 @@ export const Agenda = () => {
     }
   };
 
-  const getAgendaForSlot = (dia: number, hora: string): AgendaItem | undefined => {
-    return agendaItems.find(
-      (item) =>
-        item.dia_semana === dia &&
-        item.hora_inicio <= hora &&
-        item.hora_fim > hora
-    );
+  /** Normaliza hora para HH:mm (banco pode retornar HH:mm:ss). */
+  const normalizeHora = (h: string): string => {
+    if (!h) return h;
+    const parts = String(h).trim().split(':');
+    return `${parts[0].padStart(2, '0')}:${(parts[1] || '00').padStart(2, '0')}`;
+  };
+
+  /** Retorna todos os agendamentos do slot (um horário pode ter até 4 alunos). */
+  const getAgendaForSlot = (dia: number, hora: string): AgendaItem[] => {
+    const h = normalizeHora(hora);
+    return agendaItems.filter((item) => {
+      const start = normalizeHora(String(item.hora_inicio));
+      const end = normalizeHora(String(item.hora_fim));
+      return item.dia_semana === dia && start <= h && end > h;
+    });
+  };
+
+  /** Nome do aluno: do join ou da lista local (evita espaço em branco). */
+  const getAlunoNome = (item: AgendaItem): string => {
+    const fromJoin = item.aluno?.nome || (item.aluno as any)?.name;
+    if (fromJoin) return fromJoin;
+    const local = alunos.find((a) => a.id === item.aluno_id);
+    return local?.nome || local?.name || 'Aluno';
   };
 
   const handleSlotClick = (dia: number, hora: string) => {
-    const existing = getAgendaForSlot(dia, hora);
+    const items = getAgendaForSlot(dia, hora);
 
-    if (existing) {
-      // Se já existe, permitir remover
-      if (confirm('Deseja remover este agendamento?')) {
-        deleteAgendaItem(existing.id);
+    if (items.length > 0) {
+      if (confirm('Remover todos os agendamentos deste horário?')) {
+        deleteAgendaItemsForSlot(dia, hora);
       }
     } else {
-      // Se não existe, abrir modal para selecionar aluno
       setSelectedSlot({ dia, hora });
       setHoraInicio(hora);
-      // Calcular hora fim (padrão 1 hora depois)
       const [h, m] = hora.split(':').map(Number);
       const endHour = (h + 1) % 24;
       setHoraFim(`${endHour.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+      setSelectedAlunoIds([]);
       setShowAlunoModal(true);
     }
   };
 
   const saveAgendaItem = async () => {
-    if (!user || !selectedSlot || !selectedAlunoId) {
-      toast.error('Selecione um aluno');
+    if (!user || !selectedSlot) {
+      toast.error('Dados do horário não encontrados');
       return;
     }
-
+    if (selectedAlunoIds.length === 0) {
+      toast.error('Selecione pelo menos um aluno (até 4)');
+      return;
+    }
     if (!horaInicio || !horaFim) {
       toast.error('Defina as horas de início e fim');
       return;
     }
 
     try {
-      // Verificar se já existe um agendamento no mesmo horário e dia
-      const { data: existing } = await supabase
-        .from('agenda_personal')
-        .select('id')
-        .eq('personal_id', user.id)
-        .eq('dia_semana', selectedSlot.dia)
-        .eq('hora_inicio', horaInicio)
-        .single();
-
-      if (existing) {
-        toast.error('Já existe um agendamento neste horário');
-        return;
-      }
-
-      const { error } = await supabase.from('agenda_personal').insert({
+      const rows = selectedAlunoIds.map((aluno_id) => ({
         personal_id: user.id,
-        aluno_id: selectedAlunoId,
+        aluno_id,
         dia_semana: selectedSlot.dia,
         hora_inicio: horaInicio,
         hora_fim: horaFim,
-      });
+      }));
+
+      const { error } = await supabase.from('agenda_personal').insert(rows);
 
       if (error) throw error;
 
-      toast.success('Horário agendado com sucesso!');
+      toast.success(
+        selectedAlunoIds.length === 1
+          ? 'Horário agendado com sucesso!'
+          : `${selectedAlunoIds.length} alunos agendados com sucesso!`
+      );
       setShowAlunoModal(false);
       setSelectedSlot(null);
-      setSelectedAlunoId('');
+      setSelectedAlunoIds([]);
       loadAgenda();
     } catch (error: any) {
       console.error('Erro ao salvar agendamento:', error);
@@ -196,9 +205,7 @@ export const Agenda = () => {
   const deleteAgendaItem = async (id: string) => {
     try {
       const { error } = await supabase.from('agenda_personal').delete().eq('id', id);
-
       if (error) throw error;
-
       toast.success('Agendamento removido!');
       loadAgenda();
     } catch (error: any) {
@@ -207,24 +214,38 @@ export const Agenda = () => {
     }
   };
 
-  const getSlotStyle = (item: AgendaItem | undefined) => {
-    if (!item) {
+  const deleteAgendaItemsForSlot = async (dia: number, hora: string) => {
+    const items = getAgendaForSlot(dia, hora);
+    try {
+      for (const item of items) {
+        const { error } = await supabase.from('agenda_personal').delete().eq('id', item.id);
+        if (error) throw error;
+      }
+      toast.success('Agendamentos removidos!');
+      loadAgenda();
+    } catch (error: any) {
+      console.error('Erro ao remover agendamentos:', error);
+      toast.error('Erro ao remover agendamentos');
+    }
+  };
+
+  const getSlotStyle = (hasItems: boolean) => {
+    if (!hasItems) {
       return 'bg-dark-soft border border-gray-dark hover:border-primary/50 transition-colors cursor-pointer';
     }
     return 'bg-primary/20 border border-primary text-white cursor-pointer';
   };
 
-  const calculateSlotHeight = (item: AgendaItem | undefined, hora: string) => {
-    if (!item || item.hora_inicio !== hora) return null;
+  const calculateSlotHeight = (firstItem: AgendaItem | undefined, hora: string) => {
+    if (!firstItem || normalizeHora(String(firstItem.hora_inicio)) !== hora) return null;
 
-    const [startH, startM] = item.hora_inicio.split(':').map(Number);
-    const [endH, endM] = item.hora_fim.split(':').map(Number);
+    const [startH, startM] = String(firstItem.hora_inicio).split(':').map(Number);
+    const [endH, endM] = String(firstItem.hora_fim).split(':').map(Number);
 
     const startMinutes = startH * 60 + startM;
     const endMinutes = endH * 60 + endM;
     const durationMinutes = endMinutes - startMinutes;
 
-    // Cada slot de 30 minutos = 48px, então altura = (duração / 30) * 48
     return Math.max(48, (durationMinutes / 30) * 48);
   };
 
@@ -265,9 +286,11 @@ export const Agenda = () => {
                       {hora}
                     </td>
                     {diasSemana.map((dia) => {
-                      const item = getAgendaForSlot(dia.id, hora);
-                      const isFirstSlot = item && item.hora_inicio === hora;
-                      const slotHeight = calculateSlotHeight(item, hora);
+                      const items = getAgendaForSlot(dia.id, hora);
+                      const firstItem = items[0];
+                      const isFirstSlot =
+                        firstItem && normalizeHora(String(firstItem.hora_inicio)) === hora;
+                      const slotHeight = calculateSlotHeight(firstItem, hora);
 
                       return (
                         <td
@@ -275,9 +298,9 @@ export const Agenda = () => {
                           className="py-1 px-1"
                           style={{ position: 'relative', height: '48px' }}
                         >
-                          {isFirstSlot && item && slotHeight ? (
+                          {isFirstSlot && firstItem && slotHeight ? (
                             <div
-                              className={`${getSlotStyle(item)} rounded p-1 sm:p-2 text-xs flex flex-col justify-center min-h-[44px]`}
+                              className={`${getSlotStyle(true)} rounded p-1 sm:p-2 text-xs flex flex-col justify-center min-h-[44px]`}
                               style={{
                                 height: `${slotHeight}px`,
                                 position: 'absolute',
@@ -289,15 +312,15 @@ export const Agenda = () => {
                               onClick={() => handleSlotClick(dia.id, hora)}
                             >
                               <p className="font-semibold truncate text-[10px] sm:text-xs">
-                                {item.aluno?.nome || item.aluno?.name || 'Aluno'}
+                                {items.map((it) => getAlunoNome(it)).join(', ')}
                               </p>
                               <p className="text-[9px] sm:text-xs opacity-80 mt-0.5 sm:mt-1">
-                                {item.hora_inicio} - {item.hora_fim}
+                                {normalizeHora(String(firstItem.hora_inicio))} - {normalizeHora(String(firstItem.hora_fim))}
                               </p>
                             </div>
-                          ) : !item ? (
+                          ) : items.length === 0 ? (
                             <div
-                              className={`${getSlotStyle(item)} rounded p-1 text-center text-xs h-full flex items-center justify-center min-h-[44px]`}
+                              className={`${getSlotStyle(false)} rounded p-1 text-center text-xs h-full flex items-center justify-center min-h-[44px]`}
                               onClick={() => handleSlotClick(dia.id, hora)}
                             >
                               <span className="text-gray-light opacity-50 text-[10px] sm:text-xs">Livre</span>
@@ -326,8 +349,9 @@ export const Agenda = () => {
                 onClick={() => {
                   setShowAlunoModal(false);
                   setSelectedSlot(null);
+                  setSelectedAlunoIds([]);
                 }}
-                className="text-gray-light hover:text-white transition-colors"
+                className="text-gray-light hover:text-white transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 <X size={24} />
               </button>
@@ -371,21 +395,49 @@ export const Agenda = () => {
 
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
-                  Aluno *
+                  Alunos (até 4 no mesmo horário) *
                 </label>
-                <select
-                  value={selectedAlunoId}
-                  onChange={(e) => setSelectedAlunoId(e.target.value)}
-                  className="input-core w-full"
-                  required
-                >
-                  <option value="">Selecione um aluno</option>
-                  {alunos.map((aluno) => (
-                    <option key={aluno.id} value={aluno.id}>
-                      {aluno.nome || aluno.name || 'Sem nome'}
-                    </option>
-                  ))}
-                </select>
+                <p className="text-xs text-gray-light mb-2">
+                  Marque os alunos que atendem juntos neste horário (dupla, trio ou grupo de 4).
+                </p>
+                <div className="max-h-48 overflow-y-auto space-y-2 border border-gray-dark rounded-lg p-3 bg-dark">
+                  {alunos.map((aluno) => {
+                    const id = aluno.id;
+                    const checked = selectedAlunoIds.includes(id);
+                    const disabled =
+                      !checked && selectedAlunoIds.length >= 4;
+                    return (
+                      <label
+                        key={id}
+                        className={`flex items-center gap-3 cursor-pointer p-2 rounded-lg border transition-colors ${
+                          disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-dark-soft'
+                        } ${checked ? 'border-primary bg-primary/10' : 'border-gray-dark'}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={disabled}
+                          onChange={() => {
+                            if (checked) {
+                              setSelectedAlunoIds((prev) => prev.filter((x) => x !== id));
+                            } else if (selectedAlunoIds.length < 4) {
+                              setSelectedAlunoIds((prev) => [...prev, id]);
+                            }
+                          }}
+                          className="w-4 h-4 text-primary bg-dark-soft border-gray-dark rounded focus:ring-primary"
+                        />
+                        <span className="text-white text-sm">
+                          {aluno.nome || aluno.name || 'Sem nome'}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                {selectedAlunoIds.length > 0 && (
+                  <p className="text-xs text-gray-light mt-2">
+                    {selectedAlunoIds.length} aluno(s) selecionado(s)
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-4 border-t border-gray-dark">
@@ -394,6 +446,7 @@ export const Agenda = () => {
                   onClick={() => {
                     setShowAlunoModal(false);
                     setSelectedSlot(null);
+                    setSelectedAlunoIds([]);
                   }}
                   className="min-h-[44px] w-full sm:w-auto"
                 >
