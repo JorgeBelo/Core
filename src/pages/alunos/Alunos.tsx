@@ -162,17 +162,21 @@ export const Alunos = () => {
     minimumFractionDigits: 2,
   });
 
-  const alunosAtivos = alunos.filter((a) => a.active);
+  /** Mensalidades só de alunos ativos no mês selecionado (para os cards de resumo) */
+  const mensalidadesAtivosNoMes = mensalidadesMes.filter((m) => {
+    const aluno = alunos.find((a) => a.id === m.aluno_id);
+    return aluno ? activeForThisMonth(aluno) : false;
+  });
 
-  const totalRecebido = mensalidadesMes
+  const totalRecebido = mensalidadesAtivosNoMes
     .filter((m) => m.status === 'pago')
     .reduce((sum, m) => sum + (typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0), 0);
 
-  const totalPendentes = mensalidadesMes
+  const totalPendentes = mensalidadesAtivosNoMes
     .filter((m) => m.status !== 'pago')
     .reduce((sum, m) => sum + (typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0), 0);
 
-  const totalMes = mensalidadesMes.reduce(
+  const totalMes = mensalidadesAtivosNoMes.reduce(
     (sum, m) => sum + (typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0),
     0
   );
