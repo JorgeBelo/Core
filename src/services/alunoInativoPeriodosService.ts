@@ -10,7 +10,7 @@ export interface PeriodoInativo {
   created_at: string;
 }
 
-/** Busca todos os períodos de inatividade dos alunos do personal */
+/** Busca todos os períodos de inatividade dos alunos do personal. Em erro (ex.: tabela não existe), retorna []. */
 export async function getPeriodosInativos(personalId: string): Promise<PeriodoInativo[]> {
   const { data, error } = await supabase
     .from('aluno_inativo_periodos')
@@ -18,7 +18,10 @@ export async function getPeriodosInativos(personalId: string): Promise<PeriodoIn
     .eq('personal_id', personalId)
     .order('data_inicio', { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    console.warn('getPeriodosInativos:', error.message);
+    return [];
+  }
   return (data || []) as PeriodoInativo[];
 }
 

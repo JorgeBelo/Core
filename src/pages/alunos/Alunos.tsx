@@ -81,16 +81,18 @@ export const Alunos = () => {
 
     setLoading(true);
     try {
-      const [alunosRes, periodos] = await Promise.all([
-        supabase.from('alunos').select('*').eq('personal_id', user.id).order('created_at', { ascending: false }),
-        getPeriodosInativos(user.id),
-      ]);
+      const { data, error } = await supabase
+        .from('alunos')
+        .select('*')
+        .eq('personal_id', user.id)
+        .order('created_at', { ascending: false });
 
-      const { data, error } = alunosRes;
       if (error) throw error;
 
       const lista = (data || []) as Aluno[];
       setAlunos(lista);
+
+      const periodos = await getPeriodosInativos(user.id);
       setPeriodosInativos(periodos);
 
       await ensureMensalidadesForMonth(user.id, anoAtual, mesAtual);
