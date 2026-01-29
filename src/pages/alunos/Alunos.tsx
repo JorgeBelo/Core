@@ -17,7 +17,7 @@ import {
 } from '../../services/mensalidadesService';
 import { format, subMonths, addMonths, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { parseLocalDate } from '../../utils/dateUtils';
+import { toDateOnlyString } from '../../utils/dateUtils';
 
 export const Alunos = () => {
   const { user } = useAuth();
@@ -112,11 +112,12 @@ export const Alunos = () => {
   const getMensalidadeAluno = (alunoId: string): MensalidadeRow | undefined =>
     mensalidadesMes.find((x) => x.aluno_id === alunoId);
 
-  /** Aluno considerado ativo no mês selecionado: sem data_inativacao ou inativado depois do fim do mês */
+  /** Aluno considerado ativo no mês selecionado: sem data_inativacao ou inativado depois do fim do mês (compara só YYYY-MM-DD para evitar fuso) */
   const activeForThisMonth = (aluno: Aluno): boolean => {
     if (!aluno.data_inativacao) return true;
-    const fimMes = endOfMonth(mesRef);
-    return parseLocalDate(aluno.data_inativacao) > fimMes;
+    const ultimoDiaMesStr = format(endOfMonth(mesRef), 'yyyy-MM-dd');
+    const dataInativacaoStr = toDateOnlyString(aluno.data_inativacao);
+    return dataInativacaoStr > ultimoDiaMesStr;
   };
 
   const handleDelete = async (id: string, nome: string) => {
