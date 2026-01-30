@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Eye, Edit, Trash2, CheckCircle, Clock, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Trash2, CheckCircle, Clock, DollarSign } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { Aluno } from '../../types';
@@ -15,7 +15,7 @@ import {
   updateMensalidadeStatus,
   type MensalidadeRow,
 } from '../../services/mensalidadesService';
-import { format, subMonths, addMonths, endOfMonth } from 'date-fns';
+import { format, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toDateOnlyString } from '../../utils/dateUtils';
 
@@ -31,9 +31,9 @@ export const Alunos = () => {
   const navigate = useNavigate();
 
   const hoje = new Date();
-  const [mesRef, setMesRef] = useState<Date>(() => new Date(hoje.getFullYear(), hoje.getMonth(), 1));
-  const anoAtual = mesRef.getFullYear();
-  const mesAtual = mesRef.getMonth() + 1;
+  const inicioMesAtual = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  const anoAtual = hoje.getFullYear();
+  const mesAtual = hoje.getMonth() + 1;
 
   useEffect(() => {
     if (user) {
@@ -45,7 +45,7 @@ export const Alunos = () => {
     if (user) {
       loadMensalidadesDoMes();
     }
-  }, [user, mesRef]);
+  }, [user, anoAtual, mesAtual]);
 
   const loadMensalidadesDoMes = async () => {
     if (!user) return;
@@ -111,9 +111,9 @@ export const Alunos = () => {
   const getMensalidadeAluno = (alunoId: string): MensalidadeRow | undefined =>
     mensalidadesMes.find((x) => x.aluno_id === alunoId);
 
-  /** Aluno ativo no mês: não inativado no mês OU reativado a partir de um mês que já passou (compara YYYY-MM-DD). */
+  /** Aluno ativo no mês atual: não inativado no mês OU reativado a partir de um mês que já passou (compara YYYY-MM-DD). */
   const activeForThisMonth = (aluno: Aluno): boolean => {
-    const ultimoDiaMesStr = format(endOfMonth(mesRef), 'yyyy-MM-dd');
+    const ultimoDiaMesStr = format(endOfMonth(inicioMesAtual), 'yyyy-MM-dd');
     const dataInativacao = aluno.data_inativacao;
     const dataReativacao = aluno.data_reativacao;
     const inativacaoStr = dataInativacao ? toDateOnlyString(dataInativacao) : '';
@@ -207,38 +207,6 @@ export const Alunos = () => {
         </div>
       </div>
 
-      {/* Seletor de mês/ano */}
-      <Card className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setMesRef((d) => subMonths(d, 1))}
-            className="min-h-[44px] min-w-[44px] rounded-lg border border-gray-dark text-gray-light hover:bg-dark-soft hover:text-white transition-colors flex items-center justify-center"
-            aria-label="Mês anterior"
-          >
-            <ChevronLeft size={24} />
-          </button>
-          <span className="text-white font-semibold min-w-[160px] text-center">
-            {format(mesRef, 'MMMM yyyy', { locale: ptBR })}
-          </span>
-          <button
-            type="button"
-            onClick={() => setMesRef((d) => addMonths(d, 1))}
-            className="min-h-[44px] min-w-[44px] rounded-lg border border-gray-dark text-gray-light hover:bg-dark-soft hover:text-white transition-colors flex items-center justify-center"
-            aria-label="Próximo mês"
-          >
-            <ChevronRight size={24} />
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={() => setMesRef(new Date(hoje.getFullYear(), hoje.getMonth(), 1))}
-          className="text-primary hover:text-primary-light text-sm font-medium min-h-[44px] px-3"
-        >
-          Mês atual
-        </button>
-      </Card>
-
       {/* Cards de Resumo - estilo Financeiro */}
       {alunos.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
@@ -297,7 +265,7 @@ export const Alunos = () => {
       {/* Seção 1: Alunos ativos no mês (lista principal com pagamentos) */}
       <Card>
         <h2 className="text-lg font-semibold text-white mb-4">
-          Alunos ativos em {format(mesRef, 'MMMM/yyyy', { locale: ptBR })}
+          Alunos ativos em {format(inicioMesAtual, 'MMMM/yyyy', { locale: ptBR })}
         </h2>
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
@@ -490,7 +458,7 @@ export const Alunos = () => {
             <p className="text-gray-light text-sm mb-4">
               Você tem certeza que deseja inativar{' '}
               <strong className="text-white">{confirmInativarAluno.nome || confirmInativarAluno.name || 'este aluno'}</strong>?
-              A partir de <strong className="text-white">{format(mesRef, 'MMMM/yyyy', { locale: ptBR })}</strong> ele constará como inativo.
+              A partir de <strong className="text-white">{format(inicioMesAtual, 'MMMM/yyyy', { locale: ptBR })}</strong> ele constará como inativo.
             </p>
             <div className="flex justify-end gap-3 mt-4">
               <Button
@@ -508,8 +476,8 @@ export const Alunos = () => {
                     setConfirmInativarAluno(null);
                     return;
                   }
-                  const y = mesRef.getFullYear();
-                  const m = mesRef.getMonth() + 1;
+                  const y = hoje.getFullYear();
+                  const m = hoje.getMonth() + 1;
                   const primeiroDiaMes = `${y}-${String(m).padStart(2, '0')}-01`;
                   try {
                     const { error } = await supabase
@@ -522,7 +490,7 @@ export const Alunos = () => {
                         a.id === aluno.id ? { ...a, active: false, data_inativacao: primeiroDiaMes } : a
                       )
                     );
-                    toast.success(`${aluno.nome || aluno.name || 'Aluno'} marcado como inativo a partir de ${format(mesRef, 'MMMM/yyyy', { locale: ptBR })}.`);
+                    toast.success(`${aluno.nome || aluno.name || 'Aluno'} marcado como inativo a partir de ${format(inicioMesAtual, 'MMMM/yyyy', { locale: ptBR })}.`);
                     loadMensalidadesDoMes();
                   } catch (err: any) {
                     console.error('Erro ao inativar aluno:', err);
