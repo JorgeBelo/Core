@@ -148,13 +148,9 @@ export const Alunos = () => {
   };
 
   const alunosAtivosNoMes = alunos.filter((a) => activeForThisMonth(a));
-  const alunosInativosNoMes = alunos.filter((a) => !activeForThisMonth(a));
   const matchesSearch = (nome: string) =>
     nome.toLowerCase().includes(searchTerm.toLowerCase().trim());
   const filteredAtivosNoMes = alunosAtivosNoMes.filter((a) =>
-    matchesSearch(a.nome || a.name || '')
-  );
-  const filteredInativosNoMes = alunosInativosNoMes.filter((a) =>
     matchesSearch(a.nome || a.name || '')
   );
 
@@ -187,11 +183,15 @@ export const Alunos = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Alunos</h1>
           <p className="text-gray-light text-sm sm:text-base">
-            Gerencie seus alunos e status de pagamento por mês
+            Gerencie seus alunos e status de pagamento por mês. Quem for inativado some daqui e fica em <strong className="text-white">Alunos → Inativos</strong> com a data registrada.
           </p>
         </div>
-        <Button 
-          onClick={() => {
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="secondary" onClick={() => navigate('/alunos/inativos')} className="min-h-[44px]">
+            Ver inativos
+          </Button>
+          <Button
+            onClick={() => {
             setEditingAluno(null);
             setShowModal(true);
           }}
@@ -201,6 +201,7 @@ export const Alunos = () => {
           <span className="hidden sm:inline">Cadastrar Novo Aluno</span>
           <span className="sm:hidden">Novo Aluno</span>
         </Button>
+        </div>
       </div>
 
       {/* Seletor de mês/ano */}
@@ -458,127 +459,6 @@ export const Alunos = () => {
                     <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="flex items-center gap-2 text-primary hover:text-primary-light text-sm min-h-[44px]"><Eye size={18} /> Ver</button>
                     <button onClick={() => handleEdit(aluno)} className="flex items-center gap-2 text-yellow-500 hover:text-yellow-400 text-sm min-h-[44px]"><Edit size={18} /> Editar</button>
                     <button onClick={() => handleDelete(aluno.id, alunoNome)} className="flex items-center gap-2 text-primary hover:text-primary-light text-sm min-h-[44px]"><Trash2 size={18} /> Excluir</button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </Card>
-
-      {/* Seção 2: Alunos inativos no mês (só a partir do mês da inativação; históricos passados ficam na seção de ativos) */}
-      <Card>
-        <h2 className="text-lg font-semibold text-white mb-4">
-          Alunos inativos em {format(mesRef, 'MMMM/yyyy', { locale: ptBR })}
-        </h2>
-        <p className="text-gray-light text-sm mb-4">
-          Aparecem aqui apenas quem está inativo a partir deste mês. Em meses anteriores eles continuam na lista de ativos (histórico).
-        </p>
-        <div className="hidden lg:block overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-dark">
-                <th className="text-left py-3 px-4 text-gray-light font-medium">Aluno</th>
-                <th className="text-left py-3 px-4 text-gray-light font-medium">WhatsApp</th>
-                <th className="text-left py-3 px-4 text-gray-light font-medium">Inativo desde</th>
-                <th className="text-left py-3 px-4 text-gray-light font-medium">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredInativosNoMes.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-center py-8 text-gray-light">
-                    {searchTerm.trim() ? 'Nenhum aluno inativo encontrado' : 'Nenhum aluno inativo neste mês'}
-                  </td>
-                </tr>
-              ) : (
-                filteredInativosNoMes.map((aluno) => {
-                  const alunoNome = aluno.nome || aluno.name || 'Sem nome';
-                  const inativoDesde = (() => {
-                    const d = aluno.data_inativacao;
-                    if (!d || String(d).length < 10) return '-';
-                    const [y, m] = String(d).slice(0, 10).split('-').map(Number);
-                    return format(new Date(y, m - 1, 1), 'MMMM/yyyy', { locale: ptBR });
-                  })();
-                  return (
-                    <tr key={aluno.id} className="border-b border-gray-dark hover:bg-dark-soft transition-colors">
-                      <td className="py-4 px-4 text-white">{alunoNome}</td>
-                      <td className="py-4 px-4 text-gray-light">{aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}</td>
-                      <td className="py-4 px-4 text-gray-light">{inativoDesde}</td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                const { error } = await supabase.from('alunos').update({ active: true, data_inativacao: null }).eq('id', aluno.id);
-                                if (error) throw error;
-                                setAlunos((prev) => prev.map((a) => (a.id === aluno.id ? { ...a, active: true, data_inativacao: null } : a)));
-                                toast.success(`${alunoNome} reativado(a).`);
-                                loadMensalidadesDoMes();
-                              } catch (err: any) {
-                                console.error('Erro ao reativar:', err);
-                                toast.error('Não foi possível reativar.');
-                              }
-                            }}
-                            className="text-green-500 hover:text-green-400 text-sm font-medium min-h-[44px]"
-                          >
-                            Reativar
-                          </button>
-                          <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Ver"><Eye size={18} /></button>
-                          <button onClick={() => handleEdit(aluno)} className="text-yellow-500 hover:text-yellow-400 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Editar"><Edit size={18} /></button>
-                          <button onClick={() => handleDelete(aluno.id, alunoNome)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Excluir"><Trash2 size={18} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="lg:hidden space-y-4">
-          {filteredInativosNoMes.length === 0 ? (
-            <div className="text-center py-8 text-gray-light">
-              {searchTerm.trim() ? 'Nenhum aluno inativo encontrado' : 'Nenhum aluno inativo neste mês'}
-            </div>
-          ) : (
-            filteredInativosNoMes.map((aluno) => {
-              const alunoNome = aluno.nome || aluno.name || 'Sem nome';
-              const inativoDesde = (() => {
-                const d = aluno.data_inativacao;
-                if (!d || String(d).length < 10) return '-';
-                const [y, m] = String(d).slice(0, 10).split('-').map(Number);
-                return format(new Date(y, m - 1, 1), 'MMMM/yyyy', { locale: ptBR });
-              })();
-              return (
-                <div key={aluno.id} className="bg-dark-soft border border-gray-dark rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-white font-semibold truncate">{alunoNome}</h3>
-                    <span className="text-gray-light text-xs shrink-0">Desde {inativoDesde}</span>
-                  </div>
-                  {aluno.whatsapp && <p className="text-gray-light text-sm">{maskWhatsApp(aluno.whatsapp)}</p>}
-                  <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-dark">
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const { error } = await supabase.from('alunos').update({ active: true, data_inativacao: null }).eq('id', aluno.id);
-                          if (error) throw error;
-                          setAlunos((prev) => prev.map((a) => (a.id === aluno.id ? { ...a, active: true, data_inativacao: null } : a)));
-                          toast.success(`${alunoNome} reativado(a).`);
-                          loadMensalidadesDoMes();
-                        } catch (err: any) {
-                          toast.error('Não foi possível reativar.');
-                        }
-                      }}
-                      className="text-green-500 hover:text-green-400 text-sm font-medium min-h-[44px] px-4"
-                    >
-                      Reativar
-                    </button>
-                    <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="text-primary hover:text-primary-light text-sm min-h-[44px] px-4">Ver</button>
-                    <button onClick={() => handleEdit(aluno)} className="text-yellow-500 hover:text-yellow-400 text-sm min-h-[44px] px-4">Editar</button>
-                    <button onClick={() => handleDelete(aluno.id, alunoNome)} className="text-primary hover:text-primary-light text-sm min-h-[44px] px-4">Excluir</button>
                   </div>
                 </div>
               );

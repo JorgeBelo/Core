@@ -4,16 +4,24 @@ import {
   Calendar, 
   DollarSign, 
   Bell,
-  User as UserIcon
+  User as UserIcon,
+  ChevronDown
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { Logo } from '../common/Logo';
 import { NotificationsDropdown } from '../common/NotificationsDropdown';
 import { ProfileDropdown } from '../common/ProfileDropdown';
 
-const menuItems = [
+type MenuItem = {
+  path: string;
+  icon: React.ComponentType<{ size?: number }>;
+  label: string;
+  children?: { path: string; label: string }[];
+};
+
+const menuItems: MenuItem[] = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/alunos', icon: Users, label: 'Alunos' },
+  { path: '/alunos', icon: Users, label: 'Alunos', children: [{ path: '/alunos/inativos', label: 'Inativos' }] },
   { path: '/agenda', icon: Calendar, label: 'Agenda Semanal' },
   { path: '/financeiro', icon: DollarSign, label: 'Financeiro' },
   { path: '/notificacoes', icon: Bell, label: 'Notificações' },
@@ -21,6 +29,8 @@ const menuItems = [
 ];
 
 export const Sidebar = () => {
+  const location = useLocation();
+
   return (
     <aside className="hidden lg:flex w-64 bg-dark-soft border-r border-gray-dark h-screen fixed left-0 top-0 flex-col">
       <div className="px-6 py-6 mb-4 flex justify-center border-b border-gray-dark">
@@ -31,6 +41,7 @@ export const Sidebar = () => {
         <ul className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const isParentActive = location.pathname === item.path || (item.children?.some((c) => location.pathname === c.path));
             
             return (
               <li key={item.path}>
@@ -38,15 +49,31 @@ export const Sidebar = () => {
                   to={item.path}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                      isActive 
+                      isActive && !item.children
                         ? 'bg-primary text-white' 
+                        : isParentActive && item.children
+                        ? 'bg-dark text-white'
                         : 'text-gray-light hover:bg-dark hover:text-white'
                     }`
                   }
                 >
                   <Icon size={20} />
                   <span className="font-medium">{item.label}</span>
+                  {item.children && <ChevronDown size={16} className="ml-auto opacity-70" />}
                 </NavLink>
+                {item.children?.map((child) => (
+                  <NavLink
+                    key={child.path}
+                    to={child.path}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 pl-10 pr-4 py-2.5 rounded-lg transition-colors text-sm ${
+                        isActive ? 'bg-primary text-white' : 'text-gray-light hover:bg-dark hover:text-white'
+                      }`
+                    }
+                  >
+                    {child.label}
+                  </NavLink>
+                ))}
               </li>
             );
           })}

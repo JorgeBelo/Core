@@ -13,9 +13,16 @@ import { Logo } from '../common/Logo';
 import { NotificationsDropdown } from '../common/NotificationsDropdown';
 import { ProfileDropdown } from '../common/ProfileDropdown';
 
-const menuItems = [
+type MenuItem = {
+  path: string;
+  icon: React.ComponentType<{ size?: number }>;
+  label: string;
+  children?: { path: string; label: string }[];
+};
+
+const menuItems: MenuItem[] = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/alunos', icon: Users, label: 'Alunos' },
+  { path: '/alunos', icon: Users, label: 'Alunos', children: [{ path: '/alunos/inativos', label: 'Inativos' }] },
   { path: '/agenda', icon: Calendar, label: 'Agenda Semanal' },
   { path: '/financeiro', icon: DollarSign, label: 'Financeiro' },
   { path: '/notificacoes', icon: Bell, label: 'Notificações' },
@@ -75,6 +82,7 @@ export const MobileSidebar = () => {
               {menuItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
+                const hasChildActive = item.children?.some((c) => location.pathname === c.path);
                 
                 return (
                   <li key={item.path}>
@@ -82,14 +90,26 @@ export const MobileSidebar = () => {
                       to={item.path}
                       onClick={handleNavClick}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors min-h-[44px] ${
-                        isActive 
+                        isActive && !item.children
                           ? 'bg-primary text-white' 
-                          : 'text-gray-light hover:bg-dark hover:text-white'
+                          : hasChildActive ? 'bg-dark text-white' : 'text-gray-light hover:bg-dark hover:text-white'
                       }`}
                     >
                       <Icon size={20} />
                       <span className="font-medium">{item.label}</span>
                     </NavLink>
+                    {item.children?.map((child) => (
+                      <NavLink
+                        key={child.path}
+                        to={child.path}
+                        onClick={handleNavClick}
+                        className={`flex items-center gap-3 pl-10 pr-4 py-2.5 rounded-lg transition-colors text-sm min-h-[44px] ${
+                          location.pathname === child.path ? 'bg-primary text-white' : 'text-gray-light hover:bg-dark hover:text-white'
+                        }`}
+                      >
+                        {child.label}
+                      </NavLink>
+                    ))}
                   </li>
                 );
               })}
