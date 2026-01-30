@@ -9,10 +9,10 @@ import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
 import { maskWhatsApp } from '../../utils/masks';
 import toast from 'react-hot-toast';
-import { format } from 'date-fns';
+import { format, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-/** Lista todos os alunos inativos (data_inativacao preenchida), com data em que foram inativados. */
+/** Lista alunos inativos (data_inativacao preenchida). Quem tem data_reativacao no mês atual ou passado some da lista. */
 export const AlunosInativos = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -21,6 +21,9 @@ export const AlunosInativos = () => {
   const [loading, setLoading] = useState(true);
   const [editingAluno, setEditingAluno] = useState<Aluno | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [reativarAluno, setReativarAluno] = useState<Aluno | null>(null);
+  const hoje = new Date();
+  const [reativarMesRef, setReativarMesRef] = useState<Date>(() => new Date(hoje.getFullYear(), hoje.getMonth(), 1));
 
   useEffect(() => {
     if (user) loadInativos();
@@ -47,13 +50,20 @@ export const AlunosInativos = () => {
     }
   };
 
-  const formatInativoDesde = (dataInativacao: string | null | undefined): string => {
-    if (!dataInativacao || String(dataInativacao).length < 10) return '-';
-    const [y, m] = String(dataInativacao).slice(0, 10).split('-').map(Number);
+  const formatMesAno = (dataStr: string | null | undefined): string => {
+    if (!dataStr || String(dataStr).length < 10) return '-';
+    const s = String(dataStr).slice(0, 10);
+    const [y, m] = s.split('-').map(Number);
     return format(new Date(y, m - 1, 1), 'MMMM/yyyy', { locale: ptBR });
   };
 
-  const filtered = alunos.filter((a) =>
+  const ultimoDiaMesAtualStr = format(endOfMonth(hoje), 'yyyy-MM-dd');
+  const aindaInativo = (a: Aluno) => {
+    const reat = a.data_reativacao ? String(a.data_reativacao).trim().slice(0, 10) : '';
+    return !reat || reat > ultimoDiaMesAtualStr;
+  };
+  const alunosAindaInativos = alunos.filter(aindaInativo);
+  const filtered = alunosAindaInativos.filter((a) =>
     (a.nome || a.name || '').toLowerCase().includes(searchTerm.toLowerCase().trim())
   );
 
@@ -120,20 +130,19 @@ export const AlunosInativos = () => {
                     <tr key={aluno.id} className="border-b border-gray-dark hover:bg-dark-soft transition-colors">
                       <td className="py-4 px-4 text-white">{nome}</td>
                       <td className="py-4 px-4 text-gray-light">{aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}</td>
-                      <td className="py-4 px-4 text-gray-light">{formatInativoDesde(aluno.data_inativacao)}</td>
+                      <td className="py-4 px-4 text-gray-light">
+                        {formatMesAno(aluno.data_inativacao)}
+                        {aluno.data_reativacao && (
+                          <span className="ml-2 text-green-500 text-xs">(Reativa em {formatMesAno(aluno.data_reativacao)})</span>
+                        )}
+                      </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
                           <button
                             type="button"
-                            onClick={async () => {
-                              try {
-                                const { error } = await supabase.from('alunos').update({ active: true, data_inativacao: null }).eq('id', aluno.id);
-                                if (error) throw error;
-                                setAlunos((prev) => prev.filter((a) => a.id !== aluno.id));
-                                toast.success(`${nome} reativado(a).`);
-                              } catch (err: any) {
-                                toast.error('Não foi possível reativar.');
-                              }
+                            onClick={() => {
+                              setReativarAluno(aluno);
+                              setReativarMesRef(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
                             }}
                             className="text-green-500 hover:text-green-400 text-sm font-medium min-h-[44px]"
                           >
@@ -166,19 +175,18 @@ export const AlunosInativos = () => {
                 <div key={aluno.id} className="bg-dark-soft border border-gray-dark rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="text-white font-semibold truncate">{nome}</h3>
-                    <span className="text-gray-light text-xs shrink-0">Desde {formatInativoDesde(aluno.data_inativacao)}</span>
+                    <span className="text-gray-light text-xs shrink-0">
+                    Desde {formatMesAno(aluno.data_inativacao)}
+                    {aluno.data_reativacao && ` · Reativa em ${formatMesAno(aluno.data_reativacao)}`}
+                  </span>
                   </div>
                   {aluno.whatsapp && <p className="text-gray-light text-sm">{maskWhatsApp(aluno.whatsapp)}</p>}
                   <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-dark">
                     <button
                       type="button"
-                      onClick={async () => {
-                        try {
-                          const { error } = await supabase.from('alunos').update({ active: true, data_inativacao: null }).eq('id', aluno.id);
-                          if (error) throw error;
-                          setAlunos((prev) => prev.filter((a) => a.id !== aluno.id));
-                          toast.success(`${nome} reativado(a).`);
-                        } catch { toast.error('Não foi possível reativar.'); }
+                      onClick={() => {
+                        setReativarAluno(aluno);
+                        setReativarMesRef(new Date(hoje.getFullYear(), hoje.getMonth(), 1));
                       }}
                       className="text-green-500 hover:text-green-400 text-sm font-medium min-h-[44px] px-4"
                     >
@@ -204,6 +212,99 @@ export const AlunosInativos = () => {
             loadInativos();
           }}
         />
+      )}
+
+      {reativarAluno && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-soft border border-gray-dark rounded-lg w-full max-w-md p-6">
+            <h2 className="text-xl font-sans font-semibold text-white mb-4">Reativar aluno</h2>
+            <p className="text-gray-light text-sm mb-4">
+              <strong className="text-white">{reativarAluno.nome || reativarAluno.name || 'Aluno'}</strong>
+              {' '}ficará ativo a partir do mês selecionado. Em meses anteriores continuará inativo no histórico.
+            </p>
+            <div className="mb-4">
+              <label className="block text-gray-light text-sm mb-2">Reativar a partir de</label>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setReativarMesRef((d) => subMonths(d, 1))}
+                  className="min-h-[44px] min-w-[44px] rounded-lg border border-gray-dark text-gray-light hover:bg-dark flex items-center justify-center"
+                  aria-label="Mês anterior"
+                >
+                  ‹
+                </button>
+                <span className="text-white font-semibold min-w-[140px] text-center">
+                  {format(reativarMesRef, 'MMMM/yyyy', { locale: ptBR })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setReativarMesRef((d) => addMonths(d, 1))}
+                  className="min-h-[44px] min-w-[44px] rounded-lg border border-gray-dark text-gray-light hover:bg-dark flex items-center justify-center"
+                  aria-label="Próximo mês"
+                >
+                  ›
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReativarMesRef(new Date(hoje.getFullYear(), hoje.getMonth(), 1))}
+                className="mt-2 text-primary hover:text-primary-light text-sm"
+              >
+                Usar mês atual
+              </button>
+            </div>
+            <div className="flex justify-end gap-3 mt-4">
+              <Button variant="secondary" type="button" onClick={() => setReativarAluno(null)}>
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={async () => {
+                  const aluno = reativarAluno;
+                  if (!aluno || !user) {
+                    setReativarAluno(null);
+                    return;
+                  }
+                  const nome = aluno.nome || aluno.name || 'Aluno';
+                  const isEsteMes =
+                    reativarMesRef.getFullYear() === hoje.getFullYear() &&
+                    reativarMesRef.getMonth() === hoje.getMonth();
+                  const y = reativarMesRef.getFullYear();
+                  const m = reativarMesRef.getMonth() + 1;
+                  const primeiroDia = `${y}-${String(m).padStart(2, '0')}-01`;
+                  try {
+                    if (isEsteMes) {
+                      const { error } = await supabase
+                        .from('alunos')
+                        .update({ active: true, data_inativacao: null, data_reativacao: null })
+                        .eq('id', aluno.id);
+                      if (error) throw error;
+                      setAlunos((prev) => prev.filter((a) => a.id !== aluno.id));
+                      toast.success(`${nome} reativado(a) a partir de agora.`);
+                    } else {
+                      const { error } = await supabase
+                        .from('alunos')
+                        .update({ data_reativacao: primeiroDia })
+                        .eq('id', aluno.id);
+                      if (error) throw error;
+                      setAlunos((prev) =>
+                        prev.map((a) => (a.id === aluno.id ? { ...a, data_reativacao: primeiroDia } : a))
+                      );
+                      toast.success(`${nome} reativado(a) a partir de ${format(reativarMesRef, 'MMMM/yyyy', { locale: ptBR })}.`);
+                    }
+                  } catch (err: any) {
+                    console.error('Erro ao reativar:', err);
+                    toast.error('Não foi possível reativar.');
+                  } finally {
+                    setReativarAluno(null);
+                  }
+                }}
+              >
+                Confirmar
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

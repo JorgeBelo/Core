@@ -34,6 +34,8 @@ export interface Aluno {
   active: boolean;
   /** Data a partir da qual o aluno ficou inativo (null = ativo). Meses anteriores constam como ativo no histórico. */
   data_inativacao?: string | null;
+  /** Data a partir da qual o aluno volta a ser ativo (ex.: reativar "a partir de março"). Null = ainda inativo. */
+  data_reativacao?: string | null;
   created_at: string;
   updated_at: string;
 }

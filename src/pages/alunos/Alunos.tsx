@@ -111,14 +111,17 @@ export const Alunos = () => {
   const getMensalidadeAluno = (alunoId: string): MensalidadeRow | undefined =>
     mensalidadesMes.find((x) => x.aluno_id === alunoId);
 
-  /** Aluno ativo no mês: sem data_inativacao ou data de inativação DEPOIS do último dia do mês (compara só YYYY-MM-DD). */
+  /** Aluno ativo no mês: não inativado no mês OU reativado a partir de um mês que já passou (compara YYYY-MM-DD). */
   const activeForThisMonth = (aluno: Aluno): boolean => {
-    const dataInativacao = aluno.data_inativacao;
-    if (dataInativacao == null || String(dataInativacao).trim() === '') return true;
     const ultimoDiaMesStr = format(endOfMonth(mesRef), 'yyyy-MM-dd');
-    const dataInativacaoStr = toDateOnlyString(dataInativacao);
-    if (!dataInativacaoStr || dataInativacaoStr.length < 10) return true;
-    return dataInativacaoStr > ultimoDiaMesStr;
+    const dataInativacao = aluno.data_inativacao;
+    const dataReativacao = aluno.data_reativacao;
+    const inativacaoStr = dataInativacao ? toDateOnlyString(dataInativacao) : '';
+    const reativacaoStr = dataReativacao ? toDateOnlyString(dataReativacao) : '';
+    const inativoNesteMes = inativacaoStr && inativacaoStr.length >= 10 && inativacaoStr <= ultimoDiaMesStr;
+    const reativadoAteEsteMes = reativacaoStr && reativacaoStr.length >= 10 && reativacaoStr <= ultimoDiaMesStr;
+    if (!inativoNesteMes) return true;
+    return !!reativadoAteEsteMes;
   };
 
   const handleDelete = async (id: string, nome: string) => {
@@ -505,11 +508,13 @@ export const Alunos = () => {
                     setConfirmInativarAluno(null);
                     return;
                   }
-                  const primeiroDiaMes = format(mesRef, 'yyyy-MM-dd');
+                  const y = mesRef.getFullYear();
+                  const m = mesRef.getMonth() + 1;
+                  const primeiroDiaMes = `${y}-${String(m).padStart(2, '0')}-01`;
                   try {
                     const { error } = await supabase
                       .from('alunos')
-                      .update({ active: false, data_inativacao: primeiroDiaMes })
+                      .update({ active: false, data_inativacao: primeiroDiaMes, data_reativacao: null })
                       .eq('id', aluno.id);
                     if (error) throw error;
                     setAlunos((prev) =>

@@ -27,6 +27,17 @@ export function getLastDayOfMonth(year: number, month: number): string {
   return `${year}-${m}-${d}`;
 }
 
+/** Verifica se o aluno está ativo no mês (considera data_inativacao e data_reativacao). */
+export function isAlunoAtivoNoMes(aluno: { data_inativacao?: string | null; data_reativacao?: string | null }, year: number, month: number): boolean {
+  const lastDay = getLastDayOfMonth(year, month);
+  const inativacao = aluno.data_inativacao ? String(aluno.data_inativacao).trim().slice(0, 10) : '';
+  const reativacao = aluno.data_reativacao ? String(aluno.data_reativacao).trim().slice(0, 10) : '';
+  const inativoNesteMes = inativacao.length >= 10 && inativacao <= lastDay;
+  const reativadoAteEsteMes = reativacao.length >= 10 && reativacao <= lastDay;
+  if (!inativoNesteMes) return true;
+  return !!reativadoAteEsteMes;
+}
+
 /** Garante que todos os alunos que estavam ativos naquele mês tenham mensalidade. Cria as que faltam com status pendente. */
 export async function ensureMensalidadesForMonth(
   personalId: string,
@@ -36,14 +47,14 @@ export async function ensureMensalidadesForMonth(
   const dueDate = getFirstDayOfMonth(year, month);
   const lastDay = getLastDayOfMonth(year, month);
 
-  const { data: alunos, error: alunosError } = await supabase
+  const { data: todosAlunos, error: alunosError } = await supabase
     .from('alunos')
-    .select('id, monthly_fee, data_inativacao')
-    .eq('personal_id', personalId)
-    .or(`data_inativacao.is.null,data_inativacao.gt.${lastDay}`);
+    .select('id, monthly_fee, data_inativacao, data_reativacao')
+    .eq('personal_id', personalId);
 
   if (alunosError) throw alunosError;
-  if (!alunos?.length) return;
+  const alunos = (todosAlunos || []).filter((a: any) => isAlunoAtivoNoMes(a, year, month));
+  if (!alunos.length) return;
 
   const { data: existentes, error: existError } = await supabase
     .from('mensalidades')
