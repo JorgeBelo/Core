@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Eye, Filter, Edit, Trash2, CheckCircle, Clock, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Trash2, CheckCircle, Clock, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { Aluno } from '../../types';
@@ -24,7 +24,6 @@ export const Alunos = () => {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [mensalidadesMes, setMensalidadesMes] = useState<MensalidadeRow[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'todos' | 'ativo' | 'inativo'>('todos');
   const [showModal, setShowModal] = useState(false);
   const [editingAluno, setEditingAluno] = useState<Aluno | null>(null);
   const [loading, setLoading] = useState(true);
@@ -148,16 +147,16 @@ export const Alunos = () => {
     setShowModal(true);
   };
 
-  const filteredAlunos = alunos.filter((aluno) => {
-    const alunoNome = aluno.nome || aluno.name || '';
-    const matchesSearch = alunoNome.toLowerCase().includes(searchTerm.toLowerCase());
-    const ativoNoMes = activeForThisMonth(aluno);
-    const matchesStatus =
-      statusFilter === 'todos' ||
-      (statusFilter === 'ativo' && ativoNoMes) ||
-      (statusFilter === 'inativo' && !ativoNoMes);
-    return matchesSearch && matchesStatus;
-  });
+  const alunosAtivosNoMes = alunos.filter((a) => activeForThisMonth(a));
+  const alunosInativosNoMes = alunos.filter((a) => !activeForThisMonth(a));
+  const matchesSearch = (nome: string) =>
+    nome.toLowerCase().includes(searchTerm.toLowerCase().trim());
+  const filteredAtivosNoMes = alunosAtivosNoMes.filter((a) =>
+    matchesSearch(a.nome || a.name || '')
+  );
+  const filteredInativosNoMes = alunosInativosNoMes.filter((a) =>
+    matchesSearch(a.nome || a.name || '')
+  );
 
   const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -165,11 +164,9 @@ export const Alunos = () => {
     minimumFractionDigits: 2,
   });
 
-  /** Mensalidades só de alunos ativos no mês selecionado (para os cards de resumo) */
-  const mensalidadesAtivosNoMes = mensalidadesMes.filter((m) => {
-    const aluno = alunos.find((a) => a.id === m.aluno_id);
-    return aluno ? activeForThisMonth(aluno) : false;
-  });
+  const mensalidadesAtivosNoMes = mensalidadesMes.filter((m) =>
+    alunosAtivosNoMes.some((a) => a.id === m.aluno_id)
+  );
 
   const totalRecebido = mensalidadesAtivosNoMes
     .filter((m) => m.status === 'pago')
@@ -279,37 +276,25 @@ export const Alunos = () => {
         </div>
       )}
 
-      {/* Filtros e Busca */}
+      {/* Busca (vale para as duas seções) */}
       <Card>
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-light" size={20} />
-            <input
-              type="text"
-              placeholder="Buscar por nome..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-core w-full pl-10"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter size={20} className="text-gray-light" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'todos' | 'ativo' | 'inativo')}
-              className="input-core"
-            >
-              <option value="todos">Todos</option>
-              <option value="ativo">Ativos</option>
-              <option value="inativo">Inativos</option>
-            </select>
-          </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-light" size={20} />
+          <input
+            type="text"
+            placeholder="Buscar por nome..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input-core w-full pl-10"
+          />
         </div>
       </Card>
 
-      {/* Tabela de Alunos - Desktop */}
+      {/* Seção 1: Alunos ativos no mês (lista principal com pagamentos) */}
       <Card>
-        {/* Desktop Table */}
+        <h2 className="text-lg font-semibold text-white mb-4">
+          Alunos ativos em {format(mesRef, 'MMMM/yyyy', { locale: ptBR })}
+        </h2>
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -320,275 +305,50 @@ export const Alunos = () => {
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Freq. semana</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Vencimento</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Status Pagamento</th>
-                <th className="text-left py-3 px-4 text-gray-light font-medium">Status</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-8 text-gray-light">
-                    Carregando...
-                  </td>
+                  <td colSpan={7} className="text-center py-8 text-gray-light">Carregando...</td>
                 </tr>
-              ) : filteredAlunos.length === 0 ? (
+              ) : filteredAtivosNoMes.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-8 text-gray-light">
-                    Nenhum aluno encontrado
+                  <td colSpan={7} className="text-center py-8 text-gray-light">
+                    {searchTerm.trim() ? 'Nenhum aluno ativo encontrado' : 'Nenhum aluno ativo neste mês'}
                   </td>
                 </tr>
               ) : (
-                filteredAlunos.map((aluno) => {
+                filteredAtivosNoMes.map((aluno) => {
                   const alunoNome = aluno.nome || aluno.name || 'Sem nome';
                   return (
                     <tr key={aluno.id} className="border-b border-gray-dark hover:bg-dark-soft transition-colors">
                       <td className="py-4 px-4 text-white">
-                        {activeForThisMonth(aluno) && (
-                          <span
-                            className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                              getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500' : 'bg-primary'
-                            }`}
-                          />
-                        )}
+                        <span
+                          className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                            getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500' : 'bg-primary'
+                          }`}
+                        />
                         {alunoNome}
                       </td>
                       <td className="py-4 px-4 text-gray-light">
                         {aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}
                       </td>
                       <td className="py-4 px-4 text-white font-semibold">
-                        {activeForThisMonth(aluno) ? (
-                          currencyFormatter.format(
-                            typeof aluno.monthly_fee === 'number'
-                              ? aluno.monthly_fee
-                              : parseFloat(String(aluno.monthly_fee)) || 0
-                          )
-                        ) : (
-                          <span className="text-gray-light">-</span>
+                        {currencyFormatter.format(
+                          typeof aluno.monthly_fee === 'number'
+                            ? aluno.monthly_fee
+                            : parseFloat(String(aluno.monthly_fee)) || 0
                         )}
                       </td>
                       <td className="py-4 px-4 text-gray-light">
-                        {activeForThisMonth(aluno)
-                          ? (aluno.frequency_per_week
-                              ? `${aluno.frequency_per_week}x/semana`
-                              : '-')
-                          : '-'}
+                        {aluno.frequency_per_week ? `${aluno.frequency_per_week}x/semana` : '-'}
                       </td>
                       <td className="py-4 px-4 text-gray-light">
-                        {activeForThisMonth(aluno)
-                          ? (aluno.payment_day
-                              ? `Todo dia ${aluno.payment_day}`
-                              : '-')
-                          : '-'}
+                        {aluno.payment_day ? `Todo dia ${aluno.payment_day}` : '-'}
                       </td>
                       <td className="py-4 px-4">
-                        {activeForThisMonth(aluno) ? (
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              if (!user) return;
-                              const mensAluno = getMensalidadeAluno(aluno.id);
-                              if (!mensAluno) {
-                                toast.error('Mensalidade do mês não encontrada. Recarregue a página.');
-                                return;
-                              }
-                              const current = mensAluno.status || 'pendente';
-                              const ordem: Array<'pendente' | 'pago'> = ['pendente', 'pago'];
-                              const idx = ordem.indexOf(current);
-                              const next = ordem[(idx + 1) % ordem.length];
-
-                              try {
-                                await updateMensalidadeStatus(mensAluno.id, next);
-                                setMensalidadesMes((prev) =>
-                                  prev.map((m) =>
-                                    m.id === mensAluno.id ? { ...m, status: next, paid_date: next === 'pago' ? new Date().toISOString().slice(0, 10) : null } : m
-                                  )
-                                );
-                                toast.success(`Status de pagamento de ${alunoNome} atualizado para "${next}".`);
-                              } catch (err: any) {
-                                console.error('Erro ao atualizar status de pagamento:', err);
-                                toast.error('Não foi possível atualizar o status de pagamento.');
-                              }
-                            }}
-                            className="focus:outline-none min-h-[44px]"
-                          >
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                getStatusAluno(aluno.id) === 'pago'
-                                  ? 'bg-green-500/20 text-green-500'
-                                  : 'bg-primary/20 text-primary'
-                              }`}
-                            >
-                              {getStatusAluno(aluno.id) === 'pago'
-                                ? 'Pago'
-                                : getStatusAluno(aluno.id) === 'atrasado'
-                                ? 'Atrasado'
-                                : 'Pendente'}
-                            </span>
-                          </button>
-                        ) : (
-                          <span className="text-gray-light">-</span>
-                        )}
-                      </td>
-                      <td className="py-4 px-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (activeForThisMonth(aluno)) {
-                          setConfirmInativarAluno(aluno);
-                        } else {
-                          (async () => {
-                            try {
-                                  const { error } = await supabase
-                                    .from('alunos')
-                                    .update({ active: true, data_inativacao: null })
-                                    .eq('id', aluno.id);
-                                  if (error) throw error;
-                                  setAlunos((prev) =>
-                                    prev.map((a) =>
-                                      a.id === aluno.id ? { ...a, active: true, data_inativacao: null } : a
-                                    )
-                                  );
-                                  toast.success(`${alunoNome} reativado(a) com sucesso.`);
-                                  loadMensalidadesDoMes();
-                                } catch (err: any) {
-                                  console.error('Erro ao reativar aluno:', err);
-                                  toast.error('Não foi possível reativar o aluno.');
-                                }
-                              })();
-                            }
-                          }}
-                          className="focus:outline-none min-h-[44px]"
-                        >
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              activeForThisMonth(aluno)
-                                ? 'bg-green-500/20 text-green-500'
-                                : 'bg-gray-light/20 text-gray-light'
-                            }`}
-                          >
-                            {activeForThisMonth(aluno) ? 'Ativo' : 'Inativo'}
-                          </span>
-                        </button>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => navigate(`/alunos/${aluno.id}`)}
-                            className="text-primary hover:text-primary-light transition-colors flex items-center gap-1 min-h-[44px] min-w-[44px] justify-center"
-                            title="Ver Perfil"
-                          >
-                            <Eye size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(aluno)}
-                            className="text-yellow-500 hover:text-yellow-400 transition-colors flex items-center gap-1 min-h-[44px] min-w-[44px] justify-center"
-                            title="Editar"
-                          >
-                            <Edit size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(aluno.id, alunoNome)}
-                            className="text-primary hover:text-primary-light transition-colors flex items-center gap-1 min-h-[44px] min-w-[44px] justify-center"
-                            title="Excluir"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile Cards */}
-        <div className="lg:hidden space-y-4">
-          {loading ? (
-            <div className="text-center py-8 text-gray-light">Carregando...</div>
-          ) : filteredAlunos.length === 0 ? (
-            <div className="text-center py-8 text-gray-light">Nenhum aluno encontrado</div>
-          ) : (
-            filteredAlunos.map((aluno) => {
-              const alunoNome = aluno.nome || aluno.name || 'Sem nome';
-              return (
-                <div
-                  key={aluno.id}
-                  className="bg-dark-soft border border-gray-dark rounded-lg p-4 space-y-3"
-                >
-                  {/* Header: Nome e Status */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      {activeForThisMonth(aluno) && (
-                        <span
-                          className={`flex-shrink-0 w-3 h-3 rounded-full ${
-                            getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500' : 'bg-primary'
-                          }`}
-                        />
-                      )}
-                      <h3 className="text-white font-semibold truncate">{alunoNome}</h3>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (activeForThisMonth(aluno)) {
-                          setConfirmInativarAluno(aluno);
-                        } else {
-                          (async () => {
-                            try {
-                              const { error } = await supabase
-                                .from('alunos')
-                                .update({ active: true, data_inativacao: null })
-                                .eq('id', aluno.id);
-                              if (error) throw error;
-                              setAlunos((prev) =>
-                                prev.map((a) =>
-                                  a.id === aluno.id ? { ...a, active: true, data_inativacao: null } : a
-                                )
-                              );
-                              toast.success(`${alunoNome} reativado(a) com sucesso.`);
-                              loadMensalidadesDoMes();
-                            } catch (err: any) {
-                              console.error('Erro ao reativar aluno:', err);
-                              toast.error('Não foi possível reativar o aluno.');
-                            }
-                          })();
-                        }
-                      }}
-                      className="flex-shrink-0 min-h-[44px] px-3"
-                    >
-                      <span
-                        className={`px-3 py-2 rounded-full text-xs font-medium ${
-                          activeForThisMonth(aluno)
-                            ? 'bg-green-500/20 text-green-500'
-                            : 'bg-gray-light/20 text-gray-light'
-                        }`}
-                      >
-                        {activeForThisMonth(aluno) ? 'Ativo' : 'Inativo'}
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* Informações Principais */}
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-gray-light text-xs mb-1">Mensalidade</p>
-                      <p className="text-white font-semibold">
-                        {activeForThisMonth(aluno) ? (
-                          currencyFormatter.format(
-                            typeof aluno.monthly_fee === 'number'
-                              ? aluno.monthly_fee
-                              : parseFloat(String(aluno.monthly_fee)) || 0
-                          )
-                        ) : (
-                          <span className="text-gray-light">-</span>
-                        )}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-light text-xs mb-1">Status Pagamento</p>
-                      {activeForThisMonth(aluno) ? (
                         <button
                           type="button"
                           onClick={async () => {
@@ -600,8 +360,7 @@ export const Alunos = () => {
                             }
                             const current = mensAluno.status || 'pendente';
                             const ordem: Array<'pendente' | 'pago'> = ['pendente', 'pago'];
-                            const idx = ordem.indexOf(current);
-                            const next = ordem[(idx + 1) % ordem.length];
+                            const next = ordem[(ordem.indexOf(current) + 1) % ordem.length];
                             try {
                               await updateMensalidadeStatus(mensAluno.id, next);
                               setMensalidadesMes((prev) =>
@@ -609,81 +368,217 @@ export const Alunos = () => {
                                   m.id === mensAluno.id ? { ...m, status: next, paid_date: next === 'pago' ? new Date().toISOString().slice(0, 10) : null } : m
                                 )
                               );
-                              toast.success(`Status de pagamento de ${alunoNome} atualizado para "${next}".`);
+                              toast.success(`Status de ${alunoNome} atualizado para "${next}".`);
                             } catch (err: any) {
-                              console.error('Erro ao atualizar status de pagamento:', err);
-                              toast.error('Não foi possível atualizar o status de pagamento.');
+                              console.error('Erro ao atualizar status:', err);
+                              toast.error('Não foi possível atualizar o status.');
                             }
                           }}
-                          className="min-h-[44px] w-full"
+                          className="focus:outline-none min-h-[44px]"
                         >
                           <span
-                            className={`px-3 py-2 rounded-full text-xs font-medium block text-center ${
-                              getStatusAluno(aluno.id) === 'pago'
-                                ? 'bg-green-500/20 text-green-500'
-                                : 'bg-primary/20 text-primary'
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500/20 text-green-500' : 'bg-primary/20 text-primary'
                             }`}
                           >
-                            {getStatusAluno(aluno.id) === 'pago'
-                              ? 'Pago'
-                              : getStatusAluno(aluno.id) === 'atrasado'
-                              ? 'Atrasado'
-                              : 'Pendente'}
+                            {getStatusAluno(aluno.id) === 'pago' ? 'Pago' : getStatusAluno(aluno.id) === 'atrasado' ? 'Atrasado' : 'Pendente'}
                           </span>
                         </button>
-                      ) : (
-                        <span className="text-gray-light">-</span>
-                      )}
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setConfirmInativarAluno(aluno)}
+                            className="text-gray-light hover:text-white text-xs font-medium min-h-[44px]"
+                            title="Marcar como inativo a partir deste mês"
+                          >
+                            Inativar
+                          </button>
+                          <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Ver"><Eye size={18} /></button>
+                          <button onClick={() => handleEdit(aluno)} className="text-yellow-500 hover:text-yellow-400 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Editar"><Edit size={18} /></button>
+                          <button onClick={() => handleDelete(aluno.id, alunoNome)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Excluir"><Trash2 size={18} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="lg:hidden space-y-4">
+          {loading ? (
+            <div className="text-center py-8 text-gray-light">Carregando...</div>
+          ) : filteredAtivosNoMes.length === 0 ? (
+            <div className="text-center py-8 text-gray-light">
+              {searchTerm.trim() ? 'Nenhum aluno ativo encontrado' : 'Nenhum aluno ativo neste mês'}
+            </div>
+          ) : (
+            filteredAtivosNoMes.map((aluno) => {
+              const alunoNome = aluno.nome || aluno.name || 'Sem nome';
+              return (
+                <div key={aluno.id} className="bg-dark-soft border border-gray-dark rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className={`flex-shrink-0 w-3 h-3 rounded-full ${getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500' : 'bg-primary'}`} />
+                      <h3 className="text-white font-semibold truncate">{alunoNome}</h3>
                     </div>
+                    <button type="button" onClick={() => setConfirmInativarAluno(aluno)} className="text-gray-light hover:text-white text-xs font-medium shrink-0">Inativar</button>
                   </div>
-
-                  {/* Informações Secundárias (Ocultas por padrão, podem ser expandidas) */}
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-gray-light text-xs mb-1">Vencimento</p>
-                      <p className="text-white">
-                        {activeForThisMonth(aluno)
-                          ? (aluno.payment_day
-                              ? `Dia ${aluno.payment_day}`
-                              : '-')
-                          : '-'}
-                      </p>
+                      <p className="text-gray-light text-xs mb-1">Mensalidade</p>
+                      <p className="text-white font-semibold">{currencyFormatter.format(typeof aluno.monthly_fee === 'number' ? aluno.monthly_fee : parseFloat(String(aluno.monthly_fee)) || 0)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-light text-xs mb-1">Frequência</p>
-                      <p className="text-white">
-                        {activeForThisMonth(aluno)
-                          ? (aluno.frequency_per_week
-                              ? `${aluno.frequency_per_week}x/semana`
-                              : '-')
-                          : '-'}
-                      </p>
+                      <p className="text-gray-light text-xs mb-1">Status</p>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!user) return;
+                          const mensAluno = getMensalidadeAluno(aluno.id);
+                          if (!mensAluno) return;
+                          const next = getStatusAluno(aluno.id) === 'pago' ? 'pendente' : 'pago';
+                          try {
+                            await updateMensalidadeStatus(mensAluno.id, next);
+                            setMensalidadesMes((prev) => prev.map((m) => m.id === mensAluno.id ? { ...m, status: next, paid_date: next === 'pago' ? new Date().toISOString().slice(0, 10) : null } : m));
+                            toast.success(`Status de ${alunoNome}: ${next}.`);
+                          } catch { toast.error('Erro ao atualizar.'); }
+                        }}
+                        className="w-full min-h-[44px]"
+                      >
+                        <span className={`px-3 py-2 rounded-full text-xs font-medium block text-center ${getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500/20 text-green-500' : 'bg-primary/20 text-primary'}`}>
+                          {getStatusAluno(aluno.id) === 'pago' ? 'Pago' : 'Pendente'}
+                        </span>
+                      </button>
                     </div>
                   </div>
+                  <div className="flex justify-between pt-3 border-t border-gray-dark">
+                    <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="flex items-center gap-2 text-primary hover:text-primary-light text-sm min-h-[44px]"><Eye size={18} /> Ver</button>
+                    <button onClick={() => handleEdit(aluno)} className="flex items-center gap-2 text-yellow-500 hover:text-yellow-400 text-sm min-h-[44px]"><Edit size={18} /> Editar</button>
+                    <button onClick={() => handleDelete(aluno.id, alunoNome)} className="flex items-center gap-2 text-primary hover:text-primary-light text-sm min-h-[44px]"><Trash2 size={18} /> Excluir</button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </Card>
 
-                  {/* Ações */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-dark">
+      {/* Seção 2: Alunos inativos no mês (só a partir do mês da inativação; históricos passados ficam na seção de ativos) */}
+      <Card>
+        <h2 className="text-lg font-semibold text-white mb-4">
+          Alunos inativos em {format(mesRef, 'MMMM/yyyy', { locale: ptBR })}
+        </h2>
+        <p className="text-gray-light text-sm mb-4">
+          Aparecem aqui apenas quem está inativo a partir deste mês. Em meses anteriores eles continuam na lista de ativos (histórico).
+        </p>
+        <div className="hidden lg:block overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-dark">
+                <th className="text-left py-3 px-4 text-gray-light font-medium">Aluno</th>
+                <th className="text-left py-3 px-4 text-gray-light font-medium">WhatsApp</th>
+                <th className="text-left py-3 px-4 text-gray-light font-medium">Inativo desde</th>
+                <th className="text-left py-3 px-4 text-gray-light font-medium">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredInativosNoMes.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-8 text-gray-light">
+                    {searchTerm.trim() ? 'Nenhum aluno inativo encontrado' : 'Nenhum aluno inativo neste mês'}
+                  </td>
+                </tr>
+              ) : (
+                filteredInativosNoMes.map((aluno) => {
+                  const alunoNome = aluno.nome || aluno.name || 'Sem nome';
+                  const inativoDesde = (() => {
+                    const d = aluno.data_inativacao;
+                    if (!d || String(d).length < 10) return '-';
+                    const [y, m] = String(d).slice(0, 10).split('-').map(Number);
+                    return format(new Date(y, m - 1, 1), 'MMMM/yyyy', { locale: ptBR });
+                  })();
+                  return (
+                    <tr key={aluno.id} className="border-b border-gray-dark hover:bg-dark-soft transition-colors">
+                      <td className="py-4 px-4 text-white">{alunoNome}</td>
+                      <td className="py-4 px-4 text-gray-light">{aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}</td>
+                      <td className="py-4 px-4 text-gray-light">{inativoDesde}</td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const { error } = await supabase.from('alunos').update({ active: true, data_inativacao: null }).eq('id', aluno.id);
+                                if (error) throw error;
+                                setAlunos((prev) => prev.map((a) => (a.id === aluno.id ? { ...a, active: true, data_inativacao: null } : a)));
+                                toast.success(`${alunoNome} reativado(a).`);
+                                loadMensalidadesDoMes();
+                              } catch (err: any) {
+                                console.error('Erro ao reativar:', err);
+                                toast.error('Não foi possível reativar.');
+                              }
+                            }}
+                            className="text-green-500 hover:text-green-400 text-sm font-medium min-h-[44px]"
+                          >
+                            Reativar
+                          </button>
+                          <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Ver"><Eye size={18} /></button>
+                          <button onClick={() => handleEdit(aluno)} className="text-yellow-500 hover:text-yellow-400 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Editar"><Edit size={18} /></button>
+                          <button onClick={() => handleDelete(aluno.id, alunoNome)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Excluir"><Trash2 size={18} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="lg:hidden space-y-4">
+          {filteredInativosNoMes.length === 0 ? (
+            <div className="text-center py-8 text-gray-light">
+              {searchTerm.trim() ? 'Nenhum aluno inativo encontrado' : 'Nenhum aluno inativo neste mês'}
+            </div>
+          ) : (
+            filteredInativosNoMes.map((aluno) => {
+              const alunoNome = aluno.nome || aluno.name || 'Sem nome';
+              const inativoDesde = (() => {
+                const d = aluno.data_inativacao;
+                if (!d || String(d).length < 10) return '-';
+                const [y, m] = String(d).slice(0, 10).split('-').map(Number);
+                return format(new Date(y, m - 1, 1), 'MMMM/yyyy', { locale: ptBR });
+              })();
+              return (
+                <div key={aluno.id} className="bg-dark-soft border border-gray-dark rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-white font-semibold truncate">{alunoNome}</h3>
+                    <span className="text-gray-light text-xs shrink-0">Desde {inativoDesde}</span>
+                  </div>
+                  {aluno.whatsapp && <p className="text-gray-light text-sm">{maskWhatsApp(aluno.whatsapp)}</p>}
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-dark">
                     <button
-                      onClick={() => navigate(`/alunos/${aluno.id}`)}
-                      className="flex items-center gap-2 text-primary hover:text-primary-light transition-colors min-h-[44px] px-4"
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const { error } = await supabase.from('alunos').update({ active: true, data_inativacao: null }).eq('id', aluno.id);
+                          if (error) throw error;
+                          setAlunos((prev) => prev.map((a) => (a.id === aluno.id ? { ...a, active: true, data_inativacao: null } : a)));
+                          toast.success(`${alunoNome} reativado(a).`);
+                          loadMensalidadesDoMes();
+                        } catch (err: any) {
+                          toast.error('Não foi possível reativar.');
+                        }
+                      }}
+                      className="text-green-500 hover:text-green-400 text-sm font-medium min-h-[44px] px-4"
                     >
-                      <Eye size={18} />
-                      <span className="text-sm">Ver</span>
+                      Reativar
                     </button>
-                    <button
-                      onClick={() => handleEdit(aluno)}
-                      className="flex items-center gap-2 text-yellow-500 hover:text-yellow-400 transition-colors min-h-[44px] px-4"
-                    >
-                      <Edit size={18} />
-                      <span className="text-sm">Editar</span>
-                    </button>
-                    <button
-                      onClick={() => handleDelete(aluno.id, alunoNome)}
-                      className="flex items-center gap-2 text-primary hover:text-primary-light transition-colors min-h-[44px] px-4"
-                    >
-                      <Trash2 size={18} />
-                      <span className="text-sm">Excluir</span>
-                    </button>
+                    <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="text-primary hover:text-primary-light text-sm min-h-[44px] px-4">Ver</button>
+                    <button onClick={() => handleEdit(aluno)} className="text-yellow-500 hover:text-yellow-400 text-sm min-h-[44px] px-4">Editar</button>
+                    <button onClick={() => handleDelete(aluno.id, alunoNome)} className="text-primary hover:text-primary-light text-sm min-h-[44px] px-4">Excluir</button>
                   </div>
                 </div>
               );
