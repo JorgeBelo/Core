@@ -15,9 +15,8 @@ import {
   updateMensalidadeStatus,
   type MensalidadeRow,
 } from '../../services/mensalidadesService';
-import { format, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { toDateOnlyString } from '../../utils/dateUtils';
 
 export const Alunos = () => {
   const { user } = useAuth();
@@ -27,7 +26,6 @@ export const Alunos = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingAluno, setEditingAluno] = useState<Aluno | null>(null);
   const [loading, setLoading] = useState(true);
-  const [confirmInativarAluno, setConfirmInativarAluno] = useState<Aluno | null>(null);
   const navigate = useNavigate();
 
   const hoje = new Date();
@@ -111,19 +109,6 @@ export const Alunos = () => {
   const getMensalidadeAluno = (alunoId: string): MensalidadeRow | undefined =>
     mensalidadesMes.find((x) => x.aluno_id === alunoId);
 
-  /** Aluno ativo no mês atual: não inativado no mês OU reativado a partir de um mês que já passou (compara YYYY-MM-DD). */
-  const activeForThisMonth = (aluno: Aluno): boolean => {
-    const ultimoDiaMesStr = format(endOfMonth(inicioMesAtual), 'yyyy-MM-dd');
-    const dataInativacao = aluno.data_inativacao;
-    const dataReativacao = aluno.data_reativacao;
-    const inativacaoStr = dataInativacao ? toDateOnlyString(dataInativacao) : '';
-    const reativacaoStr = dataReativacao ? toDateOnlyString(dataReativacao) : '';
-    const inativoNesteMes = inativacaoStr && inativacaoStr.length >= 10 && inativacaoStr <= ultimoDiaMesStr;
-    const reativadoAteEsteMes = reativacaoStr && reativacaoStr.length >= 10 && reativacaoStr <= ultimoDiaMesStr;
-    if (!inativoNesteMes) return true;
-    return !!reativadoAteEsteMes;
-  };
-
   const handleDelete = async (id: string, nome: string) => {
     if (!confirm(`Tem certeza que deseja excluir o aluno "${nome}"?`)) {
       return;
@@ -150,10 +135,9 @@ export const Alunos = () => {
     setShowModal(true);
   };
 
-  const alunosAtivosNoMes = alunos.filter((a) => activeForThisMonth(a));
   const matchesSearch = (nome: string) =>
     nome.toLowerCase().includes(searchTerm.toLowerCase().trim());
-  const filteredAtivosNoMes = alunosAtivosNoMes.filter((a) =>
+  const filteredAlunos = alunos.filter((a) =>
     matchesSearch(a.nome || a.name || '')
   );
 
@@ -163,19 +147,15 @@ export const Alunos = () => {
     minimumFractionDigits: 2,
   });
 
-  const mensalidadesAtivosNoMes = mensalidadesMes.filter((m) =>
-    alunosAtivosNoMes.some((a) => a.id === m.aluno_id)
-  );
-
-  const totalRecebido = mensalidadesAtivosNoMes
+  const totalRecebido = mensalidadesMes
     .filter((m) => m.status === 'pago')
     .reduce((sum, m) => sum + (typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0), 0);
 
-  const totalPendentes = mensalidadesAtivosNoMes
+  const totalPendentes = mensalidadesMes
     .filter((m) => m.status !== 'pago')
     .reduce((sum, m) => sum + (typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0), 0);
 
-  const totalMes = mensalidadesAtivosNoMes.reduce(
+  const totalMes = mensalidadesMes.reduce(
     (sum, m) => sum + (typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0),
     0
   );
@@ -186,13 +166,10 @@ export const Alunos = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Alunos</h1>
           <p className="text-gray-light text-sm sm:text-base">
-            Gerencie seus alunos e status de pagamento por mês. Quem for inativado some daqui e fica em <strong className="text-white">Alunos → Inativos</strong> com a data registrada.
+            Gerencie seus alunos e status de pagamento do mês.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="secondary" onClick={() => navigate('/alunos/inativos')} className="min-h-[44px]">
-            Ver inativos
-          </Button>
           <Button
             onClick={() => {
             setEditingAluno(null);
@@ -265,7 +242,7 @@ export const Alunos = () => {
       {/* Seção 1: Alunos ativos no mês (lista principal com pagamentos) */}
       <Card>
         <h2 className="text-lg font-semibold text-white mb-4">
-          Alunos ativos em {format(inicioMesAtual, 'MMMM/yyyy', { locale: ptBR })}
+          Alunos em {format(inicioMesAtual, 'MMMM/yyyy', { locale: ptBR })}
         </h2>
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
@@ -285,14 +262,14 @@ export const Alunos = () => {
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-gray-light">Carregando...</td>
                 </tr>
-              ) : filteredAtivosNoMes.length === 0 ? (
+              ) : filteredAlunos.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-gray-light">
-                    {searchTerm.trim() ? 'Nenhum aluno ativo encontrado' : 'Nenhum aluno ativo neste mês'}
+                    {searchTerm.trim() ? 'Nenhum aluno encontrado' : 'Nenhum aluno cadastrado'}
                   </td>
                 </tr>
               ) : (
-                filteredAtivosNoMes.map((aluno) => {
+                filteredAlunos.map((aluno) => {
                   const alunoNome = aluno.nome || aluno.name || 'Sem nome';
                   return (
                     <tr key={aluno.id} className="border-b border-gray-dark hover:bg-dark-soft transition-colors">
@@ -359,14 +336,6 @@ export const Alunos = () => {
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setConfirmInativarAluno(aluno)}
-                            className="text-gray-light hover:text-white text-xs font-medium min-h-[44px]"
-                            title="Marcar como inativo a partir deste mês"
-                          >
-                            Inativar
-                          </button>
                           <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Ver"><Eye size={18} /></button>
                           <button onClick={() => handleEdit(aluno)} className="text-yellow-500 hover:text-yellow-400 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Editar"><Edit size={18} /></button>
                           <button onClick={() => handleDelete(aluno.id, alunoNome)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Excluir"><Trash2 size={18} /></button>
@@ -382,12 +351,12 @@ export const Alunos = () => {
         <div className="lg:hidden space-y-4">
           {loading ? (
             <div className="text-center py-8 text-gray-light">Carregando...</div>
-          ) : filteredAtivosNoMes.length === 0 ? (
+          ) : filteredAlunos.length === 0 ? (
             <div className="text-center py-8 text-gray-light">
-              {searchTerm.trim() ? 'Nenhum aluno ativo encontrado' : 'Nenhum aluno ativo neste mês'}
+              {searchTerm.trim() ? 'Nenhum aluno encontrado' : 'Nenhum aluno cadastrado'}
             </div>
           ) : (
-            filteredAtivosNoMes.map((aluno) => {
+            filteredAlunos.map((aluno) => {
               const alunoNome = aluno.nome || aluno.name || 'Sem nome';
               return (
                 <div key={aluno.id} className="bg-dark-soft border border-gray-dark rounded-lg p-4 space-y-3">
@@ -396,7 +365,6 @@ export const Alunos = () => {
                       <span className={`flex-shrink-0 w-3 h-3 rounded-full ${getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500' : 'bg-primary'}`} />
                       <h3 className="text-white font-semibold truncate">{alunoNome}</h3>
                     </div>
-                    <button type="button" onClick={() => setConfirmInativarAluno(aluno)} className="text-gray-light hover:text-white text-xs font-medium shrink-0">Inativar</button>
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
@@ -447,64 +415,6 @@ export const Alunos = () => {
             loadAlunos();
           }}
         />
-      )}
-
-      {confirmInativarAluno && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-dark-soft border border-gray-dark rounded-lg w-full max-w-md p-6">
-            <h2 className="text-xl font-sans font-semibold text-white mb-4">
-              Confirmar inativação
-            </h2>
-            <p className="text-gray-light text-sm mb-4">
-              Você tem certeza que deseja inativar{' '}
-              <strong className="text-white">{confirmInativarAluno.nome || confirmInativarAluno.name || 'este aluno'}</strong>?
-              A partir de <strong className="text-white">{format(inicioMesAtual, 'MMMM/yyyy', { locale: ptBR })}</strong> ele constará como inativo.
-            </p>
-            <div className="flex justify-end gap-3 mt-4">
-              <Button
-                variant="secondary"
-                type="button"
-                onClick={() => setConfirmInativarAluno(null)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                onClick={async () => {
-                  const aluno = confirmInativarAluno;
-                  if (!aluno || !user) {
-                    setConfirmInativarAluno(null);
-                    return;
-                  }
-                  const y = hoje.getFullYear();
-                  const m = hoje.getMonth() + 1;
-                  const primeiroDiaMes = `${y}-${String(m).padStart(2, '0')}-01`;
-                  try {
-                    const { error } = await supabase
-                      .from('alunos')
-                      .update({ active: false, data_inativacao: primeiroDiaMes, data_reativacao: null })
-                      .eq('id', aluno.id);
-                    if (error) throw error;
-                    setAlunos((prev) =>
-                      prev.map((a) =>
-                        a.id === aluno.id ? { ...a, active: false, data_inativacao: primeiroDiaMes } : a
-                      )
-                    );
-                    toast.success(`${aluno.nome || aluno.name || 'Aluno'} marcado como inativo a partir de ${format(inicioMesAtual, 'MMMM/yyyy', { locale: ptBR })}.`);
-                    loadMensalidadesDoMes();
-                  } catch (err: any) {
-                    console.error('Erro ao inativar aluno:', err);
-                    toast.error('Não foi possível inativar o aluno.');
-                  } finally {
-                    setConfirmInativarAluno(null);
-                  }
-                }}
-              >
-                Confirmar
-              </Button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

@@ -6,7 +6,6 @@ import { Layout } from './components/layout/Layout';
 import { Login } from './pages/auth/Login';
 import { Dashboard } from './pages/dashboard/Dashboard';
 import { Alunos } from './pages/alunos/Alunos';
-import { AlunosInativos } from './pages/alunos/AlunosInativos';
 import { AlunoDetalhes } from './pages/alunos/AlunoDetalhes';
 import { Agenda } from './pages/agenda/Agenda';
 import { Financeiro } from './pages/financeiro/Financeiro';
@@ -59,14 +58,6 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Alunos />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/alunos/inativos"
-        element={
-          <ProtectedRoute>
-            <AlunosInativos />
           </ProtectedRoute>
         }
       />
