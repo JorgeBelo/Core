@@ -3,6 +3,7 @@ import {
   Users, 
   Calendar, 
   DollarSign, 
+  History,
   Bell,
   User as UserIcon,
   ChevronDown
@@ -22,6 +23,7 @@ type MenuItem = {
 const menuItems: MenuItem[] = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/alunos', icon: Users, label: 'Alunos' },
+  { path: '/historico-entrada', icon: History, label: 'Histórico de Entrada' },
   { path: '/agenda', icon: Calendar, label: 'Agenda Semanal' },
   { path: '/financeiro', icon: DollarSign, label: 'Financeiro' },
   { path: '/notificacoes', icon: Bell, label: 'Notificações' },

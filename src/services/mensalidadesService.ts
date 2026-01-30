@@ -101,3 +101,50 @@ export async function updateMensalidadeStatus(
   const { error } = await supabase.from('mensalidades').update(payload).eq('id', id);
   if (error) throw error;
 }
+
+/** Item do histórico: mensalidade paga com nome do aluno para exibição */
+export interface HistoricoRecebimentoItem {
+  id: string;
+  aluno_id: string;
+  due_date: string;
+  amount: number;
+  paid_date: string | null;
+  aluno_nome: string;
+}
+
+/**
+ * Busca todo o histórico de recebimentos (mensalidades pagas) do personal,
+ * ordenado do mais recente ao mais antigo (por data em que foi marcado como pago).
+ * Usado na aba "Histórico de Entrada" e como fonte para o dashboard.
+ */
+export async function getHistoricoRecebimentos(personalId: string): Promise<HistoricoRecebimentoItem[]> {
+  const { data: mensalidades, error: msgError } = await supabase
+    .from('mensalidades')
+    .select('id, aluno_id, due_date, amount, paid_date')
+    .eq('personal_id', personalId)
+    .eq('status', 'pago')
+    .order('paid_date', { ascending: false, nullFirst: true })
+    .order('due_date', { ascending: false });
+
+  if (msgError) throw msgError;
+  const lista = mensalidades || [];
+  if (lista.length === 0) return [];
+
+  const alunoIds = [...new Set(lista.map((m: any) => m.aluno_id))];
+  const { data: alunos, error: alunosError } = await supabase
+    .from('alunos')
+    .select('id, nome, name')
+    .in('id', alunoIds);
+
+  if (alunosError) throw alunosError;
+  const mapaAlunos = new Map((alunos || []).map((a: any) => [a.id, a.nome || a.name || 'Aluno']));
+
+  return lista.map((m: any) => ({
+    id: m.id,
+    aluno_id: m.aluno_id,
+    due_date: m.due_date,
+    amount: typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0,
+    paid_date: m.paid_date || null,
+    aluno_nome: mapaAlunos.get(m.aluno_id) || 'Aluno',
+  }));
+}

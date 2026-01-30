@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, DollarSign, CheckCircle, Clock, TrendingUp, TrendingDown, ArrowUpCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, DollarSign, CheckCircle, Clock, TrendingUp, TrendingDown, ArrowUpCircle, ChevronLeft, ChevronRight, History } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useNavigate } from 'react-router-dom';
@@ -233,7 +233,7 @@ export const Dashboard = () => {
       <div>
         <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Dashboard</h1>
         <p className="text-gray-light text-sm sm:text-base">
-          Controle financeiro por mês. Todo mês inicia com alunos pendentes; histórico preservado.
+          Controle financeiro por mês. Os valores recebidos vêm do que você marca como pago em Alunos e ficam registrados no <strong className="text-white">Histórico de Entrada</strong>.
         </p>
       </div>
 
@@ -546,6 +546,19 @@ export const Dashboard = () => {
                   <p className="text-xs opacity-80">Status de pagamento e dados de contato</p>
                 </div>
                 <span className="sm:hidden font-semibold">Alunos</span>
+              </Button>
+
+              <Button
+                variant="secondary"
+                className="flex items-center justify-center gap-3 py-4 min-h-[44px]"
+                onClick={() => navigate('/historico-entrada')}
+              >
+                <History size={20} className="sm:w-6 sm:h-6" />
+                <div className="text-left hidden sm:block">
+                  <p className="font-semibold text-sm">Histórico de entrada</p>
+                  <p className="text-xs opacity-80">Extrato de mensalidades recebidas</p>
+                </div>
+                <span className="sm:hidden font-semibold">Histórico</span>
               </Button>
 
               <Button

@@ -166,10 +166,17 @@ export const Alunos = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Alunos</h1>
           <p className="text-gray-light text-sm sm:text-base">
-            Gerencie seus alunos e status de pagamento do mês.
+            Gerencie seus alunos e status de pagamento do mês. Marque quem já pagou — depois que o mês passar não será possível alterar. O histórico fica em <strong className="text-white">Histórico de Entrada</strong>.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/historico-entrada')}
+            className="min-h-[44px]"
+          >
+            Ver histórico de entrada
+          </Button>
           <Button
             onClick={() => {
             setEditingAluno(null);
