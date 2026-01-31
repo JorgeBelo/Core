@@ -148,3 +148,50 @@ export async function getHistoricoRecebimentos(personalId: string): Promise<Hist
     aluno_nome: mapaAlunos.get(m.aluno_id) || 'Aluno',
   }));
 }
+
+/** Item de pagamento pendente de meses anteriores */
+export interface PagamentoPendenteItem {
+  id: string;
+  aluno_id: string;
+  due_date: string;
+  amount: number;
+  aluno_nome: string;
+}
+
+/**
+ * Busca mensalidades pendentes de meses ANTERIORES ao mês atual.
+ * Usado na aba "Pagamentos Pendentes" para acertar dívidas passadas.
+ */
+export async function getPagamentosPendentes(personalId: string): Promise<PagamentoPendenteItem[]> {
+  const hoje = new Date();
+  const primeiroDiaMesAtual = getFirstDayOfMonth(hoje.getFullYear(), hoje.getMonth() + 1);
+
+  const { data: mensalidades, error: msgError } = await supabase
+    .from('mensalidades')
+    .select('id, aluno_id, due_date, amount')
+    .eq('personal_id', personalId)
+    .neq('status', 'pago')
+    .lt('due_date', primeiroDiaMesAtual)
+    .order('due_date', { ascending: true });
+
+  if (msgError) throw msgError;
+  const lista = mensalidades || [];
+  if (lista.length === 0) return [];
+
+  const alunoIds = [...new Set(lista.map((m: any) => m.aluno_id))];
+  const { data: alunos, error: alunosError } = await supabase
+    .from('alunos')
+    .select('id, nome, name')
+    .in('id', alunoIds);
+
+  if (alunosError) throw alunosError;
+  const mapaAlunos = new Map((alunos || []).map((a: any) => [a.id, a.nome || a.name || 'Aluno']));
+
+  return lista.map((m: any) => ({
+    id: m.id,
+    aluno_id: m.aluno_id,
+    due_date: m.due_date,
+    amount: typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0,
+    aluno_nome: mapaAlunos.get(m.aluno_id) || 'Aluno',
+  }));
+}
