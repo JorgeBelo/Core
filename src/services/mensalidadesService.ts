@@ -27,21 +27,28 @@ export function getLastDayOfMonth(year: number, month: number): string {
   return `${year}-${m}-${d}`;
 }
 
-/** Garante que todos os alunos tenham mensalidade no mês. Cria as que faltam com status pendente. */
+/** Garante que todos os alunos tenham mensalidade no mês. Cria as que faltam com status pendente.
+ * Só inclui alunos cadastrados até o fim do mês — não há histórico de aluno antes de existir. */
 export async function ensureMensalidadesForMonth(
   personalId: string,
   year: number,
   month: number
 ): Promise<void> {
   const dueDate = getFirstDayOfMonth(year, month);
+  const ultimoDiaMes = getLastDayOfMonth(year, month);
 
   const { data: todosAlunos, error: alunosError } = await supabase
     .from('alunos')
-    .select('id, monthly_fee')
+    .select('id, monthly_fee, created_at')
     .eq('personal_id', personalId);
 
   if (alunosError) throw alunosError;
-  const alunos = todosAlunos || [];
+
+  // Só inclui alunos cadastrados até o fim do mês
+  const alunos = (todosAlunos || []).filter((a: any) => {
+    const createdAt = a.created_at ? String(a.created_at).trim().slice(0, 10) : '';
+    return createdAt.length >= 10 && createdAt <= ultimoDiaMes;
+  });
   if (!alunos.length) return;
 
   const { data: existentes, error: existError } = await supabase
