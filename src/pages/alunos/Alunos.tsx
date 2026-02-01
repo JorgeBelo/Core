@@ -18,7 +18,7 @@ export const Alunos = () => {
   const { user } = useAuth();
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filtroAtivo, setFiltroAtivo] = useState<FiltroAtivo>('ativos');
+  const [filtroAtivo, setFiltroAtivo] = useState<FiltroAtivo>('todos');
   const [showModal, setShowModal] = useState(false);
   const [editingAluno, setEditingAluno] = useState<Aluno | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,6 +80,24 @@ export const Alunos = () => {
     setShowModal(true);
   };
 
+  const handleToggleAtivo = async (aluno: Aluno) => {
+    if (!user) return;
+    const nome = aluno.nome || aluno.name || 'Aluno';
+    const novoActive = aluno.active === false;
+    try {
+      const { error } = await supabase
+        .from('alunos')
+        .update({ active: novoActive })
+        .eq('id', aluno.id);
+      if (error) throw error;
+      toast.success(novoActive ? `${nome} reativado.` : `${nome} marcado como inativo.`);
+      loadAlunos();
+    } catch (error: any) {
+      console.error('Erro ao atualizar status:', error);
+      toast.error(error.message || 'Erro ao atualizar');
+    }
+  };
+
   const matchesSearch = (nome: string) =>
     nome.toLowerCase().includes(searchTerm.toLowerCase().trim());
 
@@ -127,7 +145,7 @@ export const Alunos = () => {
       <Card>
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-gray-light text-sm mr-2">Ver:</span>
-          {(['ativos', 'inativos', 'todos'] as const).map((op) => (
+          {(['todos', 'ativos', 'inativos'] as const).map((op) => (
             <button
               key={op}
               type="button"
@@ -138,7 +156,7 @@ export const Alunos = () => {
                   : 'bg-dark-soft text-gray-light hover:text-white border border-gray-dark'
               }`}
             >
-              {op === 'ativos' ? 'Ativos' : op === 'inativos' ? 'Inativos' : 'Todos'}
+              {op === 'todos' ? 'Todos' : op === 'ativos' ? 'Ativos' : 'Inativos'}
             </button>
           ))}
         </div>
@@ -186,12 +204,13 @@ export const Alunos = () => {
               ) : (
                 filteredAlunos.map((aluno) => {
                   const alunoNome = aluno.nome || aluno.name || 'Sem nome';
+                  const inativo = aluno.active === false;
                   return (
                     <tr key={aluno.id} className="border-b border-gray-dark hover:bg-dark-soft transition-colors">
                       <td className="py-4 px-4 text-white">
                         <span
                           className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                            aluno.active !== false ? 'bg-green-500' : 'bg-gray-500'
+                            inativo ? 'bg-red-500' : 'bg-green-500'
                           }`}
                         />
                         {alunoNome}
@@ -200,17 +219,25 @@ export const Alunos = () => {
                         {aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}
                       </td>
                       <td className="py-4 px-4 text-white font-semibold">
-                        {currencyFormatter.format(
+                        {inativo ? '-' : currencyFormatter.format(
                           typeof aluno.monthly_fee === 'number'
                             ? aluno.monthly_fee
                             : parseFloat(String(aluno.monthly_fee)) || 0
                         )}
                       </td>
                       <td className="py-4 px-4 text-gray-light">
-                        {aluno.frequency_per_week ? `${aluno.frequency_per_week}x/semana` : '-'}
+                        {inativo ? '-' : (aluno.frequency_per_week ? `${aluno.frequency_per_week}x/semana` : '-')}
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleAtivo(aluno)}
+                            className="text-gray-light hover:text-white text-xs font-medium min-h-[44px]"
+                            title={inativo ? 'Reativar' : 'Marcar como inativo'}
+                          >
+                            {inativo ? 'Reativar' : 'Inativar'}
+                          </button>
                           <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Ver">
                             <Eye size={18} />
                           </button>
@@ -239,24 +266,32 @@ export const Alunos = () => {
           ) : (
             filteredAlunos.map((aluno) => {
               const alunoNome = aluno.nome || aluno.name || 'Sem nome';
+              const inativo = aluno.active === false;
               return (
                 <div key={aluno.id} className="bg-dark-soft border border-gray-dark rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className={`flex-shrink-0 w-3 h-3 rounded-full ${aluno.active !== false ? 'bg-green-500' : 'bg-gray-500'}`} />
+                      <span className={`flex-shrink-0 w-3 h-3 rounded-full ${inativo ? 'bg-red-500' : 'bg-green-500'}`} />
                       <h3 className="text-white font-semibold truncate">{alunoNome}</h3>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleAtivo(aluno)}
+                      className="text-gray-light hover:text-white text-xs font-medium shrink-0 min-h-[44px]"
+                    >
+                      {inativo ? 'Reativar' : 'Inativar'}
+                    </button>
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <p className="text-gray-light text-xs mb-1">Mensalidade</p>
                       <p className="text-white font-semibold">
-                        {currencyFormatter.format(typeof aluno.monthly_fee === 'number' ? aluno.monthly_fee : parseFloat(String(aluno.monthly_fee)) || 0)}
+                        {inativo ? '-' : currencyFormatter.format(typeof aluno.monthly_fee === 'number' ? aluno.monthly_fee : parseFloat(String(aluno.monthly_fee)) || 0)}
                       </p>
                     </div>
                     <div>
                       <p className="text-gray-light text-xs mb-1">Freq.</p>
-                      <p className="text-white">{aluno.frequency_per_week ? `${aluno.frequency_per_week}x/semana` : '-'}</p>
+                      <p className="text-white">{inativo ? '-' : (aluno.frequency_per_week ? `${aluno.frequency_per_week}x/semana` : '-')}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-dark">
