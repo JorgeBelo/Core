@@ -26,6 +26,7 @@ export interface Aluno {
   whatsapp?: string;
   // Data de nascimento (YYYY-MM-DD)
   birth_date?: string;
+  sexo?: 'M' | 'F'; // Sexo do aluno (para cálculos de avaliação física)
   monthly_fee: number;
    // Quantas vezes treina na semana (1-7)
   frequency_per_week?: number;
