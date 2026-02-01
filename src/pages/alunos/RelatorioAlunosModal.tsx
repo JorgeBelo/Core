@@ -32,8 +32,6 @@ export const RelatorioAlunosModal = ({
   const telefonePersonal = userProfile?.phone ? maskWhatsApp(userProfile.phone) : '-';
   const crefPreenchido = userProfile?.cref?.trim();
   const alunosAtivos = alunos.filter((a) => a.active !== false);
-  const diaVencimento = (dia: number | undefined) =>
-    dia != null && dia >= 1 && dia <= 31 ? String(dia).padStart(2, '0') : '-';
 
   const handleImprimir = () => {
     const conteudo = reportRef.current;
@@ -129,13 +127,12 @@ export const RelatorioAlunosModal = ({
       const nome = a.nome || a.name || '-';
       const tel = a.whatsapp ? maskWhatsApp(a.whatsapp) : '-';
       const freq = a.frequency_per_week ? `${a.frequency_per_week}x/semana` : '-';
-      const venc = diaVencimento(a.payment_day);
-      return [nome, tel, freq, venc];
+      return [nome, tel, freq];
     });
 
     autoTable(doc, {
       startY: y,
-      head: [['Nome', 'Telefone', 'Vezes por semana', 'Dia venc.']],
+      head: [['Nome', 'Telefone', 'Vezes por semana']],
       body: tableData,
       theme: 'grid',
       headStyles: {
@@ -149,6 +146,10 @@ export const RelatorioAlunosModal = ({
         fontSize: 11,
         textColor: [26, 26, 26],
         cellPadding: 3.5,
+      },
+      columnStyles: {
+        1: { cellWidth: 50, overflow: 'hidden' },   // Telefone – evita quebra
+        2: { cellWidth: 36, overflow: 'hidden' },   // Vezes por semana – evita quebra
       },
       alternateRowStyles: { fillColor: [248, 248, 248] },
       margin: { left: margin, right: margin, bottom: 18 },
@@ -230,13 +231,12 @@ export const RelatorioAlunosModal = ({
                     <th className="bg-primary text-white border border-gray-dark p-2.5 text-left font-semibold">Nome</th>
                     <th className="bg-primary text-white border border-gray-dark p-2.5 text-left font-semibold">Telefone</th>
                     <th className="bg-primary text-white border border-gray-dark p-2.5 text-left font-semibold">Vezes por semana</th>
-                    <th className="bg-primary text-white border border-gray-dark p-2.5 text-left font-semibold">Dia venc.</th>
                   </tr>
                 </thead>
                 <tbody>
                   {alunosAtivos.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="border border-gray-dark p-2.5 text-center text-gray-dark bg-gray-100">
+                      <td colSpan={3} className="border border-gray-dark p-2.5 text-center text-gray-dark bg-gray-100">
                         Nenhum aluno ativo na lista
                       </td>
                     </tr>
@@ -250,7 +250,6 @@ export const RelatorioAlunosModal = ({
                         <td className="border border-gray-dark p-2.5 text-[#1a1a1a]">
                           {a.frequency_per_week ? `${a.frequency_per_week}x/semana` : '-'}
                         </td>
-                        <td className="border border-gray-dark p-2.5 text-[#1a1a1a] tabular-nums">{diaVencimento(a.payment_day)}</td>
                       </tr>
                     ))
                   )}
