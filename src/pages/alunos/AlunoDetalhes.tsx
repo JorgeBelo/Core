@@ -86,70 +86,51 @@ export const AlunoDetalhes = () => {
         </div>
         </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Informações Administrativas */}
-        <Card title="Informações Administrativas" className="lg:col-span-2">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-gray-light text-sm mb-1">WhatsApp</p>
-                <p className="text-white flex items-center gap-2">
-                  <Phone size={16} />
-                  {aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-light text-sm mb-1">Valor da Mensalidade</p>
-                <p className="text-white flex items-center gap-2">
-                  <DollarSign size={16} />
-                  R$ {aluno.monthly_fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-light text-sm mb-1">Vencimento</p>
-                <p className="text-white flex items-center gap-2">
-                  <Calendar size={16} />
-                  Dia {aluno.payment_day || '-'}
-                </p>
-              </div>
-              <div>
-                <p className="text-gray-light text-sm mb-1">Status do Aluno</p>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    aluno.active
-                      ? 'bg-green-500/20 text-green-500'
-                      : 'bg-gray-light/20 text-gray-light'
-                  }`}
-                >
-                  {aluno.active ? 'Ativo' : 'Inativo'}
-                </span>
-              </div>
-              <div>
-                <p className="text-gray-light text-sm mb-1">Cadastrado em</p>
-                <p className="text-white">
-                  {format(new Date(aluno.created_at), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Resumo Financeiro */}
-        <Card title="Resumo Financeiro">
-          <div className="space-y-4">
+      <Card title="Informações do Aluno">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-gray-light text-sm">Valor da mensalidade</p>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-gray-light text-sm mb-1">WhatsApp</p>
+              <p className="text-white flex items-center gap-2">
+                <Phone size={16} />
+                {aluno.whatsapp ? maskWhatsApp(aluno.whatsapp) : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-light text-sm mb-1">Valor da Mensalidade</p>
+              <p className="text-white flex items-center gap-2">
+                <DollarSign size={16} />
                 R$ {aluno.monthly_fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
             </div>
             <div>
-              <p className="text-gray-light text-sm">Dia de vencimento</p>
-              <p className="text-white">Dia {aluno.payment_day || '-'} do mês</p>
+              <p className="text-gray-light text-sm mb-1">Vencimento</p>
+              <p className="text-white flex items-center gap-2">
+                <Calendar size={16} />
+                Dia {aluno.payment_day || '-'}
+              </p>
             </div>
+            <div>
+              <p className="text-gray-light text-sm mb-1">Status do Aluno</p>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  aluno.active
+                    ? 'bg-green-500/20 text-green-500'
+                    : 'bg-gray-light/20 text-gray-light'
+                }`}
+              >
+                {aluno.active ? 'Ativo' : 'Inativo'}
+              </span>
             </div>
-        </Card>
-      </div>
+            <div>
+              <p className="text-gray-light text-sm mb-1">Cadastrado em</p>
+              <p className="text-white">
+                {format(new Date(aluno.created_at), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 };
