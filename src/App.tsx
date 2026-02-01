@@ -9,7 +9,6 @@ import { AlunoDetalhes } from './pages/alunos/AlunoDetalhes';
 import { Agenda } from './pages/agenda/Agenda';
 import { Financeiro } from './pages/financeiro/Financeiro';
 import { Perfil } from './pages/perfil/Perfil';
-import { Notificacoes } from './pages/notificacoes/Notificacoes';
 
 // Componente para proteger rotas autenticadas
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -81,14 +80,6 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Perfil />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/notificacoes"
-        element={
-          <ProtectedRoute>
-            <Notificacoes />
           </ProtectedRoute>
         }
       />

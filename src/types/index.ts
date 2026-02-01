@@ -65,17 +65,6 @@ export interface Mensalidade {
   updated_at: string;
 }
 
-export interface Notification {
-  id: string;
-  personal_id: string;
-  type: 'aniversario' | 'vencimento' | 'atraso' | 'aula';
-  title: string;
-  message: string;
-  related_id?: string;
-  read: boolean;
-  created_at: string;
-}
-
 export interface Agenda {
   id: string;
   personal_id: string;

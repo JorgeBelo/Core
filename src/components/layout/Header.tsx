@@ -1,5 +1,4 @@
 import { Logo } from '../common/Logo';
-import { NotificationsDropdown } from '../common/NotificationsDropdown';
 import { ProfileDropdownHeader } from '../common/ProfileDropdownHeader';
 
 export const Header = () => {
@@ -10,7 +9,6 @@ export const Header = () => {
       </div>
       
       <div className="flex items-center gap-4">
-        <NotificationsDropdown />
         <ProfileDropdownHeader />
       </div>
     </header>

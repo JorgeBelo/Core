@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { X, Menu } from 'lucide-react';
-import { Users, Calendar, DollarSign, Bell, User as UserIcon } from 'lucide-react';
+import { Users, Calendar, DollarSign, User as UserIcon } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Logo } from '../common/Logo';
-import { NotificationsDropdown } from '../common/NotificationsDropdown';
 import { ProfileDropdown } from '../common/ProfileDropdown';
 
 type MenuItem = {
@@ -17,7 +16,6 @@ const menuItems: MenuItem[] = [
   { path: '/alunos', icon: Users, label: 'Alunos' },
   { path: '/financeiro', icon: DollarSign, label: 'Financeiro' },
   { path: '/agenda', icon: Calendar, label: 'Agenda Semanal' },
-  { path: '/notificacoes', icon: Bell, label: 'Notificações' },
   { path: '/perfil', icon: UserIcon, label: 'Perfil' },
 ];
 
@@ -110,7 +108,6 @@ export const MobileSidebar = () => {
 
           {/* Footer */}
           <div className="p-4 border-t border-gray-dark space-y-3">
-            <NotificationsDropdown />
             <ProfileDropdown />
           </div>
         </div>

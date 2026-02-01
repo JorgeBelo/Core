@@ -402,33 +402,6 @@ export const Perfil = () => {
           </div>
         </div>
       </Card>
-
-      {/* Configurações Adicionais */}
-      <Card title="Configurações">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 border border-gray-dark rounded-lg">
-            <div>
-              <p className="text-white font-medium">Notificações por Email</p>
-              <p className="text-gray-light text-sm">Receba alertas sobre mensalidades e aniversários</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-gray-dark peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-light after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between p-4 border border-gray-dark rounded-lg">
-            <div>
-              <p className="text-white font-medium">Notificações Push</p>
-              <p className="text-gray-light text-sm">Receba notificações no navegador</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-gray-dark peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-light after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-            </label>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 };
