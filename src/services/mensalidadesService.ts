@@ -111,9 +111,12 @@ export async function getMensalidadesForMonth(
     ])
   );
 
+  // Inclui mensalidade se: aluno não existe (excluído) OU foi cadastrado até o fim do mês
   return lista.filter((m) => {
-    const created = mapaCreated.get(m.aluno_id) || '';
-    return created.length >= 10 && created <= ultimoDiaMes;
+    const created = mapaCreated.get(m.aluno_id);
+    if (created === undefined) return true; // aluno excluído: mantém para totais
+    if (!created || created.length < 10) return true;
+    return created <= ultimoDiaMes;
   });
 }
 
@@ -173,13 +176,16 @@ export async function getHistoricoRecebimentos(personalId: string): Promise<Hist
     ])
   );
 
+  // Inclui todas; só exclui quando o aluno existe e foi cadastrado DEPOIS do mês da mensalidade.
+  // Alunos excluídos (não estão mais em alunos) permanecem no histórico.
   const filtrado = lista.filter((m: any) => {
     const due = m.due_date ? String(m.due_date).slice(0, 7) : '';
     if (due.length < 7) return false;
     const [y, month] = due.split('-').map(Number);
     const ultimoDiaMes = getLastDayOfMonth(y, month);
     const aluno = mapaAlunos.get(m.aluno_id);
-    if (!aluno || !aluno.created_at || aluno.created_at.length < 10) return false;
+    if (!aluno) return true; // aluno excluído: mantém no histórico
+    if (!aluno.created_at || aluno.created_at.length < 10) return true;
     return aluno.created_at <= ultimoDiaMes;
   });
 
@@ -189,7 +195,7 @@ export async function getHistoricoRecebimentos(personalId: string): Promise<Hist
     due_date: m.due_date,
     amount: typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0,
     paid_date: m.paid_date || null,
-    aluno_nome: mapaAlunos.get(m.aluno_id)?.nome ?? 'Aluno',
+    aluno_nome: mapaAlunos.get(m.aluno_id)?.nome ?? 'Aluno (excluído)',
   }));
 }
 
@@ -236,13 +242,16 @@ export async function getPagamentosPendentes(personalId: string): Promise<Pagame
     ])
   );
 
+  // Inclui todas; só exclui quando o aluno existe e foi cadastrado DEPOIS do mês.
+  // Alunos excluídos permanecem na lista de pendentes (para poder marcar como pago se acertar).
   const filtrado = lista.filter((m: any) => {
     const due = m.due_date ? String(m.due_date).slice(0, 7) : '';
     if (due.length < 7) return false;
     const [y, month] = due.split('-').map(Number);
     const ultimoDiaMes = getLastDayOfMonth(y, month);
     const aluno = mapaAlunos.get(m.aluno_id);
-    if (!aluno || !aluno.created_at || aluno.created_at.length < 10) return false;
+    if (!aluno) return true;
+    if (!aluno.created_at || aluno.created_at.length < 10) return true;
     return aluno.created_at <= ultimoDiaMes;
   });
 
@@ -251,6 +260,6 @@ export async function getPagamentosPendentes(personalId: string): Promise<Pagame
     aluno_id: m.aluno_id,
     due_date: m.due_date,
     amount: typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0,
-    aluno_nome: mapaAlunos.get(m.aluno_id)?.nome ?? 'Aluno',
+    aluno_nome: mapaAlunos.get(m.aluno_id)?.nome ?? 'Aluno (excluído)',
   }));
 }
