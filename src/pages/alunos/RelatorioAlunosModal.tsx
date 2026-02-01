@@ -25,7 +25,8 @@ export const RelatorioAlunosModal = ({
 
   if (!open) return null;
 
-  const dataGeracao = format(new Date(), "dd-MM-yyyy", { locale: ptBR });
+  const dataHoraGeracao = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+  const dataGeracaoArquivo = format(new Date(), "dd-MM-yyyy_HH-mm", { locale: ptBR });
   const nomePersonal = userProfile?.name || 'Personal';
   const emailPersonal = userProfile?.email || '-';
   const telefonePersonal = userProfile?.phone ? maskWhatsApp(userProfile.phone) : '-';
@@ -114,12 +115,12 @@ export const RelatorioAlunosModal = ({
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     doc.text(
-      `Gerado por Core - gestão para personal. Data: ${dataGeracao}`,
+      `Core - Gestão para Personal Trainers | Documento gerado em ${dataHoraGeracao}`,
       margin,
       finalY + 14
     );
 
-    doc.save(`relatorio-alunos-${dataGeracao.replace(/\//g, '-')}.pdf`);
+    doc.save(`relatorio-alunos-${dataGeracaoArquivo}.pdf`);
   };
 
   return (
@@ -201,8 +202,8 @@ export const RelatorioAlunosModal = ({
               </tbody>
             </table>
 
-            <div className="rodape mt-6 pt-4 border-t border-gray-300 text-gray-500 text-xs">
-              Gerado por Core - gestão para personal. Data: {dataGeracao}
+            <div className="rodape mt-6 pt-4 border-t border-gray-300 text-gray-500 text-xs text-center">
+              Core - Gestão para Personal Trainers | Documento gerado em {dataHoraGeracao}
             </div>
           </div>
         </div>
