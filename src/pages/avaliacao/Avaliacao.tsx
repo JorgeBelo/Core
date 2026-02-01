@@ -8,7 +8,7 @@ import { VisualizarAvaliacaoModal } from '../../components/avaliacao/VisualizarA
 import { CompararAvaliacoesModal } from '../../components/avaliacao/CompararAvaliacoesModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
-import { criarAvaliacao, listarAvaliacoes, listarAvaliacoesAluno } from '../../services/avaliacaoService';
+import { criarAvaliacao, listarAvaliacoes } from '../../services/avaliacaoService';
 import { gerarRelatorioPDF } from '../../services/pdfAvaliacaoService';
 import type { Aluno, User } from '../../types';
 import type { AvaliacaoFisica, NovaAvaliacaoInput } from '../../types/avaliacao';

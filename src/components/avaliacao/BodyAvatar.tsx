@@ -21,7 +21,6 @@ interface Props {
 export const BodyAvatar = ({ 
   percentualGordura, 
   sexo, 
-  protocolo,
   dobras = {},
   width = 200, 
   height = 400,
