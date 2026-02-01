@@ -8,8 +8,6 @@ import { maskWhatsApp } from '../../utils/masks';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-
 type RelatorioAlunosModalProps = {
   open: boolean;
   onClose: () => void;
@@ -31,18 +29,8 @@ export const RelatorioAlunosModal = ({
   const nomePersonal = userProfile?.name || 'Personal';
   const emailPersonal = userProfile?.email || '-';
   const telefonePersonal = userProfile?.phone ? maskWhatsApp(userProfile.phone) : '-';
-  const crefPersonal = userProfile?.cref || '-';
-  const diasAtendimento =
-    userProfile?.agenda_working_days?.length &&
-    userProfile.agenda_working_days.length < 7
-      ? (userProfile.agenda_working_days as number[])
-          .map((d) => DIAS_SEMANA[d])
-          .join(', ')
-      : 'Todos os dias';
-  const horarioAgenda =
-    userProfile?.agenda_hora_inicio && userProfile?.agenda_hora_fim
-      ? `${userProfile.agenda_hora_inicio} às ${userProfile.agenda_hora_fim}`
-      : '-';
+  const crefPreenchido = userProfile?.cref?.trim();
+  const alunosAtivos = alunos.filter((a) => a.active !== false);
 
   const handleImprimir = () => {
     const conteudo = reportRef.current;
@@ -95,18 +83,17 @@ export const RelatorioAlunosModal = ({
     y += 6;
     doc.text(`Telefone: ${telefonePersonal}`, margin, y);
     y += 6;
-    doc.text(`CREF: ${crefPersonal}`, margin, y);
+    if (crefPreenchido) {
+      doc.text(`CREF: ${crefPreenchido}`, margin, y);
+      y += 6;
+    }
     y += 6;
-    doc.text(`Dias de atendimento: ${diasAtendimento}`, margin, y);
-    y += 6;
-    doc.text(`Horário da agenda: ${horarioAgenda}`, margin, y);
-    y += 12;
 
     doc.setFontSize(14);
     doc.text('Relatório de Alunos', margin, y);
     y += 10;
 
-    const tableData = alunos.map((a) => {
+    const tableData = alunosAtivos.map((a) => {
       const nome = a.nome || a.name || '-';
       const tel = a.whatsapp ? maskWhatsApp(a.whatsapp) : '-';
       const freq = a.frequency_per_week ? `${a.frequency_per_week}x/semana` : '-';
@@ -179,9 +166,7 @@ export const RelatorioAlunosModal = ({
               <p><strong>Nome:</strong> {nomePersonal}</p>
               <p><strong>E-mail:</strong> {emailPersonal}</p>
               <p><strong>Telefone:</strong> {telefonePersonal}</p>
-              <p><strong>CREF:</strong> {crefPersonal}</p>
-              <p><strong>Dias de atendimento:</strong> {diasAtendimento}</p>
-              <p><strong>Horário da agenda:</strong> {horarioAgenda}</p>
+              {crefPreenchido ? <p><strong>CREF:</strong> {crefPreenchido}</p> : null}
             </div>
 
             <h2 className="text-base font-bold mb-3">Relatório de Alunos</h2>
@@ -194,14 +179,14 @@ export const RelatorioAlunosModal = ({
                 </tr>
               </thead>
               <tbody>
-                {alunos.length === 0 ? (
+                {alunosAtivos.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="border border-gray-700 p-2 text-center text-gray-600">
-                      Nenhum aluno na lista
+                      Nenhum aluno ativo na lista
                     </td>
                   </tr>
                 ) : (
-                  alunos.map((a) => (
+                  alunosAtivos.map((a) => (
                     <tr key={a.id}>
                       <td className="border border-gray-700 p-2">{a.nome || a.name || '-'}</td>
                       <td className="border border-gray-700 p-2">
