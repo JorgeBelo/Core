@@ -107,9 +107,11 @@ export const Alunos = () => {
     return a.active === false;
   });
 
-  const filteredAlunos = alunosFiltradosPorAtivo.filter((a) =>
-    matchesSearch(a.nome || a.name || '')
-  );
+  const filteredAlunos = alunosFiltradosPorAtivo
+    .filter((a) => matchesSearch(a.nome || a.name || ''))
+    .sort((a, b) =>
+      (a.nome || a.name || '').localeCompare(b.nome || b.name || '', 'pt-BR')
+    );
 
   const currencyFormatter = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
