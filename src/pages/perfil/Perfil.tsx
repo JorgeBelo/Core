@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Save, Camera, Link as LinkIcon, Calendar } from 'lucide-react';
+import { Save, Camera, Calendar } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useUserProfile } from '../../hooks/useUserProfile';
@@ -239,25 +239,6 @@ export const Perfil = () => {
                 />
               </div>
 
-              <div className="p-3 rounded-lg border border-gray-dark bg-dark-soft flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-white text-sm font-medium">Conta Google</p>
-                  <p className="text-gray-light text-xs">
-                    Integração real com login Google será configurada depois.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="flex items-center gap-2 px-3 py-2 rounded-md bg-white text-black text-xs font-medium hover:bg-gray-200 transition-colors min-h-[44px]"
-                  disabled
-                >
-                  <span className="bg-white rounded-full flex items-center justify-center w-5 h-5">
-                    <span className="text-[10px] font-bold text-primary">G</span>
-                  </span>
-                  <span>Vincular Google</span>
-                  <LinkIcon size={14} />
-                </button>
-              </div>
             </div>
           </div>
         </Card>
@@ -324,9 +305,9 @@ export const Perfil = () => {
             </div>
 
             <div className="flex justify-end pt-4 border-t border-gray-dark">
-              <Button type="submit" className="min-h-[44px] w-full sm:w-auto">
+              <Button type="submit" className="min-h-[44px] w-full sm:w-auto whitespace-nowrap">
                 <Save size={20} className="mr-2" />
-                Salvar Alterações
+                Salvar
               </Button>
             </div>
           </form>
@@ -394,10 +375,10 @@ export const Perfil = () => {
             <Button
               onClick={handleSaveAgendaSettings}
               disabled={savingAgenda}
-              className="min-h-[44px] w-full sm:w-auto"
+              className="min-h-[44px] w-full sm:w-auto whitespace-nowrap"
             >
               <Calendar size={18} className="mr-2" />
-              {savingAgenda ? 'Salvando...' : 'Salvar horários da agenda'}
+              {savingAgenda ? 'Salvando...' : 'Salvar Horários'}
             </Button>
           </div>
         </div>

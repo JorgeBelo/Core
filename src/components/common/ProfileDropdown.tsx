@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUserProfile } from '../../hooks/useUserProfile';
 
@@ -56,27 +56,6 @@ export const ProfileDropdown = () => {
       {isOpen && (
         <div className="absolute bottom-full left-0 mb-2 w-full bg-dark-soft border border-gray-dark rounded-lg shadow-lg z-50 overflow-hidden">
           <div className="p-2">
-            <button
-              onClick={() => {
-                navigate('/perfil');
-                setIsOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-dark transition-colors text-gray-light hover:text-white text-left"
-            >
-              <User size={18} />
-              <span>Meu Perfil</span>
-            </button>
-            <button
-              onClick={() => {
-                navigate('/perfil');
-                setIsOpen(false);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-dark transition-colors text-gray-light hover:text-white text-left"
-            >
-              <Settings size={18} />
-              <span>Configurações</span>
-            </button>
-            <div className="border-t border-gray-dark my-1"></div>
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-primary/20 transition-colors text-primary hover:text-primary-light text-left"
