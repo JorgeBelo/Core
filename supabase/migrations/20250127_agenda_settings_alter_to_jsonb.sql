@@ -1,3 +1,0 @@
--- Opcional: se você já criou agenda_working_days como integer[], converta para jsonb:
--- ALTER TABLE users ALTER COLUMN agenda_working_days TYPE jsonb USING to_jsonb(agenda_working_days);
--- Só execute se a coluna já existir e estiver como integer[].

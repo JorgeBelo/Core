@@ -45,10 +45,6 @@ export const Home = () => {
                 </li>
                 <li className="text-gray-light text-sm flex items-start">
                   <span className="text-primary mr-2">✓</span>
-                  <span>Controle de mensalidades</span>
-                </li>
-                <li className="text-gray-light text-sm flex items-start">
-                  <span className="text-primary mr-2">✓</span>
                   <span>Status ativo/inativo</span>
                 </li>
                 <li className="text-gray-light text-sm flex items-start">

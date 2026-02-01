@@ -1,72 +1,77 @@
-# Core - Gestão para Personal Trainers
+# CORE - Gestão para Personal Trainers
 
-Sistema de gestão administrativa para personal trainers, desenvolvido com React + TypeScript + Vite.
+Sistema simples e moderno para Personal Trainers gerenciarem seus alunos e agenda.
 
-## 🚀 Como Executar
+## 📋 Funcionalidades
 
-### 1. Instalar Dependências
+- **Home** - Página inicial com visão geral do sistema
+- **Alunos** - Cadastro e gestão de alunos
+- **Agenda Semanal** - Organização de horários de treino
+- **Perfil** - Configurações do personal trainer
 
-```bash
-npm install
-```
+## 🚀 Tecnologias
 
-### 2. Executar em Modo Desenvolvimento
+### Frontend
+- React 18 + TypeScript
+- Tailwind CSS
+- React Router DOM
+- Lucide Icons
+- jsPDF (relatórios)
 
-```bash
-npm run dev
-```
-
-O sistema estará disponível em: `http://localhost:5173`
-
-### 3. Build para Produção
-
-```bash
-npm run build
-```
-
-### 4. Preview da Build
-
-```bash
-npm run preview
-```
+### Backend
+- Supabase (BaaS)
+  - Autenticação
+  - Banco de dados PostgreSQL
+  - Storage (avatares)
 
 ## 📁 Estrutura do Projeto
 
 ```
 src/
-├── components/      # Componentes reutilizáveis
-├── contexts/       # Context API (Auth, Theme)
-├── pages/          # Páginas/rotas do sistema
-├── services/       # Chamadas à API
-├── types/          # TypeScript types
-├── utils/          # Funções utilitárias
-└── assets/         # Imagens, fontes, etc.
+├── components/          # Componentes reutilizáveis
+│   ├── common/          # Button, Card, Logo, ProfileDropdown
+│   └── layout/          # Layout, Sidebar, Header, Navigation
+├── contexts/            # Contextos React (Auth, Theme)
+├── hooks/               # Hooks customizados
+├── lib/                 # Configuração do Supabase
+├── pages/               # Páginas do sistema
+│   ├── home/            # Página inicial
+│   ├── alunos/          # Gestão de alunos
+│   ├── agenda/          # Agenda semanal
+│   ├── auth/            # Login
+│   └── perfil/          # Perfil do usuário
+├── types/               # Tipos TypeScript
+└── utils/               # Funções utilitárias
 ```
 
-## 🎨 Identidade Visual
+## 🔧 Instalação
 
-- **Cor Principal**: `#a20100` (Vermelho)
-- **Cor Secundária**: `#b4b4b4` (Cinza claro)
-- **Fundo**: `#000000` ou `#1a1a1a` (Preto)
-- **Fonte Brand**: AC Soft Icecream
-- **Fonte Sistema**: Inter/Poppins
+```bash
+# Instalar dependências
+npm install
 
-## 📚 Documentação
+# Configurar variáveis de ambiente
+cp .env.example .env
+# Editar .env com suas credenciais do Supabase
 
-Consulte `ARCHITECTURE.md` para detalhes completos da arquitetura do sistema.
+# Rodar em desenvolvimento
+npm run dev
 
-## 🔐 Autenticação
+# Build para produção
+npm run build
+```
 
-Por enquanto, o sistema está com autenticação mockada. Para desenvolvimento:
-- Email: qualquer email
-- Senha: qualquer senha
+## 🗄️ Banco de Dados
 
-**IMPORTANTE**: Implementar autenticação real com backend antes de produção.
+Execute o script `DATABASE_SCHEMA.sql` no Supabase para criar as tabelas necessárias.
 
-## 📝 Próximos Passos
+## 📱 Responsivo
 
-1. Implementar integração com API backend
-2. Adicionar todas as páginas (Alunos, Aulas, Financeiro, Agenda)
-3. Implementar sistema de notificações
-4. Adicionar gráficos e relatórios
-5. Implementar testes
+O sistema é totalmente responsivo, funcionando em:
+- Desktop (sidebar fixa)
+- Tablet (menu hamburguer)
+- Mobile (bottom navigation)
+
+## 📄 Licença
+
+Projeto privado - Core © 2026
