@@ -4,6 +4,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/auth/Login';
+import { Signup } from './pages/auth/Signup';
 import { Home } from './pages/home/Home';
 import { Alunos } from './pages/alunos/Alunos';
 import { AlunoDetalhes } from './pages/alunos/AlunoDetalhes';
@@ -40,6 +41,14 @@ function AppRoutes() {
         element={
           <PublicRoute>
             <Login />
+          </PublicRoute>
+        } 
+      />
+      <Route 
+        path="/signup" 
+        element={
+          <PublicRoute>
+            <Signup />
           </PublicRoute>
         } 
       />

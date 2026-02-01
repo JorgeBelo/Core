@@ -164,8 +164,17 @@ export const Perfil = () => {
     );
   };
 
+  const perfilIncompleto = !formData.name?.trim() || formData.name === 'Personal Trainer';
+
   return (
     <div className="space-y-4 sm:space-y-6">
+      {perfilIncompleto && (
+        <div className="bg-primary/20 border border-primary rounded-lg p-4">
+          <p className="text-white text-sm font-medium">
+            Complete seu perfil para usar o sistema. O <strong>Nome Profissional</strong> é obrigatório e aparece no Relatório da Diretoria. O CREF é opcional.
+          </p>
+        </div>
+      )}
       <div>
         <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Perfil do Personal</h1>
         <p className="text-gray-light text-sm sm:text-base">Atualize seus dados profissionais e de acesso</p>
@@ -249,7 +258,7 @@ export const Perfil = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-white mb-2">
-                  Nome Completo
+                  Nome Profissional <span className="text-primary">*</span>
                 </label>
                 <input
                   type="text"

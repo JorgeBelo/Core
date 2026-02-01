@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/common/Button';
 import { Logo } from '../../components/common/Logo';
@@ -17,7 +17,7 @@ export const Login = () => {
     
     try {
       await login(email, password);
-      navigate('/alunos');
+      navigate('/home');
     } catch (error) {
       console.error('Erro no login:', error);
       // TODO: Mostrar toast de erro
@@ -85,9 +85,9 @@ export const Login = () => {
 
         <p className="text-center text-gray-light mt-6 text-sm">
           Não tem uma conta?{' '}
-          <a href="/cadastro" className="link-primary">
+          <Link to="/signup" className="link-primary">
             Cadastre-se
-          </a>
+          </Link>
         </p>
       </div>
     </div>
