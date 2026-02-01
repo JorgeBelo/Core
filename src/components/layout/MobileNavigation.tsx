@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom';
-import { Users, Calendar, DollarSign, User as UserIcon } from 'lucide-react';
+import { Users, Calendar, Activity, User as UserIcon } from 'lucide-react';
 
 const menuItems = [
   { path: '/alunos', icon: Users, label: 'Alunos' },
-  { path: '/financeiro', icon: DollarSign, label: 'Financeiro' },
+  { path: '/avaliacao', icon: Activity, label: 'Avaliação' },
   { path: '/agenda', icon: Calendar, label: 'Agenda' },
   { path: '/perfil', icon: UserIcon, label: 'Perfil' },
 ];

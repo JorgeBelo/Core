@@ -7,7 +7,7 @@ import { Login } from './pages/auth/Login';
 import { Alunos } from './pages/alunos/Alunos';
 import { AlunoDetalhes } from './pages/alunos/AlunoDetalhes';
 import { Agenda } from './pages/agenda/Agenda';
-import { Financeiro } from './pages/financeiro/Financeiro';
+import { Avaliacao } from './pages/avaliacao/Avaliacao';
 import { Perfil } from './pages/perfil/Perfil';
 
 // Componente para proteger rotas autenticadas
@@ -68,10 +68,10 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/financeiro"
+        path="/avaliacao"
         element={
           <ProtectedRoute>
-            <Financeiro />
+            <Avaliacao />
           </ProtectedRoute>
         }
       />
