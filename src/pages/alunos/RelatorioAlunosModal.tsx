@@ -45,15 +45,18 @@ export const RelatorioAlunosModal = ({
           <meta charset="utf-8">
           <title>Relatório de Alunos</title>
           <style>
-            body { font-family: Arial, sans-serif; font-size: 12px; padding: 20px; color: #1a1a1a; }
-            .titulo-documento { margin: 0 0 24px 0; font-size: 20px; text-align: center; padding-bottom: 12px; border-bottom: 2px solid #666; }
-            .cabecalho { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #ddd; }
-            .cabecalho h2 { margin: 0 0 12px 0; font-size: 18px; }
-            .cabecalho p { margin: 4px 0; }
+            body { font-family: Arial, sans-serif; font-size: 12px; padding: 20px; background: #f5f5f5; color: #1a1a1a; }
+            .doc-paper { background: #ffffff; color: #1a1a1a; padding: 24px; border-radius: 8px; max-width: 210mm; margin: 0 auto; }
+            .titulo-documento { background: #a20100; color: #ffffff !important; margin: -24px -24px 24px -24px; padding: 16px 24px; font-size: 20px; font-weight: 700; text-align: center; border-radius: 8px 8px 0 0; }
+            .cabecalho { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #a20100; }
+            .cabecalho h2 { margin: 0 0 12px 0; font-size: 16px; color: #a20100; font-weight: 700; }
+            .cabecalho p { margin: 4px 0; color: #1a1a1a; }
+            .secao-tabela { color: #1a1a1a; font-weight: 700; font-size: 14px; margin-bottom: 12px; color: #333; }
             table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-            th, td { border: 1px solid #333; padding: 8px 12px; text-align: left; }
-            th { background: #f0f0f0; font-weight: 600; }
-            .rodape { margin-top: 24px; padding-top: 16px; border-top: 1px solid #ddd; font-size: 11px; color: #666; }
+            th, td { border: 1px solid #404040; padding: 10px 12px; text-align: left; color: #1a1a1a; }
+            th { background: #a20100; color: #ffffff !important; font-weight: 600; }
+            tbody tr:nth-child(even) { background: #f8f8f8; }
+            .rodape { margin-top: 24px; padding-top: 16px; border-top: 2px solid #404040; font-size: 11px; color: #404040; text-align: center; }
           </style>
         </head>
         <body>
@@ -73,17 +76,28 @@ export const RelatorioAlunosModal = ({
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const margin = 14;
     const pageWidth = doc.internal.pageSize.getWidth();
-    let y = margin;
 
+    // Cor primária Core: #a20100 -> RGB 162, 1, 0
+    const primaryR = 162;
+    const primaryG = 1;
+    const primaryB = 0;
+
+    // Faixa do título (fundo vermelho, texto branco)
+    doc.setFillColor(primaryR, primaryG, primaryB);
+    doc.rect(0, 0, pageWidth, 22, 'F');
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text('Relatório de Alunos', pageWidth / 2, y, { align: 'center' });
+    doc.text('Relatório de Alunos', pageWidth / 2, 14, { align: 'center' });
+    doc.setTextColor(26, 26, 26); // #1a1a1a
     doc.setFont('helvetica', 'normal');
-    y += 12;
+    let y = 28;
 
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryR, primaryG, primaryB);
     doc.text('Dados do Personal', margin, y);
+    doc.setTextColor(26, 26, 26);
     doc.setFont('helvetica', 'normal');
     y += 8;
 
@@ -100,7 +114,7 @@ export const RelatorioAlunosModal = ({
     }
     y += 6;
 
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.text('Listagem de alunos ativos', margin, y);
     doc.setFont('helvetica', 'normal');
@@ -118,18 +132,26 @@ export const RelatorioAlunosModal = ({
       head: [['Nome', 'Telefone', 'Vezes por semana']],
       body: tableData,
       theme: 'grid',
-      headStyles: { fillColor: [80, 80, 80], fontSize: 10 },
-      bodyStyles: { fontSize: 9 },
+      headStyles: {
+        fillColor: [primaryR, primaryG, primaryB],
+        textColor: [255, 255, 255],
+        fontSize: 10,
+        fontStyle: 'bold',
+      },
+      bodyStyles: { fontSize: 9, textColor: [26, 26, 26] },
+      alternateRowStyles: { fillColor: [248, 248, 248] },
       margin: { left: margin, right: margin },
+      tableLineColor: [64, 64, 64],
     });
 
     const finalY = (doc as any).lastAutoTable?.finalY ?? y;
     doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
+    doc.setTextColor(64, 64, 64); // #404040
     doc.text(
       `Core - Gestão para Personal Trainers | Documento gerado em ${dataHoraGeracao}`,
-      margin,
-      finalY + 14
+      pageWidth / 2,
+      finalY + 14,
+      { align: 'center' }
     );
 
     doc.save(`relatorio-alunos-${dataGeracaoArquivo}.pdf`);
@@ -169,56 +191,58 @@ export const RelatorioAlunosModal = ({
           </button>
         </div>
 
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-6 bg-[#f5f5f5]">
           <div
             ref={reportRef}
-            className="bg-white text-gray-900 rounded-lg p-6 print:shadow-none"
+            className="doc-paper bg-white rounded-lg overflow-hidden shadow-md max-w-[210mm] mx-auto"
           >
-            <h1 className="titulo-documento text-xl font-bold text-center mb-6 pb-3 border-b-2 border-gray-400">
+            <h1 className="titulo-documento bg-primary text-white text-xl font-bold text-center py-4 px-6">
               Relatório de Alunos
             </h1>
-            <div className="cabecalho border-b border-gray-300 pb-4 mb-4">
-              <h2 className="text-lg font-bold mb-3">Dados do Personal</h2>
-              <p><strong>Nome:</strong> {nomePersonal}</p>
-              <p><strong>E-mail:</strong> {emailPersonal}</p>
-              <p><strong>Telefone:</strong> {telefonePersonal}</p>
-              {crefPreenchido ? <p><strong>CREF:</strong> {crefPreenchido}</p> : null}
+            <div className="cabecalho px-6 pb-4 mb-4 border-b-2 border-primary">
+              <h2 className="text-primary font-bold mb-3 text-base">Dados do Personal</h2>
+              <p className="text-[#1a1a1a]"><strong>Nome:</strong> {nomePersonal}</p>
+              <p className="text-[#1a1a1a]"><strong>E-mail:</strong> {emailPersonal}</p>
+              <p className="text-[#1a1a1a]"><strong>Telefone:</strong> {telefonePersonal}</p>
+              {crefPreenchido ? <p className="text-[#1a1a1a]"><strong>CREF:</strong> {crefPreenchido}</p> : null}
             </div>
 
-            <h2 className="text-base font-bold mb-3">Listagem de alunos ativos</h2>
-            <table className="w-full border-collapse border border-gray-700 text-sm">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border border-gray-700 p-2 text-left">Nome</th>
-                  <th className="border border-gray-700 p-2 text-left">Telefone</th>
-                  <th className="border border-gray-700 p-2 text-left">Vezes por semana</th>
-                </tr>
-              </thead>
-              <tbody>
-                {alunosAtivos.length === 0 ? (
+            <div className="px-6">
+              <h2 className="secao-tabela text-[#333] font-bold mb-3 text-sm">Listagem de alunos ativos</h2>
+              <table className="w-full border-collapse text-sm">
+                <thead>
                   <tr>
-                    <td colSpan={3} className="border border-gray-700 p-2 text-center text-gray-600">
-                      Nenhum aluno ativo na lista
-                    </td>
+                    <th className="bg-primary text-white border border-gray-dark p-2.5 text-left font-semibold">Nome</th>
+                    <th className="bg-primary text-white border border-gray-dark p-2.5 text-left font-semibold">Telefone</th>
+                    <th className="bg-primary text-white border border-gray-dark p-2.5 text-left font-semibold">Vezes por semana</th>
                   </tr>
-                ) : (
-                  alunosAtivos.map((a) => (
-                    <tr key={a.id}>
-                      <td className="border border-gray-700 p-2">{a.nome || a.name || '-'}</td>
-                      <td className="border border-gray-700 p-2">
-                        {a.whatsapp ? maskWhatsApp(a.whatsapp) : '-'}
-                      </td>
-                      <td className="border border-gray-700 p-2">
-                        {a.frequency_per_week ? `${a.frequency_per_week}x/semana` : '-'}
+                </thead>
+                <tbody>
+                  {alunosAtivos.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="border border-gray-dark p-2.5 text-center text-gray-dark bg-gray-100">
+                        Nenhum aluno ativo na lista
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    alunosAtivos.map((a, idx) => (
+                      <tr key={a.id} className={idx % 2 === 1 ? 'bg-[#f8f8f8]' : ''}>
+                        <td className="border border-gray-dark p-2.5 text-[#1a1a1a]">{a.nome || a.name || '-'}</td>
+                        <td className="border border-gray-dark p-2.5 text-[#1a1a1a]">
+                          {a.whatsapp ? maskWhatsApp(a.whatsapp) : '-'}
+                        </td>
+                        <td className="border border-gray-dark p-2.5 text-[#1a1a1a]">
+                          {a.frequency_per_week ? `${a.frequency_per_week}x/semana` : '-'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
 
-            <div className="rodape mt-6 pt-4 border-t border-gray-300 text-gray-500 text-xs text-center">
-              Core - Gestão para Personal Trainers | Documento gerado em {dataHoraGeracao}
+              <div className="rodape mt-6 pt-4 border-t-2 border-gray-dark text-gray-dark text-xs text-center">
+                Core - Gestão para Personal Trainers | Documento gerado em {dataHoraGeracao}
+              </div>
             </div>
           </div>
         </div>
