@@ -1,25 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Eye, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Trash2, FileText } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { Aluno } from '../../types';
 import { CadastroAlunoModal } from './CadastroAlunoModal';
+import { RelatorioAlunosModal } from './RelatorioAlunosModal';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
+import { useUserProfile } from '../../hooks/useUserProfile';
 import { maskWhatsApp } from '../../utils/masks';
 import toast from 'react-hot-toast';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 type FiltroAtivo = 'todos' | 'ativos' | 'inativos';
 
 export const Alunos = () => {
   const { user } = useAuth();
+  const { userProfile } = useUserProfile();
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroAtivo, setFiltroAtivo] = useState<FiltroAtivo>('todos');
   const [showModal, setShowModal] = useState(false);
+  const [showRelatorioModal, setShowRelatorioModal] = useState(false);
   const [editingAluno, setEditingAluno] = useState<Aluno | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -129,6 +131,16 @@ export const Alunos = () => {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            onClick={() => setShowRelatorioModal(true)}
+            variant="secondary"
+            className="flex items-center w-full sm:w-auto justify-center min-h-[44px]"
+          >
+            <FileText size={20} className="mr-2" />
+            <span className="hidden sm:inline">Relatório de Alunos</span>
+            <span className="sm:hidden">Relatório</span>
+          </Button>
           <Button
             onClick={() => {
               setEditingAluno(null);
@@ -325,6 +337,12 @@ export const Alunos = () => {
         />
       )}
 
-      </div>
+      <RelatorioAlunosModal
+        open={showRelatorioModal}
+        onClose={() => setShowRelatorioModal(false)}
+        userProfile={userProfile ?? null}
+        alunos={filteredAlunos}
+      />
+    </div>
   );
 };
