@@ -1,105 +1,141 @@
-# Proposta: Módulo Financeiro inspirado em ERPs modernos
-
-## O que foi removido
-
-- **Dashboard** (removido)
-- **Histórico de Entrada** (removido)
-- **Financeiro** (removido)
-
-O app hoje tem apenas: **Alunos**, **Agenda Semanal**, **Notificações**, **Perfil**.  
-Login redireciona para **Alunos**.
+# Core — Proposta do Módulo Financeiro  
+## Modelo ERP de classe mundial, escopo Personal Trainer
 
 ---
 
-## Princípios de ERPs que funcionam no mercado
+## 1. Visão e propósito do sistema
 
-Sistemas como **Odoo**, **SAP Business One**, **Conta Azul**, **Notion** e **Bling** seguem padrões que reduzem erro e mantêm consistência:
+**O que é**  
+O Core é um sistema de gestão voltado ao **personal trainer**: um único usuário (o personal) que precisa controlar **alunos**, **agenda** e **finanças** do próprio negócio.
 
-1. **Um único “livro” de lançamentos**  
-   Tudo que é receita ou despesa vira **um registro** (como um lançamento contábil). Sem duplicar lógica em “mensalidades” e “contas” ao mesmo tempo.
+**Para quê**  
+- Ter **clareza** sobre quem treina, quando e quanto entra/sai de dinheiro.  
+- **Histórico confiável**: o que foi registrado permanece, mesmo que um aluno saia do cadastro.  
+- **Simplicidade**: sem regras automáticas escondidas; o usuário decide o que lançar e o sistema só guarda e soma.
 
-2. **Dados imutáveis e com descrição fixa**  
-   Cada lançamento guarda **texto** (ex.: “Mensalidade – João – Jan/2026”) e **valor**. Não depende de ID de aluno ou de status que pode mudar. Excluir aluno não apaga o passado.
-
-3. **Fluxo: usuário lança → sistema grava → relatórios só leem**  
-   Nada é “gerado” automaticamente por data ou por lista de alunos. Quem decide o que entrou/saiu é o usuário, via botão “Lançar”.
-
-4. **Relatórios = filtros e somas sobre esse livro**  
-   Dashboard, extrato e “histórico” são **visões** (por mês, por tipo, por período) sobre os mesmos lançamentos. Sem regras de negócio escondidas nos relatórios.
-
-5. **Módulos enxutos e bem nomeados**  
-   Um lugar para **lançar**, um para **ver por período** (resumo), um para **ver lista completa** (extrato). Nomes claros evitam confusão.
+**Para quem**  
+Personal trainers que querem um app **enxuto**, **previsível** e **fácil de auditar** — no espírito dos ERPs usados por grandes empresas, mas adaptado à realidade de um negócio de uma pessoa.
 
 ---
 
-## Proposta de estrutura para o Core (personal)
+## 2. Referência: o que os melhores ERPs do mundo fazem
 
-### 1. **Financeiro** (uma tela só, tipo “painel”)
+Sistemas como **SAP S/4HANA**, **Oracle Cloud ERP**, **Microsoft Dynamics 365**, **Odoo** e **SAP Business One** (usados por milhares de empresas globais) seguem princípios que reduzimos aqui ao que faz sentido para um personal:
 
-- **Abas ou seções:**
-  - **Lançar**  
-    Um formulário: tipo (Receita / Despesa), descrição (texto livre ou “Mensalidade – [nome aluno] – Mês/Ano”), valor, data.  
-    Grava em **uma única tabela** (ex.: `contas_financeiras` ou `lancamentos`) com campos estáticos (descrição, valor, data, tipo). Sem vínculo obrigatório com aluno (só texto na descrição).
-  - **Resumo do mês**  
-    Seletor Mês/Ano. Soma **receitas** e **despesas** daquele mês (filtro por data).  
-    Cards: Total recebido, Total pago, Saldo do mês. Sem lógica extra; só soma do que está salvo.
-  - **Extrato**  
-    Lista de todos os lançamentos (ou só receitas, com filtro), ordenada por data (mais recente primeiro).  
-    Opcional: filtro por mês. Cada linha: descrição (fixa), valor, data.
+| Princípio | No mundo enterprise | No Core (personal) |
+|-----------|---------------------|---------------------|
+| **Single source of truth** | Um único livro contábil; todas as telas leem dele. | Uma única base de lançamentos (receitas/despesas). Nada é “gerado” por data ou lista; tudo é **lançado** pelo usuário. |
+| **Imutabilidade / audit trail** | Lançamentos não são alterados no conteúdo; correções viram novos lançamentos ou estornos. | Cada lançamento guarda **descrição e valor fixos** (texto + número). Excluir um aluno não apaga receitas passadas; o histórico permanece legível. |
+| **Separação entre cadastro e movimento** | Clientes/produtos são cadastro; vendas e pagamentos são movimento. | Alunos são **cadastro**. Financeiro é **movimento**: lançamentos com descrição (ex.: “Mensalidade – João – Jan/2026”), valor e data. |
+| **Relatórios como visões** | Dashboard, DRE e extrato são **consultas** sobre os mesmos dados; não criam dados. | Resumo do mês e extrato são **somas e filtros** sobre os lançamentos. Zero lógica extra; só leitura. |
+| **Módulos claros e nomeados** | Contabilidade, Fiscal, RH etc. com fronteiras bem definidas. | Um módulo **Financeiro** com três funções: **Lançar**, **Resumo do mês**, **Extrato**. Nomes estáveis e óbvios. |
 
-- **Contas a pagar (opcional)**  
-  Se quiser manter “contas a pagar” no mesmo lugar: são lançamentos tipo Despesa com status “Pendente” ou “Pago”. O “Resumo do mês” considera só lançamentos com data naquele mês; pendentes podem ter data futura e aparecer em “Próximos vencimentos”.
-
-### 2. **Sem “Dashboard” separado (ou um bem mínimo)**
-
-- **Opção A:** Não ter tela “Dashboard”. Quem entra vai direto para **Alunos** ou **Financeiro** (definido por você).
-- **Opção B:** Um “Home” com apenas:
-  - Total recebido no mês atual (soma dos lançamentos de receita do mês).
-  - Total pago no mês atual (soma dos lançamentos de despesa do mês).
-  - Link rápido: “Lançar receita”, “Lançar despesa”, “Ver extrato”, “Alunos”.
-
-Nada de gráficos ou regras automáticas no início; tudo derivado dos lançamentos.
-
-### 3. **Alunos**
-
-- Continua como hoje: cadastro, ativo/inativo, exclusão.  
-- **Sem** botão “Lançar pagamento” na lista (evita duplicar fluxo).  
-- Quem quiser lançar receita de mensalidade usa **Financeiro → Lançar** e escreve na descrição “Mensalidade – Nome do aluno – Mês/Ano”.  
-- Opcional depois: no **Lançar**, um dropdown “Aluno” que só preenche a descrição automaticamente; o que vai pro banco continua sendo texto + valor + data.
-
-### 4. **Banco de dados**
-
-- **Uma tabela de lançamentos** (ex.: `lancamentos` ou uso de `contas_financeiras`):
-  - `personal_id`, `tipo` (receita/despesa), `descricao` (texto), `valor`, `data` (data do lançamento/vencimento), `status` (pago/pendente, para despesas), opcional `categoria`.
-- Sem tabela “mensalidades” no fluxo; sem geração automática por mês ou por aluno.
+O objetivo é trazer **confiabilidade e previsibilidade** de um ERP moderno, mantendo o escopo **100% focado no personal**: um dono, um negócio, sem multi-empresa nem multi-moeda.
 
 ---
 
-## Resumo do fluxo proposto
+## 3. Arquitetura do módulo Financeiro (estilo ERP)
 
-| Ação | Onde | O que acontece |
-|------|------|----------------|
-| Registrar que recebeu de um aluno | Financeiro → Lançar | Cria 1 lançamento tipo Receita, descrição “Mensalidade – João – Jan/2026”, valor X, data de hoje (ou da data que você escolher). |
-| Ver quanto entrou num mês | Financeiro → Resumo do mês | Seletor Mês/Ano; soma todos os lançamentos de receita daquele mês. |
-| Ver lista do que entrou | Financeiro → Extrato | Lista lançamentos (com filtro opcional por tipo/mês). |
-| Contas a pagar | Financeiro → mesma tabela | Lançamentos tipo Despesa, status Pendente/Pago; “Resumo” e “Próximos vencimentos” filtram por data. |
+O Financeiro é **um módulo** com uma única tela principal organizada em **áreas funcionais** (abas ou seções), no padrão de ERPs atuais:
 
-- **Você lança** → **O sistema salva** → **Resumo e extrato só leem e somam.**  
-- Histórico preservado: descrição e valor fixos; independe de aluno ativo ou excluído.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  FINANCEIRO                                                      │
+├─────────────────────────────────────────────────────────────────┤
+│  [ Lançar ]  [ Resumo do mês ]  [ Extrato ]  [ Contas a pagar ]  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Conteúdo da aba/seção selecionada                              │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 3.1 Lançar (entrada de dados)
+
+- **Função:** único ponto de entrada de movimentação financeira.  
+- **Campos:** Tipo (Receita / Despesa), Descrição (texto livre), Valor, Data.  
+- **Regra:** grava em **uma única tabela** de lançamentos. Descrição e valor são **estáticos** (não dependem de vínculo com aluno).  
+- **Uso típico (personal):** Receita = “Mensalidade – [Nome do aluno] – [Mês/Ano]”; Despesa = “Aluguel academia”, “Suplemento” etc.  
+- **Opcional (fase 2):** dropdown “Aluno” que **só preenche a descrição**; o banco continua armazenando texto + valor + data.
+
+### 3.2 Resumo do mês (visão gerencial)
+
+- **Função:** visão de resultado do período, no estilo “painel do mês” de ERPs.  
+- **Controle:** seletor **Mês/Ano**.  
+- **Cálculos:**  
+  - Total recebido = soma dos lançamentos tipo Receita com data no mês.  
+  - Total pago = soma dos lançamentos tipo Despesa com data no mês (considerando status Pago quando houver).  
+  - Saldo do mês = Total recebido − Total pago (e, se quiser, − Pendente a pagar).  
+- **Apresentação:** cards ou blocos bem legíveis (ex.: KPIs no topo da tela). Sem gráficos na primeira versão; só números e, se desejar, “Próximos vencimentos” (despesas pendentes com data no futuro).
+
+### 3.3 Extrato (auditoria e histórico)
+
+- **Função:** lista cronológica de lançamentos — equivalente ao extrato bancário ou ao relatório de movimentação contábil.  
+- **Ordenação:** data decrescente (mais recente primeiro).  
+- **Colunas sugeridas:** Data, Tipo, Descrição, Valor, Status (para despesas).  
+- **Filtros opcionais:** por mês, por tipo (Receita/Despesa).  
+- **Regra:** somente **leitura**; nenhum cálculo que altere ou “invente” dados.
+
+### 3.4 Contas a pagar (opcional)
+
+- **Função:** despesas com vencimento futuro e status Pendente/Pago.  
+- **Regra:** mesmo modelo de lançamento (tipo Despesa, com data de vencimento e status).  
+- **Resumo do mês:** pode considerar “Pago” no mês para o total pago; “Próximos vencimentos” lista pendentes por data.
 
 ---
 
-## Próximos passos sugeridos
+## 4. Modelo de dados (single source of truth)
 
-1. **Decidir** se quer:
-   - só **Financeiro** (Lançar + Resumo do mês + Extrato) e sem tela “Dashboard”, ou  
-   - um **Home** mínimo (totais do mês + links) além do Financeiro.
+Uma **única tabela** de movimentação (ex.: reaproveitar `contas_financeiras`):
 
-2. **Implementar** uma única tela **Financeiro** com:
-   - Formulário “Lançar” (tipo, descrição, valor, data).
-   - Seletor de mês para “Resumo do mês” (somas).
-   - Lista “Extrato” (todos os lançamentos, com filtro opcional por mês/tipo).
+| Campo         | Uso                                                                 |
+|---------------|---------------------------------------------------------------------|
+| `personal_id` | Dono do lançamento (sempre o personal logado).                      |
+| `tipo`        | Receita ou Despesa.                                                 |
+| `descricao`   | Texto fixo (ex.: “Mensalidade – João – Jan/2026”). Imutável.        |
+| `valor`       | Valor numérico. Imutável.                                           |
+| `data`        | Data do lançamento ou vencimento (única data para filtros de mês).  |
+| `status`      | Opcional: Pendente / Pago (relevante para despesas).                |
+| `categoria`   | Opcional: “Mensalidade”, “Renda extra”, “Aluguel” etc.              |
 
-3. **Reaproveitar** a tabela `contas_financeiras` já existente (com tipo receber/pagar, descrição, valor, data, status) em vez de criar outra, para não quebrar o que já existe no banco.
+**Não usar** no fluxo principal: tabela “mensalidades” com geração automática por mês ou por aluno. Toda entrada de valor vem do **Lançar**.
 
-Se quiser, na próxima etapa podemos desenhar juntos os campos exatos da tela e os nomes dos botões/abas em cima dessa proposta.
+---
+
+## 5. Fluxo operacional (o dia a dia do personal)
+
+| Ação do usuário              | Onde           | O que o sistema faz                                      |
+|-----------------------------|----------------|----------------------------------------------------------|
+| Registrar recebimento       | Financeiro → Lançar | Cria 1 lançamento Tipo = Receita, Descrição + Valor + Data. |
+| Ver resultado do mês        | Financeiro → Resumo do mês | Filtra por Mês/Ano e soma Receitas e Despesas (pagos).   |
+| Consultar histórico         | Financeiro → Extrato | Lista lançamentos (e filtros por mês/tipo).             |
+| Registrar conta a pagar     | Financeiro → Lançar (ou Contas a pagar) | Despesa, status Pendente, data = vencimento.             |
+| Marcar conta como paga      | Financeiro → Contas a pagar / Extrato | Atualiza status para Pago (e opcionalmente data de pagamento). |
+
+**Frase que resume o modelo:**  
+*Você lança → o sistema grava → Resumo e Extrato só leem e somam.*
+
+---
+
+## 6. Escopo “personal”: o que fica de fora (de propósito)
+
+Para manter o sistema **enxuto e 100% utilizável** para um personal:
+
+- **Sem** geração automática de mensalidades por aluno ou por mês.  
+- **Sem** “Dashboard” com regras de negócio próprias; no máximo um **Home** com totais do mês (lidos do mesmo livro de lançamentos) e atalhos.  
+- **Sem** múltiplas empresas, múltiplos usuários financeiros ou multi-moeda.  
+- **Alunos:** cadastro e filtro Ativo/Inativo; **não** é no cadastro de alunos que se “marca” pagamento — isso é feito no **Financeiro → Lançar**.
+
+Assim, o Core continua **claramente** um sistema “para quê”: **gestão simples e confiável do negócio do personal trainer**, com padrão de ERP moderno e foco em single source of truth, imutabilidade e relatórios como visões.
+
+---
+
+## 7. Próximos passos recomendados
+
+1. **Validar** com o usuário: uma tela Financeiro com abas/seções (Lançar, Resumo do mês, Extrato, opcional Contas a pagar) e, se fizer sentido, um Home mínimo.  
+2. **Implementar** o módulo Financeiro reutilizando a tabela `contas_financeiras` (ou equivalente), sem criar nova tabela de “mensalidades” no fluxo.  
+3. **Definir** textos e labels finais (ex.: “Lançar receita” / “Lançar despesa”) e ordem das abas conforme preferência de uso do personal.
+
+---
+
+*Documento alinhado a práticas de ERPs modernos (SAP, Oracle, Microsoft, Odoo), com escopo e linguagem adaptados ao negócio do personal trainer e à ideia inicial do Core: **o quê** (gestão de alunos, agenda e finanças) e **para quê** (clareza, histórico confiável e simplicidade operacional).*
