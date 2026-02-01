@@ -352,11 +352,14 @@ export const Agenda = () => {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 pb-24 lg:pb-0">
       <div>
         <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Agenda Semanal</h1>
         <p className="text-gray-light text-sm sm:text-base">
           Grade personalizada conforme seus dias e horários de atendimento. Configure em Perfil → Horários para a Agenda.
+        </p>
+        <p className="lg:hidden text-primary/90 text-xs mt-2">
+          Deslize para a direita para ver todos os dias.
         </p>
       </div>
 
@@ -369,18 +372,18 @@ export const Agenda = () => {
       ) : loading ? (
         <div className="text-center py-12 text-gray-light">Carregando...</div>
       ) : (
-        <Card>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+        <Card className="lg:block overflow-hidden">
+          <div className="overflow-x-auto -mx-1 lg:mx-0 overflow-y-visible touch-pan-x">
+            <table className="w-full border-collapse min-w-[280px]">
               <thead>
                 <tr>
-                    <th className="text-left py-3 px-2 sm:px-4 text-gray-light font-medium w-16 sm:w-24 border-b border-gray-dark sticky left-0 bg-dark-soft z-10">
+                    <th className="text-left py-3 px-2 sm:px-4 text-gray-light font-medium w-14 sm:w-24 border-b border-gray-dark sticky left-0 bg-dark-soft z-10 shadow-[4px_0_8px_-2px_rgba(0,0,0,0.3)] lg:shadow-none">
                       <span className="text-xs sm:text-sm">Horário</span>
                     </th>
                     {diasSemanaFiltered.map((dia) => (
                       <th
                         key={dia.id}
-                        className="text-center py-3 px-2 sm:px-4 text-gray-light font-medium min-w-[100px] sm:min-w-[150px] border-b border-gray-dark"
+                        className="text-center py-3 px-2 sm:px-4 text-gray-light font-medium min-w-[110px] sm:min-w-[150px] border-b border-gray-dark"
                       >
                         <div className="flex flex-col">
                           <span className="text-sm sm:text-lg font-semibold text-white">{dia.nome.split('-')[0]}</span>
@@ -392,7 +395,7 @@ export const Agenda = () => {
               <tbody>
                 {timeSlots.map((hora) => (
                   <tr key={hora} className="border-b border-gray-dark">
-                    <td className="py-2 px-2 sm:px-4 text-gray-light font-medium text-xs sm:text-sm sticky left-0 bg-dark-soft z-10 border-r border-gray-dark">
+                    <td className="py-2 px-2 sm:px-4 text-gray-light font-medium text-xs sm:text-sm sticky left-0 bg-dark-soft z-10 border-r border-gray-dark shadow-[4px_0_8px_-2px_rgba(0,0,0,0.3)] lg:shadow-none">
                       {hora}
                     </td>
                     {diasSemanaFiltered.map((dia) => {
@@ -406,13 +409,13 @@ export const Agenda = () => {
                         <td
                           key={`${dia.id}-${hora}`}
                           className="py-1 px-1"
-                          style={{ position: 'relative', height: '48px' }}
+                          style={{ position: 'relative', height: '52px' }}
                         >
                           {isFirstSlot && firstItem && slotHeight ? (
                             <div
-                              className={`${getSlotStyle(true)} rounded p-1 sm:p-2 text-xs flex flex-col justify-center min-h-[44px]`}
+                              className={`${getSlotStyle(true)} rounded p-2 sm:p-2 text-xs flex flex-col justify-center min-h-[48px] sm:min-h-[44px] active:scale-[0.98] transition-transform`}
                               style={{
-                                height: `${slotHeight}px`,
+                                height: `${Math.max(slotHeight, 52)}px`,
                                 position: 'absolute',
                                 top: 0,
                                 left: '4px',
@@ -421,19 +424,19 @@ export const Agenda = () => {
                               }}
                               onClick={() => handleSlotClick(dia.id, hora)}
                             >
-                              <p className="font-semibold truncate text-[10px] sm:text-xs">
+                              <p className="font-semibold truncate text-xs sm:text-xs">
                                 {items.map((it) => getAlunoNome(it)).join(', ')}
                               </p>
-                              <p className="text-[9px] sm:text-xs opacity-80 mt-0.5 sm:mt-1">
+                              <p className="text-[10px] sm:text-xs opacity-80 mt-0.5 sm:mt-1">
                                 {normalizeHora(String(firstItem.hora_inicio))} - {normalizeHora(String(firstItem.hora_fim))}
                               </p>
                             </div>
                           ) : items.length === 0 ? (
                             <div
-                              className={`${getSlotStyle(false)} rounded p-1 text-center text-xs h-full flex items-center justify-center min-h-[44px]`}
+                              className={`${getSlotStyle(false)} rounded p-2 text-center text-xs h-full flex items-center justify-center min-h-[48px] sm:min-h-[44px] active:scale-[0.98] transition-transform touch-manipulation`}
                               onClick={() => handleSlotClick(dia.id, hora)}
                             >
-                              <span className="text-gray-light opacity-50 text-[10px] sm:text-xs">Livre</span>
+                              <span className="text-gray-light opacity-50 text-xs sm:text-xs">Livre</span>
                             </div>
                           ) : null}
                         </td>

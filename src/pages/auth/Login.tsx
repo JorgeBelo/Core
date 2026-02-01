@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/common/Button';
 import { Logo } from '../../components/common/Logo';
@@ -18,9 +19,18 @@ export const Login = () => {
     try {
       await login(email, password);
       navigate('/home');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erro no login:', error);
-      // TODO: Mostrar toast de erro
+      const msg = error && typeof error === 'object' && 'message' in error
+        ? String((error as { message: string }).message)
+        : '';
+      if (msg.toLowerCase().includes('email not confirmed') || msg.includes('Email not confirmed')) {
+        toast.error('E-mail ainda não confirmado. Verifique sua caixa de entrada (e spam) e clique no link enviado.');
+      } else if (msg.toLowerCase().includes('invalid login') || msg.includes('Invalid')) {
+        toast.error('E-mail ou senha incorretos. Tente novamente.');
+      } else {
+        toast.error(msg || 'Erro ao entrar. Tente novamente.');
+      }
     } finally {
       setLoading(false);
     }

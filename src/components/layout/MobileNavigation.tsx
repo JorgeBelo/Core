@@ -1,16 +1,17 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Calendar } from 'lucide-react';
+import { Home, Users, Calendar, User } from 'lucide-react';
 
 const menuItems = [
   { path: '/home', icon: Home, label: 'Home' },
   { path: '/alunos', icon: Users, label: 'Alunos' },
   { path: '/agenda', icon: Calendar, label: 'Agenda' },
+  { path: '/perfil', icon: User, label: 'Perfil' },
 ];
 
 export const MobileNavigation = () => {
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-dark-soft border-t border-gray-dark z-50">
-      <div className="grid grid-cols-3 h-16">
+      <div className="grid grid-cols-4 h-16">
         {menuItems.map((item) => {
           const Icon = item.icon;
           return (

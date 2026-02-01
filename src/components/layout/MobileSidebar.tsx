@@ -105,8 +105,8 @@ export const MobileSidebar = () => {
             </ul>
           </nav>
 
-          {/* Footer */}
-          <div className="p-4 border-t border-gray-dark space-y-3">
+          {/* Footer: padding extra no mobile para não ficar atrás da barra inferior */}
+          <div className="p-4 pb-24 lg:pb-4 border-t border-gray-dark space-y-3">
             <ProfileDropdown />
           </div>
         </div>
