@@ -130,16 +130,26 @@ export const RelatorioAlunosModal = ({
       return [nome, tel, freq];
     });
 
-    autoTable(doc, {
-      startY: y,
-      head: [['Nome', 'Telefone', 'Vezes por semana']],
-      body: tableData,
-      theme: 'grid',
+    const drawFooter = (pageNum: number) => {
+      const footerY = pageHeight - 12;
+      doc.setFontSize(10);
+      doc.setTextColor(64, 64, 64);
+      doc.text(
+        `Core - Gestão para Personal Trainers | Documento gerado em ${dataHoraGeracao}`,
+        pageWidth / 2,
+        footerY,
+        { align: 'center' }
+      );
+      doc.text(`Página ${pageNum}`, pageWidth - margin, footerY, { align: 'right' });
+    };
+
+    const tableOpts = {
+      theme: 'grid' as const,
       headStyles: {
         fillColor: [primaryR, primaryG, primaryB],
         textColor: [255, 255, 255],
         fontSize: 12,
-        fontStyle: 'bold',
+        fontStyle: 'bold' as const,
         cellPadding: 4,
       },
       bodyStyles: {
@@ -148,27 +158,46 @@ export const RelatorioAlunosModal = ({
         cellPadding: 3.5,
       },
       columnStyles: {
-        1: { cellWidth: 50, overflow: 'hidden' },   // Telefone – evita quebra
-        2: { cellWidth: 36, overflow: 'hidden' },   // Vezes por semana – evita quebra
+        1: { cellWidth: 50, overflow: 'hidden' as const },
+        2: { cellWidth: 36, overflow: 'hidden' as const },
       },
       alternateRowStyles: { fillColor: [248, 248, 248] },
       margin: { left: margin, right: margin, bottom: 18 },
       tableLineColor: [64, 64, 64],
-      showHead: 'everyPage', // repete cabeçalho da tabela em cada página
-      didDrawPage: (data) => {
-        // Rodapé em todas as páginas, fixo no fim da folha A4
-        const footerY = pageHeight - 12;
-        doc.setFontSize(10);
-        doc.setTextColor(64, 64, 64);
-        doc.text(
-          `Core - Gestão para Personal Trainers | Documento gerado em ${dataHoraGeracao}`,
-          pageWidth / 2,
-          footerY,
-          { align: 'center' }
-        );
-        doc.text(`Página ${data.pageNumber}`, pageWidth - margin, footerY, { align: 'right' });
-      },
-    });
+    };
+
+    if (alunosAtivos.length >= 20) {
+      // A partir de 20 alunos: 1ª página com 19 alunos, 2ª página (e seguintes) com o restante
+      const primeiraPagina = tableData.slice(0, 19);
+      const restante = tableData.slice(19);
+      autoTable(doc, {
+        ...tableOpts,
+        startY: y,
+        head: [['Nome', 'Telefone', 'Vezes por semana']],
+        body: primeiraPagina,
+        showHead: 'firstPage',
+        didDrawPage: (data) => { drawFooter(data.pageNumber); },
+      });
+      doc.addPage();
+      autoTable(doc, {
+        ...tableOpts,
+        startY: margin,
+        head: [['Nome', 'Telefone', 'Vezes por semana']],
+        body: restante,
+        showHead: 'everyPage', // repete cabeçalho se o restante ocupar mais de uma página
+        didDrawPage: (data) => { drawFooter(data.pageNumber); },
+      });
+    } else {
+      // Menos de 20 alunos: todos na mesma página
+      autoTable(doc, {
+        ...tableOpts,
+        startY: y,
+        head: [['Nome', 'Telefone', 'Vezes por semana']],
+        body: tableData,
+        showHead: 'firstPage',
+        didDrawPage: (data) => { drawFooter(data.pageNumber); },
+      });
+    }
 
     doc.save(`relatorio-alunos-${dataGeracaoArquivo}.pdf`);
   };
