@@ -4,12 +4,9 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/auth/Login';
-import { Dashboard } from './pages/dashboard/Dashboard';
 import { Alunos } from './pages/alunos/Alunos';
 import { AlunoDetalhes } from './pages/alunos/AlunoDetalhes';
 import { Agenda } from './pages/agenda/Agenda';
-import { Financeiro } from './pages/financeiro/Financeiro';
-import { HistoricoEntrada } from './pages/historico/HistoricoEntrada';
 import { Perfil } from './pages/perfil/Perfil';
 import { Notificacoes } from './pages/notificacoes/Notificacoes';
 
@@ -29,7 +26,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
   
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/alunos" replace />;
   }
   
   return <>{children}</>;
@@ -45,14 +42,6 @@ function AppRoutes() {
             <Login />
           </PublicRoute>
         } 
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
       />
       <Route
         path="/alunos"
@@ -79,22 +68,6 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/financeiro"
-        element={
-          <ProtectedRoute>
-            <Financeiro />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/historico-entrada"
-        element={
-          <ProtectedRoute>
-            <HistoricoEntrada />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/perfil"
         element={
           <ProtectedRoute>
@@ -110,7 +83,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to="/alunos" replace />} />
     </Routes>
   );
 }

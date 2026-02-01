@@ -17,7 +17,7 @@ export const Login = () => {
     
     try {
       await login(email, password);
-      navigate('/dashboard');
+      navigate('/alunos');
     } catch (error) {
       console.error('Erro no login:', error);
       // TODO: Mostrar toast de erro

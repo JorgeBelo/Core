@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Eye, Edit, Trash2, DollarSign } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Trash2 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { Aluno } from '../../types';
 import { CadastroAlunoModal } from './CadastroAlunoModal';
-import { LancarPagamentoModal } from '../financeiro/LancarPagamentoModal';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
 import { maskWhatsApp } from '../../utils/masks';
@@ -21,8 +20,6 @@ export const Alunos = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroAtivo, setFiltroAtivo] = useState<FiltroAtivo>('ativos');
   const [showModal, setShowModal] = useState(false);
-  const [showLancarPagamento, setShowLancarPagamento] = useState(false);
-  const [alunoParaLancamento, setAlunoParaLancamento] = useState<string | null>(null);
   const [editingAluno, setEditingAluno] = useState<Aluno | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -60,7 +57,7 @@ export const Alunos = () => {
       'Tem certeza que deseja excluir o aluno "' +
       nome +
       '"?\n\n' +
-      'O aluno sairá da lista. Os lançamentos financeiros em que ele aparece (no Financeiro / Histórico de Entrada) permanecerão salvos com o nome dele na descrição.';
+      'O aluno sairá da lista.';
     if (!confirm(msg)) {
       return;
     }
@@ -108,21 +105,10 @@ export const Alunos = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Alunos</h1>
           <p className="text-gray-light text-sm sm:text-base">
-            Cadastro de alunos. Ativo/Inativo é só um filtro visual. Para registrar pagamentos, use{' '}
-            <strong className="text-white">Lançar pagamento</strong> (aqui ou no Financeiro).
+            Cadastro de alunos. Ativo/Inativo é só um filtro visual.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setAlunoParaLancamento(null);
-              setShowLancarPagamento(true);
-            }}
-            className="min-h-[44px]"
-          >
-            Lançar pagamento
-          </Button>
           <Button
             onClick={() => {
               setEditingAluno(null);
@@ -225,17 +211,6 @@ export const Alunos = () => {
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAlunoParaLancamento(aluno.id);
-                              setShowLancarPagamento(true);
-                            }}
-                            className="text-green-500 hover:text-green-400 text-xs font-medium min-h-[44px]"
-                            title="Lançar pagamento"
-                          >
-                            Lançar pag.
-                          </button>
                           <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Ver">
                             <Eye size={18} />
                           </button>
@@ -285,17 +260,6 @@ export const Alunos = () => {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-dark">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAlunoParaLancamento(aluno.id);
-                        setShowLancarPagamento(true);
-                      }}
-                      className="flex items-center gap-2 text-green-500 hover:text-green-400 text-sm min-h-[44px]"
-                    >
-                      <DollarSign size={18} />
-                      Lançar pagamento
-                    </button>
                     <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="flex items-center gap-2 text-primary hover:text-primary-light text-sm min-h-[44px]">
                       <Eye size={18} /> Ver
                     </button>
@@ -324,15 +288,6 @@ export const Alunos = () => {
         />
       )}
 
-      {showLancarPagamento && (
-        <LancarPagamentoModal
-          alunoId={alunoParaLancamento}
-          onClose={() => {
-            setShowLancarPagamento(false);
-            setAlunoParaLancamento(null);
-          }}
-        />
-      )}
-    </div>
+      </div>
   );
 };

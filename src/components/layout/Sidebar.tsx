@@ -1,13 +1,4 @@
-import { 
-  LayoutDashboard, 
-  Users, 
-  Calendar, 
-  DollarSign, 
-  History,
-  Bell,
-  User as UserIcon,
-  ChevronDown
-} from 'lucide-react';
+import { Users, Calendar, Bell, User as UserIcon, ChevronDown } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Logo } from '../common/Logo';
 import { NotificationsDropdown } from '../common/NotificationsDropdown';
@@ -21,11 +12,8 @@ type MenuItem = {
 };
 
 const menuItems: MenuItem[] = [
-  { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/alunos', icon: Users, label: 'Alunos' },
-  { path: '/historico-entrada', icon: History, label: 'Histórico de Entrada' },
   { path: '/agenda', icon: Calendar, label: 'Agenda Semanal' },
-  { path: '/financeiro', icon: DollarSign, label: 'Financeiro' },
   { path: '/notificacoes', icon: Bell, label: 'Notificações' },
   { path: '/perfil', icon: UserIcon, label: 'Perfil' },
 ];

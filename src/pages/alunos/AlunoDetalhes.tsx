@@ -4,7 +4,6 @@ import { ArrowLeft, Phone, DollarSign, Calendar } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { Aluno } from '../../types';
-import { LancarPagamentoModal } from '../financeiro/LancarPagamentoModal';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
 import { maskWhatsApp } from '../../utils/masks';
@@ -17,7 +16,6 @@ export const AlunoDetalhes = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [aluno, setAluno] = useState<Aluno | null>(null);
-  const [showLancarPagamento, setShowLancarPagamento] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -86,10 +84,7 @@ export const AlunoDetalhes = () => {
           <h1 className="text-3xl font-sans font-semibold text-white mb-2">{alunoNome}</h1>
           <p className="text-gray-light">Perfil completo do aluno</p>
         </div>
-        <Button onClick={() => setShowLancarPagamento(true)} className="min-h-[44px]">
-          Lançar pagamento
-        </Button>
-      </div>
+        </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Informações Administrativas */}
@@ -152,19 +147,9 @@ export const AlunoDetalhes = () => {
               <p className="text-gray-light text-sm">Dia de vencimento</p>
               <p className="text-white">Dia {aluno.payment_day || '-'} do mês</p>
             </div>
-            <Button onClick={() => setShowLancarPagamento(true)} className="w-full min-h-[44px]">
-              Lançar pagamento
-            </Button>
-          </div>
+            </div>
         </Card>
       </div>
-
-      {showLancarPagamento && id && (
-        <LancarPagamentoModal
-          alunoId={id}
-          onClose={() => setShowLancarPagamento(false)}
-        />
-      )}
     </div>
   );
 };
