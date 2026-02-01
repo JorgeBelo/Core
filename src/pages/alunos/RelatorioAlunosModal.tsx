@@ -166,10 +166,10 @@ export const RelatorioAlunosModal = ({
       tableLineColor: [64, 64, 64] as [number, number, number],
     };
 
-    if (alunosAtivos.length >= 20) {
-      // A partir de 20 alunos: 1ª página com 19 alunos, 2ª página (e seguintes) com o restante
-      const primeiraPagina = tableData.slice(0, 19);
-      const restante = tableData.slice(19);
+    if (alunosAtivos.length > 20) {
+      // A partir de 21 alunos: 1ª página com 20 alunos, 2ª página (e seguintes) com o restante
+      const primeiraPagina = tableData.slice(0, 20);
+      const restante = tableData.slice(20);
       autoTable(doc, {
         ...tableOpts,
         startY: y,
@@ -184,11 +184,11 @@ export const RelatorioAlunosModal = ({
         startY: margin,
         head: [['Nome', 'Telefone', 'Vezes por semana']],
         body: restante,
-        showHead: 'everyPage', // repete cabeçalho se o restante ocupar mais de uma página
+        showHead: 'everyPage',
         didDrawPage: (data) => { drawFooter(data.pageNumber); },
       });
     } else {
-      // Menos de 20 alunos: todos na mesma página
+      // Até 20 alunos: todos na mesma página (tabela mais compacta para caber)
       autoTable(doc, {
         ...tableOpts,
         startY: y,
@@ -196,6 +196,11 @@ export const RelatorioAlunosModal = ({
         body: tableData,
         showHead: 'firstPage',
         didDrawPage: (data) => { drawFooter(data.pageNumber); },
+        bodyStyles: {
+          fontSize: 10,
+          textColor: [26, 26, 26] as [number, number, number],
+          cellPadding: 2.5,
+        },
       });
     }
 
@@ -221,7 +226,7 @@ export const RelatorioAlunosModal = ({
           <button
             type="button"
             onClick={handleImprimir}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors min-h-[44px]"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors min-h-[44px] whitespace-nowrap"
           >
             <Printer size={18} />
             Imprimir
@@ -229,7 +234,7 @@ export const RelatorioAlunosModal = ({
           <button
             type="button"
             onClick={handleBaixarPdf}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark border border-gray-dark text-white hover:bg-dark transition-colors min-h-[44px]"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-dark border border-gray-dark text-white hover:bg-dark transition-colors min-h-[44px] whitespace-nowrap"
           >
             <FileDown size={18} />
             Baixar PDF
