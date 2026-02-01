@@ -1,4 +1,4 @@
-import { Users, Calendar, Activity, User as UserIcon, ChevronDown } from 'lucide-react';
+import { Home, Users, Calendar, User as UserIcon, ChevronDown } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Logo } from '../common/Logo';
 import { ProfileDropdown } from '../common/ProfileDropdown';
@@ -11,8 +11,8 @@ type MenuItem = {
 };
 
 const menuItems: MenuItem[] = [
+  { path: '/home', icon: Home, label: 'Home' },
   { path: '/alunos', icon: Users, label: 'Alunos' },
-  { path: '/avaliacao', icon: Activity, label: 'Avaliação Física' },
   { path: '/agenda', icon: Calendar, label: 'Agenda Semanal' },
   { path: '/perfil', icon: UserIcon, label: 'Perfil' },
 ];

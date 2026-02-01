@@ -4,10 +4,10 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Layout } from './components/layout/Layout';
 import { Login } from './pages/auth/Login';
+import { Home } from './pages/home/Home';
 import { Alunos } from './pages/alunos/Alunos';
 import { AlunoDetalhes } from './pages/alunos/AlunoDetalhes';
 import { Agenda } from './pages/agenda/Agenda';
-import { Avaliacao } from './pages/avaliacao/Avaliacao';
 import { Perfil } from './pages/perfil/Perfil';
 
 // Componente para proteger rotas autenticadas
@@ -26,7 +26,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
   
   if (isAuthenticated) {
-    return <Navigate to="/alunos" replace />;
+    return <Navigate to="/home" replace />;
   }
   
   return <>{children}</>;
@@ -42,6 +42,14 @@ function AppRoutes() {
             <Login />
           </PublicRoute>
         } 
+      />
+      <Route
+        path="/home"
+        element={
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/alunos"
@@ -68,14 +76,6 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/avaliacao"
-        element={
-          <ProtectedRoute>
-            <Avaliacao />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/perfil"
         element={
           <ProtectedRoute>
@@ -83,7 +83,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/alunos" replace />} />
+      <Route path="/" element={<Navigate to="/home" replace />} />
     </Routes>
   );
 }

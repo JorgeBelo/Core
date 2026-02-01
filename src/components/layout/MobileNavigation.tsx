@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom';
-import { Users, Calendar, Activity, User as UserIcon } from 'lucide-react';
+import { Home, Users, Calendar, User as UserIcon } from 'lucide-react';
 
 const menuItems = [
+  { path: '/home', icon: Home, label: 'Home' },
   { path: '/alunos', icon: Users, label: 'Alunos' },
-  { path: '/avaliacao', icon: Activity, label: 'Avaliação' },
   { path: '/agenda', icon: Calendar, label: 'Agenda' },
   { path: '/perfil', icon: UserIcon, label: 'Perfil' },
 ];
