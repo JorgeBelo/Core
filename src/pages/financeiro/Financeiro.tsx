@@ -10,10 +10,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2,
+  Users,
 } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { ContaFinanceira } from '../../types';
+import type { Aluno } from '../../types';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -29,7 +31,7 @@ import toast from 'react-hot-toast';
 import { parseLocalDate } from '../../utils/dateUtils';
 import { maskCurrencyBRL, unmaskCurrencyBRLToNumber } from '../../utils/masks';
 
-type Aba = 'lancar' | 'resumo' | 'extrato' | 'contas';
+type Aba = 'lancar' | 'mensalidades' | 'resumo' | 'extrato' | 'contas';
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -55,11 +57,45 @@ export const Financeiro = () => {
   const [filtroExtratoMes, setFiltroExtratoMes] = useState<string>('');
   const [filtroExtratoTipo, setFiltroExtratoTipo] = useState<string>('');
 
+  const [alunos, setAlunos] = useState<Aluno[]>([]);
+  const [mesMensalidades, setMesMensalidades] = useState<string>(() => format(new Date(), 'yyyy-MM'));
+  const [recebidosMensalidades, setRecebidosMensalidades] = useState<Record<string, boolean>>({});
+  const [valoresMensalidades, setValoresMensalidades] = useState<Record<string, number>>({});
+  const [salvandoMensalidades, setSalvandoMensalidades] = useState(false);
+
   const hoje = new Date();
 
   useEffect(() => {
     if (user) loadContas();
   }, [user]);
+
+  useEffect(() => {
+    if (user && aba === 'mensalidades') loadAlunos();
+  }, [user, aba]);
+
+  const loadAlunos = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('alunos')
+        .select('*')
+        .eq('personal_id', user.id)
+        .order('nome');
+      if (error) throw error;
+      const list = (data || []) as Aluno[];
+      setAlunos(list);
+      const inits: Record<string, boolean> = {};
+      const vals: Record<string, number> = {};
+      list.forEach((a) => {
+        inits[a.id] = false;
+        vals[a.id] = typeof a.monthly_fee === 'number' ? a.monthly_fee : parseFloat(String(a.monthly_fee)) || 0;
+      });
+      setRecebidosMensalidades(inits);
+      setValoresMensalidades(vals);
+    } catch (e: any) {
+      toast.error('Erro ao carregar alunos');
+    }
+  };
 
   const loadContas = async () => {
     if (!user) return;
@@ -153,6 +189,50 @@ export const Financeiro = () => {
     }
   };
 
+  const gerarMensalidadesEmLote = async () => {
+    if (!user) return;
+    const [y, m] = mesMensalidades.split('-').map(Number);
+    const mesLabel = format(new Date(y, m - 1, 1), 'MMMM/yyyy', { locale: ptBR });
+    const primeiroDia = `${mesMensalidades}-01`;
+    const marcados = alunos.filter((a) => recebidosMensalidades[a.id]);
+    if (marcados.length === 0) {
+      toast.error('Marque pelo menos um aluno que pagou.');
+      return;
+    }
+    setSalvandoMensalidades(true);
+    try {
+      const rows = marcados.map((a) => {
+        const nome = a.nome || a.name || 'Aluno';
+        const valor = valoresMensalidades[a.id] ?? a.monthly_fee ?? 0;
+        return {
+          personal_id: user.id,
+          descricao: `Mensalidade de ${nome} - ${mesLabel}`,
+          valor,
+          data_vencimento: primeiroDia,
+          categoria: 'Mensalidade',
+          tipo: 'receber' as const,
+          parcelada: false,
+          conta_fixa: false,
+          pago: true,
+        };
+      });
+      const { error } = await supabase.from('contas_financeiras').insert(rows);
+      if (error) throw error;
+      toast.success(`${marcados.length} mensalidade(s) de ${mesLabel} registrada(s).`);
+      setRecebidosMensalidades((prev) => {
+        const next = { ...prev };
+        marcados.forEach((a) => { next[a.id] = false; });
+        return next;
+      });
+      loadContas();
+    } catch (error: any) {
+      console.error('Erro ao gerar mensalidades:', error);
+      toast.error(error.message || 'Erro ao gerar lançamentos');
+    } finally {
+      setSalvandoMensalidades(false);
+    }
+  };
+
   const excluirLancamento = async (conta: ContaFinanceira) => {
     if (!confirm(`Excluir o lançamento "${conta.descricao}"?`)) return;
     try {
@@ -174,6 +254,7 @@ export const Financeiro = () => {
 
   const abas: { id: Aba; label: string; icon: React.ReactNode }[] = [
     { id: 'lancar', label: 'Lançar', icon: <Plus size={18} /> },
+    { id: 'mensalidades', label: 'Mensalidades do mês', icon: <Users size={18} /> },
     { id: 'resumo', label: 'Resumo do mês', icon: <DollarSign size={18} /> },
     { id: 'extrato', label: 'Extrato', icon: <FileText size={18} /> },
     { id: 'contas', label: 'Contas a pagar', icon: <Clock size={18} /> },
@@ -209,7 +290,7 @@ export const Financeiro = () => {
         </div>
       </Card>
 
-      {loading && aba !== 'lancar' ? (
+      {loading && aba !== 'lancar' && aba !== 'mensalidades' ? (
         <div className="text-center py-12 text-gray-light">Carregando...</div>
       ) : (
         <>
@@ -281,6 +362,67 @@ export const Financeiro = () => {
                   {salvando ? 'Salvando...' : 'Lançar'}
                 </Button>
               </form>
+            </Card>
+          )}
+
+          {/* Aba: Mensalidades do mês (em lote) */}
+          {aba === 'mensalidades' && (
+            <Card>
+              <h2 className="text-lg font-semibold text-white mb-2">Mensalidades do mês (em lote)</h2>
+              <p className="text-gray-light text-sm mb-4">
+                Selecione o mês e marque quem já pagou. Ao clicar em &quot;Gerar lançamentos&quot;, um registro é criado para cada aluno marcado (nome e valor ficam salvos). Gere apenas uma vez por mês para evitar duplicatas.
+              </p>
+              <div className="flex flex-wrap items-center gap-4 mb-6">
+                <label className="flex items-center gap-2">
+                  <span className="text-gray-light text-sm">Mês de referência:</span>
+                  <input
+                    type="month"
+                    value={mesMensalidades}
+                    onChange={(e) => setMesMensalidades(e.target.value)}
+                    className="input-core w-auto"
+                  />
+                </label>
+                <Button onClick={gerarMensalidadesEmLote} disabled={salvandoMensalidades}>
+                  {salvandoMensalidades ? 'Gerando...' : 'Gerar lançamentos'}
+                </Button>
+                <span className="text-gray-light text-sm">
+                  {alunos.filter((a) => recebidosMensalidades[a.id]).length} marcado(s)
+                </span>
+              </div>
+              {alunos.length === 0 ? (
+                <p className="text-gray-light py-6">Nenhum aluno cadastrado. Cadastre alunos em Alunos.</p>
+              ) : (
+                <ul className="divide-y divide-gray-dark">
+                  {alunos.map((a) => {
+                    const nome = a.nome || a.name || 'Aluno';
+                    const valor = valoresMensalidades[a.id] ?? (typeof a.monthly_fee === 'number' ? a.monthly_fee : parseFloat(String(a.monthly_fee)) || 0);
+                    return (
+                      <li key={a.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={!!recebidosMensalidades[a.id]}
+                            onChange={(e) => setRecebidosMensalidades((prev) => ({ ...prev, [a.id]: e.target.checked }))}
+                            className="rounded border-gray-dark text-primary focus:ring-primary w-5 h-5"
+                          />
+                          <span className="text-white font-medium truncate">{nome}</span>
+                        </label>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={valor}
+                            onChange={(e) => setValoresMensalidades((prev) => ({ ...prev, [a.id]: parseFloat(e.target.value) || 0 }))}
+                            className="input-core w-28 text-right"
+                          />
+                          <span className="text-gray-light text-sm">R$</span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </Card>
           )}
 
