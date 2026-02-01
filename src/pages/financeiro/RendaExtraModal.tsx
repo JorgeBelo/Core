@@ -44,6 +44,7 @@ export const RendaExtraModal = ({ onClose, mesRef }: RendaExtraModalProps) => {
         descricao: formData.descricao.trim(),
         valor,
         data_vencimento: formData.data_vencimento,
+        categoria: 'Renda extra',
         tipo: 'receber',
         parcelada: false,
         conta_fixa: false,

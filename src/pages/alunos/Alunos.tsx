@@ -1,60 +1,37 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Eye, Edit, Trash2, CheckCircle, Clock, DollarSign } from 'lucide-react';
+import { Search, Plus, Eye, Edit, Trash2, DollarSign } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { Aluno } from '../../types';
 import { CadastroAlunoModal } from './CadastroAlunoModal';
+import { LancarPagamentoModal } from '../financeiro/LancarPagamentoModal';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
 import { maskWhatsApp } from '../../utils/masks';
 import toast from 'react-hot-toast';
-import {
-  ensureMensalidadesForMonth,
-  getMensalidadesForMonth,
-  updateMensalidadeStatus,
-  type MensalidadeRow,
-} from '../../services/mensalidadesService';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+type FiltroAtivo = 'todos' | 'ativos' | 'inativos';
 
 export const Alunos = () => {
   const { user } = useAuth();
   const [alunos, setAlunos] = useState<Aluno[]>([]);
-  const [mensalidadesMes, setMensalidadesMes] = useState<MensalidadeRow[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filtroAtivo, setFiltroAtivo] = useState<FiltroAtivo>('ativos');
   const [showModal, setShowModal] = useState(false);
+  const [showLancarPagamento, setShowLancarPagamento] = useState(false);
+  const [alunoParaLancamento, setAlunoParaLancamento] = useState<string | null>(null);
   const [editingAluno, setEditingAluno] = useState<Aluno | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
-  const hoje = new Date();
-  const inicioMesAtual = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  const anoAtual = hoje.getFullYear();
-  const mesAtual = hoje.getMonth() + 1;
 
   useEffect(() => {
     if (user) {
       loadAlunos();
     }
   }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      loadMensalidadesDoMes();
-    }
-  }, [user, anoAtual, mesAtual]);
-
-  const loadMensalidadesDoMes = async () => {
-    if (!user) return;
-    try {
-      await ensureMensalidadesForMonth(user.id, anoAtual, mesAtual);
-      const mens = await getMensalidadesForMonth(user.id, anoAtual, mesAtual);
-      setMensalidadesMes(mens);
-    } catch (error: any) {
-      console.error('Erro ao carregar mensalidades do mês:', error);
-    }
-  };
 
   const loadAlunos = async () => {
     if (!user) return;
@@ -69,30 +46,7 @@ export const Alunos = () => {
 
       if (error) throw error;
 
-      const lista = (data || []) as Aluno[];
-      setAlunos(lista);
-
-      await ensureMensalidadesForMonth(user.id, anoAtual, mesAtual);
-      const mens = await getMensalidadesForMonth(user.id, anoAtual, mesAtual);
-      setMensalidadesMes(mens);
-
-      const diaHoje = hoje.getDate();
-      const mesHoje = hoje.getMonth();
-
-      lista.forEach((aluno) => {
-        const nome = aluno.nome || aluno.name || 'Aluno';
-        const mensAluno = mens.find((m: MensalidadeRow) => m.aluno_id === aluno.id);
-
-        if (aluno.payment_day === diaHoje && mensAluno?.status !== 'pago') {
-          toast(`Hoje vence a mensalidade de ${nome}.`, { icon: '💰' });
-        }
-        if (aluno.birth_date) {
-          const dt = new Date(aluno.birth_date);
-          if (dt.getDate() === diaHoje && dt.getMonth() === mesHoje) {
-            toast(`Hoje é aniversário de ${nome}! 🎉`, { icon: '🎂' });
-          }
-        }
-      });
+      setAlunos((data || []) as Aluno[]);
     } catch (error: any) {
       console.error('Erro ao carregar alunos:', error);
       toast.error('Erro ao carregar alunos');
@@ -101,24 +55,18 @@ export const Alunos = () => {
     }
   };
 
-  const getStatusAluno = (alunoId: string): 'pago' | 'pendente' | 'atrasado' => {
-    const m = mensalidadesMes.find((x) => x.aluno_id === alunoId);
-    return m?.status || 'pendente';
-  };
-
-  const getMensalidadeAluno = (alunoId: string): MensalidadeRow | undefined =>
-    mensalidadesMes.find((x) => x.aluno_id === alunoId);
-
   const handleDelete = async (id: string, nome: string) => {
-    if (!confirm(`Tem certeza que deseja excluir o aluno "${nome}"?`)) {
+    const msg =
+      'Tem certeza que deseja excluir o aluno "' +
+      nome +
+      '"?\n\n' +
+      'O aluno sairá da lista. Os lançamentos financeiros em que ele aparece (no Financeiro / Histórico de Entrada) permanecerão salvos com o nome dele na descrição.';
+    if (!confirm(msg)) {
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from('alunos')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from('alunos').delete().eq('id', id);
 
       if (error) throw error;
 
@@ -137,7 +85,14 @@ export const Alunos = () => {
 
   const matchesSearch = (nome: string) =>
     nome.toLowerCase().includes(searchTerm.toLowerCase().trim());
-  const filteredAlunos = alunos.filter((a) =>
+
+  const alunosFiltradosPorAtivo = alunos.filter((a) => {
+    if (filtroAtivo === 'todos') return true;
+    if (filtroAtivo === 'ativos') return a.active !== false;
+    return a.active === false;
+  });
+
+  const filteredAlunos = alunosFiltradosPorAtivo.filter((a) =>
     matchesSearch(a.nome || a.name || '')
   );
 
@@ -147,92 +102,63 @@ export const Alunos = () => {
     minimumFractionDigits: 2,
   });
 
-  const totalRecebido = mensalidadesMes
-    .filter((m) => m.status === 'pago')
-    .reduce((sum, m) => sum + (typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0), 0);
-
-  const totalPendentes = mensalidadesMes
-    .filter((m) => m.status !== 'pago')
-    .reduce((sum, m) => sum + (typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0), 0);
-
-  const totalMes = mensalidadesMes.reduce(
-    (sum, m) => sum + (typeof m.amount === 'number' ? m.amount : parseFloat(String(m.amount)) || 0),
-    0
-  );
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Alunos</h1>
           <p className="text-gray-light text-sm sm:text-base">
-            Gerencie seus alunos e status de pagamento do mês. Marque quem já pagou — depois que o mês passar não será possível alterar. O histórico fica em <strong className="text-white">Histórico de Entrada</strong>.
+            Cadastro de alunos. Ativo/Inativo é só um filtro visual. Para registrar pagamentos, use{' '}
+            <strong className="text-white">Lançar pagamento</strong> (aqui ou no Financeiro).
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="secondary"
-            onClick={() => navigate('/historico-entrada')}
+            onClick={() => {
+              setAlunoParaLancamento(null);
+              setShowLancarPagamento(true);
+            }}
             className="min-h-[44px]"
           >
-            Ver histórico de entrada
+            Lançar pagamento
           </Button>
           <Button
             onClick={() => {
-            setEditingAluno(null);
-            setShowModal(true);
-          }}
-          className="flex items-center w-full sm:w-auto justify-center min-h-[44px]"
-        >
-          <Plus size={20} className="mr-2" />
-          <span className="hidden sm:inline">Cadastrar Novo Aluno</span>
-          <span className="sm:hidden">Novo Aluno</span>
-        </Button>
+              setEditingAluno(null);
+              setShowModal(true);
+            }}
+            className="flex items-center w-full sm:w-auto justify-center min-h-[44px]"
+          >
+            <Plus size={20} className="mr-2" />
+            <span className="hidden sm:inline">Cadastrar Novo Aluno</span>
+            <span className="sm:hidden">Novo Aluno</span>
+          </Button>
         </div>
       </div>
 
-      {/* Cards de Resumo - estilo Financeiro */}
-      {alunos.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-          <Card>
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-gray-light text-xs sm:text-sm mb-1 truncate">Total Recebido</p>
-                <p className="text-lg sm:text-2xl font-bold text-green-500 truncate">
-                  {currencyFormatter.format(totalRecebido)}
-                </p>
-              </div>
-              <CheckCircle className="text-green-500 flex-shrink-0 hidden sm:block" size={32} />
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-gray-light text-xs sm:text-sm mb-1 truncate">Pendentes</p>
-                <p className="text-lg sm:text-2xl font-bold text-primary truncate">
-                  {currencyFormatter.format(totalPendentes)}
-                </p>
-              </div>
-              <Clock className="text-primary flex-shrink-0 hidden sm:block" size={32} />
-            </div>
-          </Card>
-
-          <Card className="col-span-2 md:col-span-1">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-gray-light text-xs sm:text-sm mb-1 truncate">Total do Mês</p>
-                <p className="text-lg sm:text-2xl font-bold text-white truncate">
-                  {currencyFormatter.format(totalMes)}
-                </p>
-              </div>
-              <DollarSign className="text-white flex-shrink-0 hidden sm:block" size={32} />
-            </div>
-          </Card>
+      {/* Filtro Ativo / Inativo */}
+      <Card>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-gray-light text-sm mr-2">Ver:</span>
+          {(['ativos', 'inativos', 'todos'] as const).map((op) => (
+            <button
+              key={op}
+              type="button"
+              onClick={() => setFiltroAtivo(op)}
+              className={`min-h-[44px] px-4 rounded-lg text-sm font-medium transition-colors ${
+                filtroAtivo === op
+                  ? 'bg-primary text-white'
+                  : 'bg-dark-soft text-gray-light hover:text-white border border-gray-dark'
+              }`}
+            >
+              {op === 'ativos' ? 'Ativos' : op === 'inativos' ? 'Inativos' : 'Todos'}
+            </button>
+          ))}
         </div>
-      )}
+      </Card>
 
-      {/* Busca (vale para as duas seções) */}
+      {/* Busca */}
       <Card>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-light" size={20} />
@@ -246,11 +172,9 @@ export const Alunos = () => {
         </div>
       </Card>
 
-      {/* Seção 1: Alunos ativos no mês (lista principal com pagamentos) */}
+      {/* Lista de alunos */}
       <Card>
-        <h2 className="text-lg font-semibold text-white mb-4">
-          Alunos em {format(inicioMesAtual, 'MMMM/yyyy', { locale: ptBR })}
-        </h2>
+        <h2 className="text-lg font-semibold text-white mb-4">Lista de alunos</h2>
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -259,19 +183,17 @@ export const Alunos = () => {
                 <th className="text-left py-3 px-4 text-gray-light font-medium">WhatsApp</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Mensalidade</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Freq. semana</th>
-                <th className="text-left py-3 px-4 text-gray-light font-medium">Vencimento</th>
-                <th className="text-left py-3 px-4 text-gray-light font-medium">Status Pagamento</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-gray-light">Carregando...</td>
+                  <td colSpan={5} className="text-center py-8 text-gray-light">Carregando...</td>
                 </tr>
               ) : filteredAlunos.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-gray-light">
+                  <td colSpan={5} className="text-center py-8 text-gray-light">
                     {searchTerm.trim() ? 'Nenhum aluno encontrado' : 'Nenhum aluno cadastrado'}
                   </td>
                 </tr>
@@ -283,7 +205,7 @@ export const Alunos = () => {
                       <td className="py-4 px-4 text-white">
                         <span
                           className={`inline-block w-2 h-2 rounded-full mr-2 ${
-                            getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500' : 'bg-primary'
+                            aluno.active !== false ? 'bg-green-500' : 'bg-gray-500'
                           }`}
                         />
                         {alunoNome}
@@ -301,51 +223,28 @@ export const Alunos = () => {
                       <td className="py-4 px-4 text-gray-light">
                         {aluno.frequency_per_week ? `${aluno.frequency_per_week}x/semana` : '-'}
                       </td>
-                      <td className="py-4 px-4 text-gray-light">
-                        {aluno.payment_day ? `Todo dia ${aluno.payment_day}` : '-'}
-                      </td>
-                      <td className="py-4 px-4">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            if (!user) return;
-                            const mensAluno = getMensalidadeAluno(aluno.id);
-                            if (!mensAluno) {
-                              toast.error('Mensalidade do mês não encontrada. Recarregue a página.');
-                              return;
-                            }
-                            const current = mensAluno.status || 'pendente';
-                            const ordem: Array<'pendente' | 'pago'> = ['pendente', 'pago'];
-                            const next = ordem[(ordem.indexOf(current) + 1) % ordem.length];
-                            try {
-                              await updateMensalidadeStatus(mensAluno.id, next);
-                              setMensalidadesMes((prev) =>
-                                prev.map((m) =>
-                                  m.id === mensAluno.id ? { ...m, status: next, paid_date: next === 'pago' ? new Date().toISOString().slice(0, 10) : null } : m
-                                )
-                              );
-                              toast.success(`Status de ${alunoNome} atualizado para "${next}".`);
-                            } catch (err: any) {
-                              console.error('Erro ao atualizar status:', err);
-                              toast.error('Não foi possível atualizar o status.');
-                            }
-                          }}
-                          className="focus:outline-none min-h-[44px]"
-                        >
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500/20 text-green-500' : 'bg-primary/20 text-primary'
-                            }`}
-                          >
-                            {getStatusAluno(aluno.id) === 'pago' ? 'Pago' : getStatusAluno(aluno.id) === 'atrasado' ? 'Atrasado' : 'Pendente'}
-                          </span>
-                        </button>
-                      </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
-                          <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Ver"><Eye size={18} /></button>
-                          <button onClick={() => handleEdit(aluno)} className="text-yellow-500 hover:text-yellow-400 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Editar"><Edit size={18} /></button>
-                          <button onClick={() => handleDelete(aluno.id, alunoNome)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Excluir"><Trash2 size={18} /></button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAlunoParaLancamento(aluno.id);
+                              setShowLancarPagamento(true);
+                            }}
+                            className="text-green-500 hover:text-green-400 text-xs font-medium min-h-[44px]"
+                            title="Lançar pagamento"
+                          >
+                            Lançar pag.
+                          </button>
+                          <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Ver">
+                            <Eye size={18} />
+                          </button>
+                          <button onClick={() => handleEdit(aluno)} className="text-yellow-500 hover:text-yellow-400 min-h-[44px] min-w-[44px] flex items-center justify-center" title="Editar">
+                            <Edit size={18} />
+                          </button>
+                          <button onClick={() => handleDelete(aluno.id, alunoNome)} className="text-primary hover:text-primary-light min-h-[44px] min-w-[44px] flex items-center justify-center" title="Excluir">
+                            <Trash2 size={18} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -369,42 +268,43 @@ export const Alunos = () => {
                 <div key={aluno.id} className="bg-dark-soft border border-gray-dark rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className={`flex-shrink-0 w-3 h-3 rounded-full ${getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500' : 'bg-primary'}`} />
+                      <span className={`flex-shrink-0 w-3 h-3 rounded-full ${aluno.active !== false ? 'bg-green-500' : 'bg-gray-500'}`} />
                       <h3 className="text-white font-semibold truncate">{alunoNome}</h3>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <p className="text-gray-light text-xs mb-1">Mensalidade</p>
-                      <p className="text-white font-semibold">{currencyFormatter.format(typeof aluno.monthly_fee === 'number' ? aluno.monthly_fee : parseFloat(String(aluno.monthly_fee)) || 0)}</p>
+                      <p className="text-white font-semibold">
+                        {currencyFormatter.format(typeof aluno.monthly_fee === 'number' ? aluno.monthly_fee : parseFloat(String(aluno.monthly_fee)) || 0)}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-gray-light text-xs mb-1">Status</p>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!user) return;
-                          const mensAluno = getMensalidadeAluno(aluno.id);
-                          if (!mensAluno) return;
-                          const next = getStatusAluno(aluno.id) === 'pago' ? 'pendente' : 'pago';
-                          try {
-                            await updateMensalidadeStatus(mensAluno.id, next);
-                            setMensalidadesMes((prev) => prev.map((m) => m.id === mensAluno.id ? { ...m, status: next, paid_date: next === 'pago' ? new Date().toISOString().slice(0, 10) : null } : m));
-                            toast.success(`Status de ${alunoNome}: ${next}.`);
-                          } catch { toast.error('Erro ao atualizar.'); }
-                        }}
-                        className="w-full min-h-[44px]"
-                      >
-                        <span className={`px-3 py-2 rounded-full text-xs font-medium block text-center ${getStatusAluno(aluno.id) === 'pago' ? 'bg-green-500/20 text-green-500' : 'bg-primary/20 text-primary'}`}>
-                          {getStatusAluno(aluno.id) === 'pago' ? 'Pago' : 'Pendente'}
-                        </span>
-                      </button>
+                      <p className="text-gray-light text-xs mb-1">Freq.</p>
+                      <p className="text-white">{aluno.frequency_per_week ? `${aluno.frequency_per_week}x/semana` : '-'}</p>
                     </div>
                   </div>
-                  <div className="flex justify-between pt-3 border-t border-gray-dark">
-                    <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="flex items-center gap-2 text-primary hover:text-primary-light text-sm min-h-[44px]"><Eye size={18} /> Ver</button>
-                    <button onClick={() => handleEdit(aluno)} className="flex items-center gap-2 text-yellow-500 hover:text-yellow-400 text-sm min-h-[44px]"><Edit size={18} /> Editar</button>
-                    <button onClick={() => handleDelete(aluno.id, alunoNome)} className="flex items-center gap-2 text-primary hover:text-primary-light text-sm min-h-[44px]"><Trash2 size={18} /> Excluir</button>
+                  <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-dark">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAlunoParaLancamento(aluno.id);
+                        setShowLancarPagamento(true);
+                      }}
+                      className="flex items-center gap-2 text-green-500 hover:text-green-400 text-sm min-h-[44px]"
+                    >
+                      <DollarSign size={18} />
+                      Lançar pagamento
+                    </button>
+                    <button onClick={() => navigate(`/alunos/${aluno.id}`)} className="flex items-center gap-2 text-primary hover:text-primary-light text-sm min-h-[44px]">
+                      <Eye size={18} /> Ver
+                    </button>
+                    <button onClick={() => handleEdit(aluno)} className="flex items-center gap-2 text-yellow-500 hover:text-yellow-400 text-sm min-h-[44px]">
+                      <Edit size={18} /> Editar
+                    </button>
+                    <button onClick={() => handleDelete(aluno.id, alunoNome)} className="flex items-center gap-2 text-primary hover:text-primary-light text-sm min-h-[44px]">
+                      <Trash2 size={18} /> Excluir
+                    </button>
                   </div>
                 </div>
               );
@@ -420,6 +320,16 @@ export const Alunos = () => {
             setShowModal(false);
             setEditingAluno(null);
             loadAlunos();
+          }}
+        />
+      )}
+
+      {showLancarPagamento && (
+        <LancarPagamentoModal
+          alunoId={alunoParaLancamento}
+          onClose={() => {
+            setShowLancarPagamento(false);
+            setAlunoParaLancamento(null);
           }}
         />
       )}

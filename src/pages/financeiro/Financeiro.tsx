@@ -11,12 +11,14 @@ import toast from 'react-hot-toast';
 import { parseLocalDate } from '../../utils/dateUtils';
 import { CadastroContaModal } from './CadastroContaModal';
 import { RendaExtraModal } from './RendaExtraModal';
+import { LancarPagamentoModal } from './LancarPagamentoModal';
 
 export const Financeiro = () => {
   const { user } = useAuth();
   const [contas, setContas] = useState<ContaFinanceira[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [showRendaExtraModal, setShowRendaExtraModal] = useState(false);
+  const [showLancarPagamentoModal, setShowLancarPagamentoModal] = useState(false);
   const [editingConta, setEditingConta] = useState<ContaFinanceira | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -110,16 +112,25 @@ export const Financeiro = () => {
           <h1 className="text-2xl sm:text-3xl font-sans font-semibold text-white mb-2">Financeiro</h1>
           <p className="text-gray-light text-sm sm:text-base">Contas a pagar por mês (única, parcelada ou fixa)</p>
         </div>
-        <Button
-          onClick={() => {
-            setEditingConta(null);
-            setShowModal(true);
-          }}
-          className="flex items-center w-full sm:w-auto justify-center min-h-[44px]"
-        >
-          <Plus size={20} className="mr-2" />
-          Nova conta a pagar
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => setShowLancarPagamentoModal(true)}
+            className="min-h-[44px]"
+          >
+            Lançar pagamento
+          </Button>
+          <Button
+            onClick={() => {
+              setEditingConta(null);
+              setShowModal(true);
+            }}
+            className="flex items-center w-full sm:w-auto justify-center min-h-[44px]"
+          >
+            <Plus size={20} className="mr-2" />
+            Nova conta a pagar
+          </Button>
+        </div>
       </div>
 
       {/* Seletor de mês: contas do mês escolhido; conta única só aparece no mês do vencimento; parcelado mostra parcela do mês */}
@@ -524,6 +535,13 @@ export const Financeiro = () => {
             setShowRendaExtraModal(false);
             loadContas();
           }}
+        />
+      )}
+
+      {showLancarPagamentoModal && (
+        <LancarPagamentoModal
+          onClose={() => setShowLancarPagamentoModal(false)}
+          onSuccess={loadContas}
         />
       )}
     </div>

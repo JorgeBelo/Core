@@ -10,7 +10,6 @@ import { AlunoDetalhes } from './pages/alunos/AlunoDetalhes';
 import { Agenda } from './pages/agenda/Agenda';
 import { Financeiro } from './pages/financeiro/Financeiro';
 import { HistoricoEntrada } from './pages/historico/HistoricoEntrada';
-import { PagamentosPendentes } from './pages/pagamentos/PagamentosPendentes';
 import { Perfil } from './pages/perfil/Perfil';
 import { Notificacoes } from './pages/notificacoes/Notificacoes';
 
@@ -92,14 +91,6 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <HistoricoEntrada />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/pagamentos-pendentes"
-        element={
-          <ProtectedRoute>
-            <PagamentosPendentes />
           </ProtectedRoute>
         }
       />

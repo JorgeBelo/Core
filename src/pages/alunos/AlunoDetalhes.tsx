@@ -4,20 +4,20 @@ import { ArrowLeft, Phone, DollarSign, Calendar } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import type { Aluno } from '../../types';
+import { LancarPagamentoModal } from '../financeiro/LancarPagamentoModal';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../contexts/AuthContext';
 import { maskWhatsApp } from '../../utils/masks';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { getMensalidadesForMonth, ensureMensalidadesForMonth } from '../../services/mensalidadesService';
 
 export const AlunoDetalhes = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [aluno, setAluno] = useState<Aluno | null>(null);
-  const [statusMes, setStatusMes] = useState<'pago' | 'pendente' | 'atrasado'>('pendente');
+  const [showLancarPagamento, setShowLancarPagamento] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,18 +25,6 @@ export const AlunoDetalhes = () => {
       loadAluno();
     }
   }, [id, user]);
-
-  useEffect(() => {
-    if (aluno?.active && user && id) {
-      const hoje = new Date();
-      ensureMensalidadesForMonth(user.id, hoje.getFullYear(), hoje.getMonth() + 1).then(() =>
-        getMensalidadesForMonth(user.id, hoje.getFullYear(), hoje.getMonth() + 1).then((mens) => {
-          const m = mens.find((x) => x.aluno_id === id);
-          setStatusMes(m?.status || 'pendente');
-        })
-      );
-    }
-  }, [aluno, user, id]);
 
   const loadAluno = async () => {
     if (!id || !user) return;
@@ -89,15 +77,18 @@ export const AlunoDetalhes = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <Button variant="secondary" onClick={() => navigate('/alunos')}>
           <ArrowLeft size={20} className="mr-2" />
           Voltar
         </Button>
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-3xl font-sans font-semibold text-white mb-2">{alunoNome}</h1>
           <p className="text-gray-light">Perfil completo do aluno</p>
         </div>
+        <Button onClick={() => setShowLancarPagamento(true)} className="min-h-[44px]">
+          Lançar pagamento
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -127,18 +118,6 @@ export const AlunoDetalhes = () => {
                 </p>
               </div>
               <div>
-                <p className="text-gray-light text-sm mb-1">Status do mês (pagamento)</p>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    statusMes === 'pago'
-                      ? 'bg-green-500/20 text-green-500'
-                      : 'bg-primary/20 text-primary'
-                  }`}
-                >
-                  {statusMes === 'pago' ? 'Pago' : statusMes === 'atrasado' ? 'Atrasado' : 'Pendente'}
-                </span>
-              </div>
-              <div>
                 <p className="text-gray-light text-sm mb-1">Status do Aluno</p>
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -164,30 +143,28 @@ export const AlunoDetalhes = () => {
         <Card title="Resumo Financeiro">
           <div className="space-y-4">
             <div>
-              <p className="text-gray-light text-sm">Mensalidade</p>
+              <p className="text-gray-light text-sm">Valor da mensalidade</p>
               <p className="text-2xl font-bold text-white">
                 R$ {aluno.monthly_fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
             </div>
             <div>
-              <p className="text-gray-light text-sm">Próximo Vencimento</p>
+              <p className="text-gray-light text-sm">Dia de vencimento</p>
               <p className="text-white">Dia {aluno.payment_day || '-'} do mês</p>
             </div>
-            <div>
-              <p className="text-gray-light text-sm">Status do mês</p>
-              <p
-                className={`text-lg font-semibold ${
-                  statusMes === 'pago'
-                    ? 'text-green-500'
-                    : 'text-primary'
-                }`}
-              >
-                {statusMes === 'pago' ? 'Pago' : statusMes === 'atrasado' ? 'Atrasado' : 'Pendente'}
-              </p>
-            </div>
+            <Button onClick={() => setShowLancarPagamento(true)} className="w-full min-h-[44px]">
+              Lançar pagamento
+            </Button>
           </div>
         </Card>
       </div>
+
+      {showLancarPagamento && id && (
+        <LancarPagamentoModal
+          alunoId={id}
+          onClose={() => setShowLancarPagamento(false)}
+        />
+      )}
     </div>
   );
 };

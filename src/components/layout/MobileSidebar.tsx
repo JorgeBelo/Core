@@ -6,7 +6,6 @@ import {
   Calendar, 
   DollarSign, 
   History,
-  AlertCircle,
   Bell,
   User as UserIcon
 } from 'lucide-react';
@@ -26,7 +25,6 @@ const menuItems: MenuItem[] = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/alunos', icon: Users, label: 'Alunos' },
   { path: '/historico-entrada', icon: History, label: 'Histórico de Entrada' },
-  { path: '/pagamentos-pendentes', icon: AlertCircle, label: 'Pagamentos Pendentes' },
   { path: '/agenda', icon: Calendar, label: 'Agenda Semanal' },
   { path: '/financeiro', icon: DollarSign, label: 'Financeiro' },
   { path: '/notificacoes', icon: Bell, label: 'Notificações' },
