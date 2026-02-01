@@ -235,17 +235,18 @@ export const Agenda = () => {
     }
   };
 
-  const deleteAgendaItem = async (id: string) => {
-    try {
-      const { error } = await supabase.from('agenda_personal').delete().eq('id', id);
-      if (error) throw error;
-      toast.success('Agendamento removido!');
-      loadAgenda();
-    } catch (error: any) {
-      console.error('Erro ao remover agendamento:', error);
-      toast.error('Erro ao remover agendamento');
-    }
-  };
+  // Função não utilizada - mantida para futura implementação
+  // const deleteAgendaItem = async (id: string) => {
+  //   try {
+  //     const { error } = await supabase.from('agenda_personal').delete().eq('id', id);
+  //     if (error) throw error;
+  //     toast.success('Agendamento removido!');
+  //     loadAgenda();
+  //   } catch (error: any) {
+  //     console.error('Erro ao remover agendamento:', error);
+  //     toast.error('Erro ao remover agendamento');
+  //   }
+  // };
 
   const deleteAgendaItemsForSlot = async (dia: number, hora: string) => {
     const items = getAgendaForSlot(dia, hora);

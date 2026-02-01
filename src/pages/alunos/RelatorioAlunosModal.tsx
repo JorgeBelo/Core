@@ -146,24 +146,24 @@ export const RelatorioAlunosModal = ({
     const tableOpts = {
       theme: 'grid' as const,
       headStyles: {
-        fillColor: [primaryR, primaryG, primaryB],
-        textColor: [255, 255, 255],
+        fillColor: [primaryR, primaryG, primaryB] as [number, number, number],
+        textColor: [255, 255, 255] as [number, number, number],
         fontSize: 12,
         fontStyle: 'bold' as const,
         cellPadding: 4,
       },
       bodyStyles: {
         fontSize: 11,
-        textColor: [26, 26, 26],
+        textColor: [26, 26, 26] as [number, number, number],
         cellPadding: 3.5,
       },
       columnStyles: {
         1: { cellWidth: 50, overflow: 'hidden' as const },
         2: { cellWidth: 36, overflow: 'hidden' as const },
       },
-      alternateRowStyles: { fillColor: [248, 248, 248] },
+      alternateRowStyles: { fillColor: [248, 248, 248] as [number, number, number] },
       margin: { left: margin, right: margin, bottom: 18 },
-      tableLineColor: [64, 64, 64],
+      tableLineColor: [64, 64, 64] as [number, number, number],
     };
 
     if (alunosAtivos.length >= 20) {

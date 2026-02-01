@@ -155,7 +155,7 @@ export async function getHistoricoRecebimentos(personalId: string): Promise<Hist
     .select('id, aluno_id, due_date, amount, paid_date')
     .eq('personal_id', personalId)
     .eq('status', 'pago')
-    .order('paid_date', { ascending: false, nullFirst: true })
+    .order('paid_date', { ascending: false, nullsFirst: true })
     .order('due_date', { ascending: false });
 
   if (msgError) throw msgError;

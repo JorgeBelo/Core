@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { Activity, Plus } from 'lucide-react';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 
 export const Avaliacao = () => {
-  const [view, setView] = useState<'dashboard' | 'nova'>('dashboard');
 
   return (
     <div className="min-h-screen bg-dark p-4 lg:p-8 pb-24 lg:pb-8">
@@ -18,7 +16,7 @@ export const Avaliacao = () => {
             </p>
           </div>
           <Button
-            onClick={() => setView('nova')}
+            onClick={() => {/* TODO: implementar wizard */}}
             className="flex items-center gap-2"
           >
             <Plus size={20} />
@@ -115,8 +113,8 @@ export const Avaliacao = () => {
                   <p className="text-green-500 font-semibold">16.2%</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="secondary" size="sm">Ver</Button>
-                  <Button variant="secondary" size="sm">Comparar</Button>
+                  <Button variant="secondary" className="text-sm px-3 py-1">Ver</Button>
+                  <Button variant="secondary" className="text-sm px-3 py-1">Comparar</Button>
                 </div>
               </div>
             </div>
@@ -148,8 +146,8 @@ export const Avaliacao = () => {
                   <p className="text-yellow-500 font-semibold">22.5%</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="secondary" size="sm">Ver</Button>
-                  <Button variant="secondary" size="sm">Comparar</Button>
+                  <Button variant="secondary" className="text-sm px-3 py-1">Ver</Button>
+                  <Button variant="secondary" className="text-sm px-3 py-1">Comparar</Button>
                 </div>
               </div>
             </div>
@@ -160,7 +158,7 @@ export const Avaliacao = () => {
         <div className="text-center py-12 hidden">
           <Activity className="mx-auto text-gray-dark mb-4" size={48} />
           <p className="text-gray-light mb-4">Nenhuma avaliação realizada ainda</p>
-          <Button onClick={() => setView('nova')}>
+          <Button onClick={() => {/* TODO: implementar wizard */}}>
             <Plus size={20} className="mr-2" />
             Realizar Primeira Avaliação
           </Button>
