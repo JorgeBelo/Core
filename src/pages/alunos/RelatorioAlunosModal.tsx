@@ -46,8 +46,9 @@ export const RelatorioAlunosModal = ({
           <title>Relatório de Alunos</title>
           <style>
             body { font-family: Arial, sans-serif; font-size: 12px; padding: 20px; color: #1a1a1a; }
+            .titulo-documento { margin: 0 0 24px 0; font-size: 20px; text-align: center; padding-bottom: 12px; border-bottom: 2px solid #666; }
             .cabecalho { margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #ddd; }
-            .cabecalho h1 { margin: 0 0 12px 0; font-size: 18px; }
+            .cabecalho h2 { margin: 0 0 12px 0; font-size: 18px; }
             .cabecalho p { margin: 4px 0; }
             table { width: 100%; border-collapse: collapse; margin: 16px 0; }
             th, td { border: 1px solid #333; padding: 8px 12px; text-align: left; }
@@ -71,10 +72,19 @@ export const RelatorioAlunosModal = ({
   const handleBaixarPdf = () => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const margin = 14;
+    const pageWidth = doc.internal.pageSize.getWidth();
     let y = margin;
 
-    doc.setFontSize(16);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Relatório de Alunos', pageWidth / 2, y, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    y += 12;
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
     doc.text('Dados do Personal', margin, y);
+    doc.setFont('helvetica', 'normal');
     y += 8;
 
     doc.setFontSize(10);
@@ -90,9 +100,11 @@ export const RelatorioAlunosModal = ({
     }
     y += 6;
 
-    doc.setFontSize(14);
-    doc.text('Relatório de Alunos', margin, y);
-    y += 10;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Listagem de alunos ativos', margin, y);
+    doc.setFont('helvetica', 'normal');
+    y += 8;
 
     const tableData = alunosAtivos.map((a) => {
       const nome = a.nome || a.name || '-';
@@ -162,15 +174,18 @@ export const RelatorioAlunosModal = ({
             ref={reportRef}
             className="bg-white text-gray-900 rounded-lg p-6 print:shadow-none"
           >
+            <h1 className="titulo-documento text-xl font-bold text-center mb-6 pb-3 border-b-2 border-gray-400">
+              Relatório de Alunos
+            </h1>
             <div className="cabecalho border-b border-gray-300 pb-4 mb-4">
-              <h1 className="text-lg font-bold mb-3">Dados do Personal</h1>
+              <h2 className="text-lg font-bold mb-3">Dados do Personal</h2>
               <p><strong>Nome:</strong> {nomePersonal}</p>
               <p><strong>E-mail:</strong> {emailPersonal}</p>
               <p><strong>Telefone:</strong> {telefonePersonal}</p>
               {crefPreenchido ? <p><strong>CREF:</strong> {crefPreenchido}</p> : null}
             </div>
 
-            <h2 className="text-base font-bold mb-3">Relatório de Alunos</h2>
+            <h2 className="text-base font-bold mb-3">Listagem de alunos ativos</h2>
             <table className="w-full border-collapse border border-gray-700 text-sm">
               <thead>
                 <tr className="bg-gray-100">
