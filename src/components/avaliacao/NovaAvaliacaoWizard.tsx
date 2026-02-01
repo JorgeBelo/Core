@@ -396,6 +396,280 @@ export const NovaAvaliacaoWizard = ({ alunos, onClose, onSubmit }: Props) => {
                 </div>
               )}
               
+              {protocolo === '7dobras' && (
+                <div>
+                  <h3 className="text-white font-semibold mb-4">📏 Dobras Cutâneas - Protocolo 7 Dobras (mm)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <label className="block text-gray-light text-sm mb-2">💪 Peitoral</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="12"
+                        value={formData.dobra_peitoral || ''}
+                        onChange={(e) => setFormData({ ...formData, dobra_peitoral: Number(e.target.value) })}
+                        className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-light text-sm mb-2">🔥 Abdominal</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="18"
+                        value={formData.dobra_abdominal || ''}
+                        onChange={(e) => setFormData({ ...formData, dobra_abdominal: Number(e.target.value) })}
+                        className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-light text-sm mb-2">🦵 Coxa</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="15"
+                        value={formData.dobra_coxa || ''}
+                        onChange={(e) => setFormData({ ...formData, dobra_coxa: Number(e.target.value) })}
+                        className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-gray-light text-sm mb-2">💪 Axilar Média</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="10"
+                        value={formData.dobra_axilar_media || ''}
+                        onChange={(e) => setFormData({ ...formData, dobra_axilar_media: Number(e.target.value) })}
+                        className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-light text-sm mb-2">💪 Tríceps</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="14"
+                        value={formData.dobra_triceps || ''}
+                        onChange={(e) => setFormData({ ...formData, dobra_triceps: Number(e.target.value) })}
+                        className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-light text-sm mb-2">🔙 Subescapular</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="16"
+                        value={formData.dobra_subescapular || ''}
+                        onChange={(e) => setFormData({ ...formData, dobra_subescapular: Number(e.target.value) })}
+                        className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-light text-sm mb-2">🔥 Supra-ilíaca</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="20"
+                        value={formData.dobra_suprailiaca || ''}
+                        onChange={(e) => setFormData({ ...formData, dobra_suprailiaca: Number(e.target.value) })}
+                        className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {protocolo === 'bioimpedancia' && (
+                <div>
+                  <h3 className="text-white font-semibold mb-4">⚡ Dados da Bioimpedância</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-gray-light text-sm mb-2">📊 % Gordura</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="18.5"
+                        value={formData.percentual_gordura_bioimpedancia || ''}
+                        onChange={(e) => setFormData({ ...formData, percentual_gordura_bioimpedancia: Number(e.target.value) })}
+                        className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-light text-sm mb-2">💪 % Massa Magra</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="81.5"
+                        value={formData.percentual_massa_magra_bioimpedancia || ''}
+                        onChange={(e) => setFormData({ ...formData, percentual_massa_magra_bioimpedancia: Number(e.target.value) })}
+                        className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-light text-sm mb-2">💧 Água Corporal (%)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="60"
+                        value={formData.agua_corporal || ''}
+                        onChange={(e) => setFormData({ ...formData, agua_corporal: Number(e.target.value) })}
+                        className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {protocolo === 'perimetros' && (
+                <div>
+                  <h3 className="text-white font-semibold mb-4">📐 Perímetros Corporais (cm)</h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-gray-light text-sm mb-2">Pescoço</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="38"
+                          value={formData.perimetro_pescoco || ''}
+                          onChange={(e) => setFormData({ ...formData, perimetro_pescoco: Number(e.target.value) })}
+                          className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-light text-sm mb-2">Ombro</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="110"
+                          value={formData.perimetro_ombro || ''}
+                          onChange={(e) => setFormData({ ...formData, perimetro_ombro: Number(e.target.value) })}
+                          className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-light text-sm mb-2">Tórax</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="95"
+                          value={formData.perimetro_torax || ''}
+                          onChange={(e) => setFormData({ ...formData, perimetro_torax: Number(e.target.value) })}
+                          className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-light text-sm mb-2">Cintura</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="85"
+                          value={formData.perimetro_cintura || ''}
+                          onChange={(e) => setFormData({ ...formData, perimetro_cintura: Number(e.target.value) })}
+                          className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-gray-light text-sm mb-2">Abdômen</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="90"
+                          value={formData.perimetro_abdomen || ''}
+                          onChange={(e) => setFormData({ ...formData, perimetro_abdomen: Number(e.target.value) })}
+                          className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-light text-sm mb-2">Quadril</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="100"
+                          value={formData.perimetro_quadril || ''}
+                          onChange={(e) => setFormData({ ...formData, perimetro_quadril: Number(e.target.value) })}
+                          className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-light text-sm mb-2">Braço D</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="32"
+                          value={formData.perimetro_braco_direito || ''}
+                          onChange={(e) => setFormData({ ...formData, perimetro_braco_direito: Number(e.target.value) })}
+                          className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-light text-sm mb-2">Braço E</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="31"
+                          value={formData.perimetro_braco_esquerdo || ''}
+                          onChange={(e) => setFormData({ ...formData, perimetro_braco_esquerdo: Number(e.target.value) })}
+                          className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-gray-light text-sm mb-2">Coxa D</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="58"
+                          value={formData.perimetro_coxa_direita || ''}
+                          onChange={(e) => setFormData({ ...formData, perimetro_coxa_direita: Number(e.target.value) })}
+                          className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-light text-sm mb-2">Coxa E</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="57"
+                          value={formData.perimetro_coxa_esquerda || ''}
+                          onChange={(e) => setFormData({ ...formData, perimetro_coxa_esquerda: Number(e.target.value) })}
+                          className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-light text-sm mb-2">Panturrilha D</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="38"
+                          value={formData.perimetro_panturrilha_direita || ''}
+                          onChange={(e) => setFormData({ ...formData, perimetro_panturrilha_direita: Number(e.target.value) })}
+                          className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-light text-sm mb-2">Panturrilha E</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          placeholder="37"
+                          value={formData.perimetro_panturrilha_esquerda || ''}
+                          onChange={(e) => setFormData({ ...formData, perimetro_panturrilha_esquerda: Number(e.target.value) })}
+                          className="w-full bg-dark border border-gray-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* Observações */}
               <div>
                 <label className="block text-gray-light text-sm mb-2">📝 Observações (opcional)</label>

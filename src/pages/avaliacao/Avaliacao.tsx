@@ -4,22 +4,31 @@ import toast from 'react-hot-toast';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { NovaAvaliacaoWizard } from '../../components/avaliacao/NovaAvaliacaoWizard';
+import { VisualizarAvaliacaoModal } from '../../components/avaliacao/VisualizarAvaliacaoModal';
+import { CompararAvaliacoesModal } from '../../components/avaliacao/CompararAvaliacoesModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
-import { criarAvaliacao, listarAvaliacoes } from '../../services/avaliacaoService';
-import type { Aluno } from '../../types';
+import { criarAvaliacao, listarAvaliacoes, listarAvaliacoesAluno } from '../../services/avaliacaoService';
+import { gerarRelatorioPDF } from '../../services/pdfAvaliacaoService';
+import type { Aluno, User } from '../../types';
 import type { AvaliacaoFisica, NovaAvaliacaoInput } from '../../types/avaliacao';
 
 export const Avaliacao = () => {
   const { user } = useAuth();
   const [showWizard, setShowWizard] = useState(false);
+  const [showVisualizarModal, setShowVisualizarModal] = useState(false);
+  const [showCompararModal, setShowCompararModal] = useState(false);
+  const [avaliacaoSelecionada, setAvaliacaoSelecionada] = useState<AvaliacaoFisica | null>(null);
+  const [alunoSelecionadoComparacao, setAlunoSelecionadoComparacao] = useState<string | null>(null);
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [avaliacoes, setAvaliacoes] = useState<AvaliacaoFisica[]>([]);
   const [loading, setLoading] = useState(true);
+  const [personalData, setPersonalData] = useState<User | null>(null);
   
   useEffect(() => {
     if (user) {
       loadData();
+      loadPersonalData();
     }
   }, [user]);
   
@@ -48,6 +57,21 @@ export const Avaliacao = () => {
     }
   };
   
+  const loadPersonalData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user?.id)
+        .single();
+      
+      if (error) throw error;
+      setPersonalData(data);
+    } catch (error) {
+      console.error('Erro ao carregar dados do personal:', error);
+    }
+  };
+  
   const handleNovaAvaliacao = async (data: NovaAvaliacaoInput, sexo: 'M' | 'F', idade: number) => {
     try {
       await criarAvaliacao(data, sexo, idade);
@@ -58,6 +82,38 @@ export const Avaliacao = () => {
       console.error('Erro ao criar avaliação:', error);
       toast.error('Erro ao criar avaliação');
       throw error;
+    }
+  };
+  
+  const handleVisualizarAvaliacao = (avaliacao: AvaliacaoFisica) => {
+    setAvaliacaoSelecionada(avaliacao);
+    setShowVisualizarModal(true);
+  };
+  
+  const handleCompararAvaliacoes = async (alunoId: string) => {
+    setAlunoSelecionadoComparacao(alunoId);
+    setShowCompararModal(true);
+  };
+  
+  const handleGerarPDF = async () => {
+    if (!avaliacaoSelecionada || !personalData) return;
+    
+    try {
+      const alunoNome = getAlunoNome(avaliacaoSelecionada.aluno_id);
+      await gerarRelatorioPDF(
+        avaliacaoSelecionada,
+        alunoNome,
+        {
+          nome: personalData.name,
+          email: personalData.email,
+          telefone: personalData.phone,
+          cref: personalData.cref
+        }
+      );
+      toast.success('PDF gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar PDF');
     }
   };
   
@@ -232,8 +288,20 @@ export const Avaliacao = () => {
                         </p>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="secondary" className="text-sm px-3 py-1">Ver</Button>
-                        <Button variant="secondary" className="text-sm px-3 py-1">Comparar</Button>
+                        <Button 
+                          variant="secondary" 
+                          className="text-sm px-3 py-1"
+                          onClick={() => handleVisualizarAvaliacao(avaliacao)}
+                        >
+                          Ver
+                        </Button>
+                        <Button 
+                          variant="secondary" 
+                          className="text-sm px-3 py-1"
+                          onClick={() => handleCompararAvaliacoes(avaliacao.aluno_id)}
+                        >
+                          Comparar
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -250,6 +318,31 @@ export const Avaliacao = () => {
           alunos={alunos}
           onClose={() => setShowWizard(false)}
           onSubmit={handleNovaAvaliacao}
+        />
+      )}
+      
+      {/* Modal de Visualização */}
+      {showVisualizarModal && avaliacaoSelecionada && (
+        <VisualizarAvaliacaoModal
+          avaliacao={avaliacaoSelecionada}
+          alunoNome={getAlunoNome(avaliacaoSelecionada.aluno_id)}
+          onClose={() => {
+            setShowVisualizarModal(false);
+            setAvaliacaoSelecionada(null);
+          }}
+          onGerarPDF={handleGerarPDF}
+        />
+      )}
+      
+      {/* Modal de Comparação */}
+      {showCompararModal && alunoSelecionadoComparacao && (
+        <CompararAvaliacoesModal
+          avaliacoes={avaliacoes.filter(a => a.aluno_id === alunoSelecionadoComparacao)}
+          alunoNome={getAlunoNome(alunoSelecionadoComparacao)}
+          onClose={() => {
+            setShowCompararModal(false);
+            setAlunoSelecionadoComparacao(null);
+          }}
         />
       )}
     </div>
