@@ -7,6 +7,7 @@ import { Login } from './pages/auth/Login';
 import { Alunos } from './pages/alunos/Alunos';
 import { AlunoDetalhes } from './pages/alunos/AlunoDetalhes';
 import { Agenda } from './pages/agenda/Agenda';
+import { Financeiro } from './pages/financeiro/Financeiro';
 import { Perfil } from './pages/perfil/Perfil';
 import { Notificacoes } from './pages/notificacoes/Notificacoes';
 
@@ -64,6 +65,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Agenda />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/financeiro"
+        element={
+          <ProtectedRoute>
+            <Financeiro />
           </ProtectedRoute>
         }
       />
