@@ -45,12 +45,13 @@ export const RelatorioAlunosModal = ({
           <meta charset="utf-8">
           <title>Relatório de Alunos</title>
           <style>
-            body { font-family: Arial, sans-serif; font-size: 12px; padding: 20px; background: #f5f5f5; color: #1a1a1a; }
-            .doc-paper { background: #ffffff; color: #1a1a1a; padding: 24px; border-radius: 8px; max-width: 210mm; margin: 0 auto; }
-            .titulo-documento { background: #a20100; color: #ffffff !important; margin: -24px -24px 0 -24px; padding: 28px 24px 20px; font-size: 20px; font-weight: 700; text-align: center; border-radius: 8px 8px 0 0; }
-            .cabecalho { margin-top: 28px; margin-bottom: 24px; padding: 20px 0 20px; border-bottom: 1px solid #ddd; }
-            .cabecalho h2 { margin: 0 0 14px 0; font-size: 15px; color: #333; font-weight: 600; }
-            .cabecalho p { margin: 6px 0; color: #1a1a1a; line-height: 1.4; }
+            @page { size: A4; margin: 15mm; }
+            body { font-family: Arial, sans-serif; font-size: 12px; padding: 16px; background: #f5f5f5; color: #1a1a1a; }
+            .doc-paper { background: #ffffff; color: #1a1a1a; padding: 20px; border-radius: 8px; width: 210mm; margin: 0 auto; box-sizing: border-box; }
+            .titulo-documento { background: #a20100; color: #ffffff !important; margin: -20px -20px 0 -20px; padding: 18px 20px 14px; font-size: 20px; font-weight: 700; text-align: center; border-radius: 8px 8px 0 0; }
+            .cabecalho { margin-top: 18px; margin-bottom: 18px; padding: 12px 0 14px; border-bottom: 1px solid #ddd; }
+            .cabecalho h2 { margin: 0 0 10px 0; font-size: 15px; color: #333; font-weight: 600; }
+            .cabecalho p { margin: 4px 0; color: #1a1a1a; line-height: 1.35; }
             .secao-tabela { color: #1a1a1a; font-weight: 700; font-size: 14px; margin-bottom: 12px; color: #333; }
             table { width: 100%; border-collapse: collapse; margin: 16px 0; }
             th, td { border: 1px solid #404040; padding: 10px 12px; text-align: left; color: #1a1a1a; }
@@ -82,44 +83,44 @@ export const RelatorioAlunosModal = ({
     const primaryG = 1;
     const primaryB = 0;
 
-    // Faixa do título (fundo vermelho, texto branco) – mais altura e espaço
+    // Faixa do título (fundo vermelho, texto branco) – meio termo
     doc.setFillColor(primaryR, primaryG, primaryB);
-    doc.rect(0, 0, pageWidth, 26, 'F');
+    doc.rect(0, 0, pageWidth, 22, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text('Relatório de Alunos', pageWidth / 2, 16, { align: 'center' });
-    doc.setTextColor(26, 26, 26); // #1a1a1a
-    doc.setFont('helvetica', 'normal');
-    let y = 38; // mais espaço entre título e "Dados do Personal"
-
-    // "Dados do Personal" – cor neutra (cinza escuro), não vermelho
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(51, 51, 51); // #333
-    doc.text('Dados do Personal', margin, y);
+    doc.text('Relatório de Alunos', pageWidth / 2, 14, { align: 'center' });
     doc.setTextColor(26, 26, 26);
     doc.setFont('helvetica', 'normal');
-    y += 10;
+    let y = 32;
+
+    // "Dados do Personal" – cor neutra
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(51, 51, 51);
+    doc.text('Dados do Personal', margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(26, 26, 26);
+    y += 8;
 
     doc.setFontSize(10);
     doc.text(`Nome: ${nomePersonal}`, margin, y);
-    y += 6;
+    y += 5.5;
     doc.text(`E-mail: ${emailPersonal}`, margin, y);
-    y += 6;
+    y += 5.5;
     doc.text(`Telefone: ${telefonePersonal}`, margin, y);
-    y += 6;
+    y += 5.5;
     if (crefPreenchido) {
       doc.text(`CREF: ${crefPreenchido}`, margin, y);
-      y += 6;
+      y += 5.5;
     }
-    y += 6;
+    y += 5;
 
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.text('Listagem de alunos ativos', margin, y);
     doc.setFont('helvetica', 'normal');
-    y += 8;
+    y += 7;
 
     const tableData = alunosAtivos.map((a) => {
       const nome = a.nome || a.name || '-';
@@ -197,11 +198,11 @@ export const RelatorioAlunosModal = ({
             ref={reportRef}
             className="doc-paper bg-white rounded-lg overflow-hidden shadow-md max-w-[210mm] mx-auto"
           >
-            <h1 className="titulo-documento bg-primary text-white text-xl font-bold text-center pt-7 pb-5 px-6">
+            <h1 className="titulo-documento bg-primary text-white text-xl font-bold text-center pt-5 pb-4 px-6">
               Relatório de Alunos
             </h1>
-            <div className="cabecalho px-6 mt-7 pt-5 pb-5 mb-4 border-b border-gray-300">
-              <h2 className="text-[#333] font-semibold mb-3.5 text-[15px]">Dados do Personal</h2>
+            <div className="cabecalho px-6 mt-5 pt-4 pb-4 mb-4 border-b border-gray-300">
+              <h2 className="text-[#333] font-semibold mb-2.5 text-[15px]">Dados do Personal</h2>
               <p className="text-[#1a1a1a] leading-snug"><strong>Nome:</strong> {nomePersonal}</p>
               <p className="text-[#1a1a1a] leading-snug"><strong>E-mail:</strong> {emailPersonal}</p>
               <p className="text-[#1a1a1a] leading-snug"><strong>Telefone:</strong> {telefonePersonal}</p>
