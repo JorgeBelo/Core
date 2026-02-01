@@ -61,7 +61,7 @@ export const NovaAvaliacaoWizard = ({ alunos, onClose, onSubmit }: Props) => {
     
     setLoading(true);
     try {
-      const idade = calcularIdade(alunoSelecionado.birth_date);
+      const idade = alunoSelecionado.birth_date ? calcularIdade(alunoSelecionado.birth_date) : 25;
       const sexo = alunoSelecionado.sexo || 'M';
       
       await onSubmit(
@@ -150,9 +150,9 @@ export const NovaAvaliacaoWizard = ({ alunos, onClose, onSubmit }: Props) => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {alunos.filter(a => a.active !== false).map((aluno) => (
-                  <Card
+                  <div
                     key={aluno.id}
-                    className={`cursor-pointer transition-all ${
+                    className={`cursor-pointer transition-all bg-dark-soft border rounded-lg p-4 ${
                       alunoSelecionado?.id === aluno.id
                         ? 'border-primary bg-primary/10'
                         : 'border-gray-dark hover:border-primary/50'
@@ -175,7 +175,7 @@ export const NovaAvaliacaoWizard = ({ alunos, onClose, onSubmit }: Props) => {
                         </div>
                       )}
                     </div>
-                  </Card>
+                  </div>
                 ))}
               </div>
             </div>
@@ -184,8 +184,8 @@ export const NovaAvaliacaoWizard = ({ alunos, onClose, onSubmit }: Props) => {
           {/* Step 2: Escolher Protocolo */}
           {step === 2 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card
-                className={`cursor-pointer transition-all ${
+              <div
+                className={`cursor-pointer transition-all bg-dark-soft border rounded-lg p-6 ${
                   protocolo === '3dobras'
                     ? 'border-primary bg-primary/10'
                     : 'border-gray-dark hover:border-primary/50'
@@ -210,10 +210,10 @@ export const NovaAvaliacaoWizard = ({ alunos, onClose, onSubmit }: Props) => {
                     Mulheres: Tríceps, Supra-ilíaca, Coxa
                   </p>
                 </div>
-              </Card>
+              </div>
               
-              <Card
-                className={`cursor-pointer transition-all ${
+              <div
+                className={`cursor-pointer transition-all bg-dark-soft border rounded-lg p-6 ${
                   protocolo === '7dobras'
                     ? 'border-primary bg-primary/10'
                     : 'border-gray-dark hover:border-primary/50'
@@ -238,10 +238,10 @@ export const NovaAvaliacaoWizard = ({ alunos, onClose, onSubmit }: Props) => {
                     Abdominal, Supra-ilíaca, Coxa
                   </p>
                 </div>
-              </Card>
+              </div>
               
-              <Card
-                className={`cursor-pointer transition-all ${
+              <div
+                className={`cursor-pointer transition-all bg-dark-soft border rounded-lg p-6 ${
                   protocolo === 'bioimpedancia'
                     ? 'border-primary bg-primary/10'
                     : 'border-gray-dark hover:border-primary/50'
@@ -263,10 +263,10 @@ export const NovaAvaliacaoWizard = ({ alunos, onClose, onSubmit }: Props) => {
                     Requer balança de bioimpedância
                   </p>
                 </div>
-              </Card>
+              </div>
               
-              <Card
-                className={`cursor-pointer transition-all ${
+              <div
+                className={`cursor-pointer transition-all bg-dark-soft border rounded-lg p-6 ${
                   protocolo === 'perimetros'
                     ? 'border-primary bg-primary/10'
                     : 'border-gray-dark hover:border-primary/50'
@@ -288,7 +288,7 @@ export const NovaAvaliacaoWizard = ({ alunos, onClose, onSubmit }: Props) => {
                     Medidas de circunferências corporais
                   </p>
                 </div>
-              </Card>
+              </div>
             </div>
           )}
           

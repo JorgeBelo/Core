@@ -1,8 +1,99 @@
+import { useState, useEffect } from 'react';
 import { Activity, Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
+import { NovaAvaliacaoWizard } from '../../components/avaliacao/NovaAvaliacaoWizard';
+import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabaseClient';
+import { criarAvaliacao, listarAvaliacoes } from '../../services/avaliacaoService';
+import type { Aluno } from '../../types';
+import type { AvaliacaoFisica, NovaAvaliacaoInput } from '../../types/avaliacao';
 
 export const Avaliacao = () => {
+  const { user } = useAuth();
+  const [showWizard, setShowWizard] = useState(false);
+  const [alunos, setAlunos] = useState<Aluno[]>([]);
+  const [avaliacoes, setAvaliacoes] = useState<AvaliacaoFisica[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+  }, [user]);
+  
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Carrega alunos
+      const { data: alunosData, error: alunosError } = await supabase
+        .from('alunos')
+        .select('*')
+        .eq('personal_id', user?.id)
+        .order('nome');
+      
+      if (alunosError) throw alunosError;
+      setAlunos(alunosData || []);
+      
+      // Carrega avaliações
+      const avaliacoesData = await listarAvaliacoes();
+      setAvaliacoes(avaliacoesData);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      toast.error('Erro ao carregar dados');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleNovaAvaliacao = async (data: NovaAvaliacaoInput, sexo: 'M' | 'F', idade: number) => {
+    try {
+      await criarAvaliacao(data, sexo, idade);
+      toast.success('Avaliação criada com sucesso!');
+      loadData();
+      setShowWizard(false);
+    } catch (error) {
+      console.error('Erro ao criar avaliação:', error);
+      toast.error('Erro ao criar avaliação');
+      throw error;
+    }
+  };
+  
+  const getAlunoNome = (alunoId: string) => {
+    const aluno = alunos.find(a => a.id === alunoId);
+    return aluno?.nome || aluno?.name || 'Aluno';
+  };
+  
+  const formatData = (data: string) => {
+    return new Date(data).toLocaleDateString('pt-BR');
+  };
+  
+  const getCorGordura = (percentual: number, sexo?: 'M' | 'F') => {
+    if (!sexo) return 'text-gray-light';
+    
+    if (sexo === 'M') {
+      if (percentual < 14) return 'text-green-500';
+      if (percentual < 18) return 'text-blue-500';
+      if (percentual < 25) return 'text-yellow-500';
+      return 'text-red-500';
+    } else {
+      if (percentual < 21) return 'text-green-500';
+      if (percentual < 25) return 'text-blue-500';
+      if (percentual < 32) return 'text-yellow-500';
+      return 'text-red-500';
+    }
+  };
+  
+  // Métricas do dashboard
+  const totalAvaliacoes = avaliacoes.length;
+  const avaliacoesEsteMes = avaliacoes.filter(a => {
+    const data = new Date(a.data_avaliacao);
+    const hoje = new Date();
+    return data.getMonth() === hoje.getMonth() && data.getFullYear() === hoje.getFullYear();
+  }).length;
+  const alunosAvaliados = new Set(avaliacoes.map(a => a.aluno_id)).size;
 
   return (
     <div className="min-h-screen bg-dark p-4 lg:p-8 pb-24 lg:pb-8">
@@ -16,7 +107,7 @@ export const Avaliacao = () => {
             </p>
           </div>
           <Button
-            onClick={() => {/* TODO: implementar wizard */}}
+            onClick={() => setShowWizard(true)}
             className="flex items-center gap-2"
           >
             <Plus size={20} />
@@ -31,7 +122,7 @@ export const Avaliacao = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-light text-sm mb-1">Total de Avaliações</p>
-              <p className="text-3xl font-bold text-white">47</p>
+              <p className="text-3xl font-bold text-white">{totalAvaliacoes}</p>
             </div>
             <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
               <Activity className="text-primary" size={24} />
@@ -43,7 +134,7 @@ export const Avaliacao = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-light text-sm mb-1">Este Mês</p>
-              <p className="text-3xl font-bold text-white">8</p>
+              <p className="text-3xl font-bold text-white">{avaliacoesEsteMes}</p>
             </div>
             <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
               <Activity className="text-green-500" size={24} />
@@ -55,7 +146,7 @@ export const Avaliacao = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-light text-sm mb-1">Alunos Avaliados</p>
-              <p className="text-3xl font-bold text-white">12</p>
+              <p className="text-3xl font-bold text-white">{alunosAvaliados}</p>
             </div>
             <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
               <Activity className="text-blue-500" size={24} />
@@ -86,84 +177,81 @@ export const Avaliacao = () => {
       <Card className="bg-dark-soft border-gray-dark">
         <h2 className="text-xl font-bold text-white mb-4">📋 Avaliações Recentes</h2>
         
-        <div className="space-y-4">
-          {/* Card de Avaliação - Exemplo */}
-          <div className="bg-dark border border-gray-dark rounded-lg p-4 hover:border-primary transition-colors cursor-pointer">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                  <span className="text-primary font-bold">CS</span>
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold">Carlos Silva</h3>
-                  <p className="text-gray-light text-sm">📅 27/01/2026 • 3 Dobras</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <p className="text-gray-light text-xs">Peso</p>
-                  <p className="text-white font-semibold">85.0 kg</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-light text-xs">IMC</p>
-                  <p className="text-white font-semibold">27.8</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-light text-xs">% Gordura</p>
-                  <p className="text-green-500 font-semibold">16.2%</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="secondary" className="text-sm px-3 py-1">Ver</Button>
-                  <Button variant="secondary" className="text-sm px-3 py-1">Comparar</Button>
-                </div>
-              </div>
-            </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-gray-light">Carregando...</p>
           </div>
-
-          {/* Mais exemplos */}
-          <div className="bg-dark border border-gray-dark rounded-lg p-4 hover:border-primary transition-colors cursor-pointer">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                  <span className="text-primary font-bold">AC</span>
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold">Ana Costa</h3>
-                  <p className="text-gray-light text-sm">📅 25/01/2026 • 7 Dobras</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <div className="text-center">
-                  <p className="text-gray-light text-xs">Peso</p>
-                  <p className="text-white font-semibold">62.0 kg</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-light text-xs">IMC</p>
-                  <p className="text-white font-semibold">22.8</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-light text-xs">% Gordura</p>
-                  <p className="text-yellow-500 font-semibold">22.5%</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="secondary" className="text-sm px-3 py-1">Ver</Button>
-                  <Button variant="secondary" className="text-sm px-3 py-1">Comparar</Button>
-                </div>
-              </div>
-            </div>
+        ) : avaliacoes.length === 0 ? (
+          <div className="text-center py-12">
+            <Activity className="mx-auto text-gray-dark mb-4" size={48} />
+            <p className="text-gray-light mb-4">Nenhuma avaliação realizada ainda</p>
+            <Button onClick={() => setShowWizard(true)}>
+              <Plus size={20} className="mr-2" />
+              Realizar Primeira Avaliação
+            </Button>
           </div>
-        </div>
-
-        {/* Estado vazio */}
-        <div className="text-center py-12 hidden">
-          <Activity className="mx-auto text-gray-dark mb-4" size={48} />
-          <p className="text-gray-light mb-4">Nenhuma avaliação realizada ainda</p>
-          <Button onClick={() => {/* TODO: implementar wizard */}}>
-            <Plus size={20} className="mr-2" />
-            Realizar Primeira Avaliação
-          </Button>
-        </div>
+        ) : (
+          <div className="space-y-4">
+            {avaliacoes.slice(0, 10).map((avaliacao) => {
+              const nomeAluno = getAlunoNome(avaliacao.aluno_id);
+              const iniciais = nomeAluno.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+              const protocoloLabel = {
+                '3dobras': '3 Dobras',
+                '7dobras': '7 Dobras',
+                'bioimpedancia': 'Bioimpedância',
+                'perimetros': 'Perímetros'
+              }[avaliacao.protocolo];
+              
+              return (
+                <div key={avaliacao.id} className="bg-dark border border-gray-dark rounded-lg p-4 hover:border-primary transition-colors cursor-pointer">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-primary font-bold">{iniciais}</span>
+                      </div>
+                      <div>
+                        <h3 className="text-white font-semibold">{nomeAluno}</h3>
+                        <p className="text-gray-light text-sm">
+                          📅 {formatData(avaliacao.data_avaliacao)} • {protocoloLabel}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-center">
+                        <p className="text-gray-light text-xs">Peso</p>
+                        <p className="text-white font-semibold">{avaliacao.peso} kg</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-gray-light text-xs">IMC</p>
+                        <p className="text-white font-semibold">{avaliacao.imc}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-gray-light text-xs">% Gordura</p>
+                        <p className={`font-semibold ${getCorGordura(avaliacao.percentual_gordura, avaliacao.sexo)}`}>
+                          {avaliacao.percentual_gordura}%
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="secondary" className="text-sm px-3 py-1">Ver</Button>
+                        <Button variant="secondary" className="text-sm px-3 py-1">Comparar</Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
+      
+      {/* Wizard de Nova Avaliação */}
+      {showWizard && (
+        <NovaAvaliacaoWizard
+          alunos={alunos}
+          onClose={() => setShowWizard(false)}
+          onSubmit={handleNovaAvaliacao}
+        />
+      )}
     </div>
   );
 };
