@@ -121,6 +121,9 @@ export const Alunos = () => {
     minimumFractionDigits: 2,
   });
 
+  const diaVencimento = (dia: number | undefined) =>
+    dia != null && dia >= 1 && dia <= 31 ? String(dia).padStart(2, '0') : '-';
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -201,17 +204,18 @@ export const Alunos = () => {
                 <th className="text-left py-3 px-4 text-gray-light font-medium">WhatsApp</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Mensalidade</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Freq. semana</th>
+                <th className="text-left py-3 px-4 text-gray-light font-medium">Dia venc.</th>
                 <th className="text-left py-3 px-4 text-gray-light font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-gray-light">Carregando...</td>
+                  <td colSpan={6} className="text-center py-8 text-gray-light">Carregando...</td>
                 </tr>
               ) : filteredAlunos.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-8 text-gray-light">
+                  <td colSpan={6} className="text-center py-8 text-gray-light">
                     {searchTerm.trim() ? 'Nenhum aluno encontrado' : 'Nenhum aluno cadastrado'}
                   </td>
                 </tr>
@@ -241,6 +245,9 @@ export const Alunos = () => {
                       </td>
                       <td className="py-4 px-4 text-gray-light">
                         {inativo ? '-' : (aluno.frequency_per_week ? `${aluno.frequency_per_week}x/semana` : '-')}
+                      </td>
+                      <td className="py-4 px-4 text-gray-light tabular-nums">
+                        {inativo ? '-' : diaVencimento(aluno.payment_day)}
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
@@ -306,6 +313,10 @@ export const Alunos = () => {
                     <div>
                       <p className="text-gray-light text-xs mb-1">Freq.</p>
                       <p className="text-white">{inativo ? '-' : (aluno.frequency_per_week ? `${aluno.frequency_per_week}x/semana` : '-')}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-light text-xs mb-1">Dia venc.</p>
+                      <p className="text-white tabular-nums">{inativo ? '-' : diaVencimento(aluno.payment_day)}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-dark">

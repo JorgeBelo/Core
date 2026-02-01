@@ -32,6 +32,8 @@ export const RelatorioAlunosModal = ({
   const telefonePersonal = userProfile?.phone ? maskWhatsApp(userProfile.phone) : '-';
   const crefPreenchido = userProfile?.cref?.trim();
   const alunosAtivos = alunos.filter((a) => a.active !== false);
+  const diaVencimento = (dia: number | undefined) =>
+    dia != null && dia >= 1 && dia <= 31 ? String(dia).padStart(2, '0') : '-';
 
   const handleImprimir = () => {
     const conteudo = reportRef.current;
@@ -75,86 +77,97 @@ export const RelatorioAlunosModal = ({
 
   const handleBaixarPdf = () => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const margin = 14;
+    const margin = 18; // margens A4 confortáveis
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
     // Cor primária Core: #a20100 -> RGB 162, 1, 0
     const primaryR = 162;
     const primaryG = 1;
     const primaryB = 0;
 
-    // Faixa do título (fundo vermelho, texto branco) – meio termo
+    // Faixa do título – tamanho visível em A4
     doc.setFillColor(primaryR, primaryG, primaryB);
-    doc.rect(0, 0, pageWidth, 22, 'F');
+    doc.rect(0, 0, pageWidth, 26, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
+    doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('Relatório de Alunos', pageWidth / 2, 14, { align: 'center' });
+    doc.text('Relatório de Alunos', pageWidth / 2, 16, { align: 'center' });
     doc.setTextColor(26, 26, 26);
     doc.setFont('helvetica', 'normal');
-    let y = 32;
+    let y = 36;
 
-    // "Dados do Personal" – cor neutra
-    doc.setFontSize(11);
+    // "Dados do Personal"
+    doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(51, 51, 51);
     doc.text('Dados do Personal', margin, y);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(26, 26, 26);
-    y += 8;
+    y += 9;
 
-    doc.setFontSize(10);
+    doc.setFontSize(12);
     doc.text(`Nome: ${nomePersonal}`, margin, y);
-    y += 5.5;
+    y += 7;
     doc.text(`E-mail: ${emailPersonal}`, margin, y);
-    y += 5.5;
+    y += 7;
     doc.text(`Telefone: ${telefonePersonal}`, margin, y);
-    y += 5.5;
+    y += 7;
     if (crefPreenchido) {
       doc.text(`CREF: ${crefPreenchido}`, margin, y);
-      y += 5.5;
+      y += 7;
     }
-    y += 5;
+    y += 6;
 
-    doc.setFontSize(11);
+    doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
     doc.text('Listagem de alunos ativos', margin, y);
     doc.setFont('helvetica', 'normal');
-    y += 7;
+    y += 9;
 
     const tableData = alunosAtivos.map((a) => {
       const nome = a.nome || a.name || '-';
       const tel = a.whatsapp ? maskWhatsApp(a.whatsapp) : '-';
       const freq = a.frequency_per_week ? `${a.frequency_per_week}x/semana` : '-';
-      return [nome, tel, freq];
+      const venc = diaVencimento(a.payment_day);
+      return [nome, tel, freq, venc];
     });
 
     autoTable(doc, {
       startY: y,
-      head: [['Nome', 'Telefone', 'Vezes por semana']],
+      head: [['Nome', 'Telefone', 'Vezes por semana', 'Dia venc.']],
       body: tableData,
       theme: 'grid',
       headStyles: {
         fillColor: [primaryR, primaryG, primaryB],
         textColor: [255, 255, 255],
-        fontSize: 10,
+        fontSize: 12,
         fontStyle: 'bold',
+        cellPadding: 4,
       },
-      bodyStyles: { fontSize: 9, textColor: [26, 26, 26] },
+      bodyStyles: {
+        fontSize: 11,
+        textColor: [26, 26, 26],
+        cellPadding: 3.5,
+      },
       alternateRowStyles: { fillColor: [248, 248, 248] },
-      margin: { left: margin, right: margin },
+      margin: { left: margin, right: margin, bottom: 18 },
       tableLineColor: [64, 64, 64],
+      showHead: 'everyPage', // repete cabeçalho da tabela em cada página
+      didDrawPage: (data) => {
+        // Rodapé em todas as páginas, fixo no fim da folha A4
+        const footerY = pageHeight - 12;
+        doc.setFontSize(10);
+        doc.setTextColor(64, 64, 64);
+        doc.text(
+          `Core - Gestão para Personal Trainers | Documento gerado em ${dataHoraGeracao}`,
+          pageWidth / 2,
+          footerY,
+          { align: 'center' }
+        );
+        doc.text(`Página ${data.pageNumber}`, pageWidth - margin, footerY, { align: 'right' });
+      },
     });
-
-    const finalY = (doc as any).lastAutoTable?.finalY ?? y;
-    doc.setFontSize(9);
-    doc.setTextColor(64, 64, 64); // #404040
-    doc.text(
-      `Core - Gestão para Personal Trainers | Documento gerado em ${dataHoraGeracao}`,
-      pageWidth / 2,
-      finalY + 14,
-      { align: 'center' }
-    );
 
     doc.save(`relatorio-alunos-${dataGeracaoArquivo}.pdf`);
   };
@@ -217,12 +230,13 @@ export const RelatorioAlunosModal = ({
                     <th className="bg-primary text-white border border-gray-dark p-2.5 text-left font-semibold">Nome</th>
                     <th className="bg-primary text-white border border-gray-dark p-2.5 text-left font-semibold">Telefone</th>
                     <th className="bg-primary text-white border border-gray-dark p-2.5 text-left font-semibold">Vezes por semana</th>
+                    <th className="bg-primary text-white border border-gray-dark p-2.5 text-left font-semibold">Dia venc.</th>
                   </tr>
                 </thead>
                 <tbody>
                   {alunosAtivos.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className="border border-gray-dark p-2.5 text-center text-gray-dark bg-gray-100">
+                      <td colSpan={4} className="border border-gray-dark p-2.5 text-center text-gray-dark bg-gray-100">
                         Nenhum aluno ativo na lista
                       </td>
                     </tr>
@@ -236,6 +250,7 @@ export const RelatorioAlunosModal = ({
                         <td className="border border-gray-dark p-2.5 text-[#1a1a1a]">
                           {a.frequency_per_week ? `${a.frequency_per_week}x/semana` : '-'}
                         </td>
+                        <td className="border border-gray-dark p-2.5 text-[#1a1a1a] tabular-nums">{diaVencimento(a.payment_day)}</td>
                       </tr>
                     ))
                   )}
