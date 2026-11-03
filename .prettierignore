@@ -1,0 +1,6 @@
+node_modules
+dist
+work
+pnpm-lock.yaml
+docs/PRODUCT-BRIEF.txt
+test-results

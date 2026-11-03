@@ -1,0 +1,50 @@
+# Registro de desenvolvimento
+
+## 03/11/2026 — Conexão hospedada e núcleo de treinos
+
+O proprietário reafirmou que o briefing novo prevalece sobre a arquitetura antiga e autorizou a instalação das ferramentas necessárias. GitHub conectado: repositório Core identificado. Supabase conectado pela integração oficial e confirmado ACTIVE_HEALTHY.
+
+As tabelas antigas e seus registros foram preservados. A fundação nova foi aplicada de forma aditiva; o usuário Auth existente do proprietário foi vinculado a professionals, e o proprietário confirmou login real na aplicação. Não foram redefinidas senhas. URL e chave publicável estão somente na configuração local ignorada pelo Git.
+
+As funções administrativas antigas deixaram de ser executáveis por anon/authenticated; search_path foi fixado e grants anônimos das tabelas antigas revogados. Nenhuma rotina de limpeza foi executada. Advisor residual documentado em LEGACY-INTEGRATION.md.
+
+Implementado núcleo de treinamento: biblioteca própria, favoritos/filtros/paginação, editor de programas, divisões, ordenação, parâmetros opcionais progressivos, duplicação de rascunho, aprovação explícita, snapshots imutáveis, área do aluno com quatro destinos, registro de séries/cargas/repetições/esforço/feedback e histórico recente.
+
+Verificação: 35 testes de domínio/PostgreSQL e 20 cenários de interface desktop/mobile. Cenário transacional completo aprovado no PostgreSQL hospedado e revertido integralmente. Login real confirmado pelo proprietário. Imagens de QA usam somente fixtures e ficam em work/, fora do Git. Limitações de fase 2 documentadas em TRAINING.md.
+
+Instalador Docker oficial baixado, hash e assinatura verificados; execução por usuário falhou na checagem VirtualMachinePlatform. WSL não instalado; firmware reporta virtualização desativada. Sem reinicialização ou mudanças de BIOS. O desenvolvimento prossegue no Supabase hospedado.
+
+Workflow de qualidade preparado com actions fixadas em SHA. Nova arquitetura será mantida em branch separada do legado, sem merge ou deploy automático. Financeiro, avaliações, agenda, comunicação, complementos de treinamento e IA continuam pendentes conforme ROADMAP.md.
+
+## 03/11/2026 — Fundação inicial
+
+### Avaliação
+
+Briefing integral lido e preservado. Workspace inicial sem aplicação existente. Encontrados Node 24.12.0, pnpm 11.25.0 e Git 2.52.0. npm não disponível no PATH. Pesquisa realizada em documentação oficial Expo/React Native/Supabase e nas referências públicas MFIT/Next Fit; links em ARCHITECTURE.md e RESEARCH.md.
+
+O proprietário informou que ainda não possui projeto Supabase e solicitou preparação local. Supabase CLI 3.0.0 executou `--version`; `status` confirmou ausência de Docker/Podman no PATH. Não houve criação de contas, alteração de instalações do sistema, publicação ou contratação.
+
+### Implementado
+
+Monorepo pnpm em `outputs/core-personal`, aplicativo Expo universal e pacotes domain, ui e api-client. Versões alinhadas pelo template oficial e por `expo install --fix`. Router, design system, lateral recolhível, navegação mobile, login e recuperação, sessão por plataforma e perfis. Cadastro essencial de alunos com criação, edição, busca, paginação, inativação e detecção de edição concorrente. Dashboard calcula métricas dos dados persistidos quando conectado.
+
+Migração cria profissionais, alunos/vínculos, notas privadas e auditoria; RLS e grants de coluna impedem mudança de tenant/identidade pelo cliente. Recursos de fases futuras são rotulados como planejados. Core AI tem somente contrato de provedor, sem chamadas.
+
+Documentação técnica e de operação criada; configuração de ambiente local e perfis EAS preparados. Git inicializado sem commit e sem alterar identidade/configuração global do usuário. Formatação Prettier padroniza os arquivos.
+
+### Verificação realizada
+
+- TypeScript: sem erros.
+- 21 testes de domínio/banco aprovados, executando migração real em PostgreSQL PGlite com uma camada Auth substituta.
+- 16 testes Playwright aprovados: oito cenários desktop/mobile Chromium, com Auth/REST simulados somente no teste. Incluem cadastro, edição/inativação, bloqueios de interface, recuperação com sucesso/falha e encerramento de sessão de recuperação.
+- `expo install --check`: dependências compatíveis. `pnpm peers check`: sem incompatibilidades após alinhamento e reinstalação pelo lockfile.
+- Exportações de bundles JavaScript/Hermes Android, iOS e web aprovadas. Não são binários APK/IPA nem testes em aparelhos.
+- Inspeção visual da tela pública em 1440×900 e 390×844: sem erros JavaScript ou overflow horizontal. Layout mobile de acesso foi reduzido após inspeção para priorizar o formulário.
+
+### Limitações e continuidade
+
+Homologação real de Supabase Auth, PostgREST, recuperação por e-mail, persistência entre sessões e acesso cruzado pelo serviço permanece pendente por falta do stack Docker local. Nenhuma alegação de produção pronta ou de fase 1 operacionalmente homologada.
+
+Roteiro de homologação em OPERATIONS.md. Próximo passo operacional: instalar/iniciar Docker, subir Supabase, configurar `.env` e provisionar o profissional. Depois validar a fundação no backend real e em Android/iOS antes da fase 2.
+
+Fotos, plano/contrato do aluno, observações privadas na interface, anamnese, treinos, execução, financeiro, agenda, mensagens, IA, offline, exportação/exclusão automatizada e backup automatizado permanecem para etapas posteriores. Sessão web é deliberadamente apenas em memória. Navegar fora do formulário por rotas globais pode descartar edição não salva; confirmação de descarte cobre os botões locais, sem bloqueio global de navegação nesta entrega.
