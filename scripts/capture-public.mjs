@@ -10,12 +10,12 @@ for (const [name, width, height] of [
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('http://127.0.0.1:4174/home');
-  await page.getByText('Conecte seu ambiente', { exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Seu próximo passo.', exact: true }).waitFor();
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate(
     () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
   );
-  await page.screenshot({ path: `docs/screenshots/setup-${name}.png`, fullPage: true });
+  await page.screenshot({ path: `docs/screenshots/access-${name}.png`, fullPage: true });
   console.log(
     JSON.stringify({
       name,

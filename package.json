@@ -13,7 +13,8 @@
     "test:ui": "node scripts/build-e2e.mjs && playwright test",
     "build:web": "pnpm --filter @core/mobile build:web",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "sdk:check": "node scripts/check-sdk.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.14",

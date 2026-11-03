@@ -24,7 +24,7 @@ jobs:
       - run: pnpm format:check
       - run: pnpm typecheck
       - run: pnpm test
-      - run: pnpm --filter @core/mobile exec expo install --check
+      - run: pnpm sdk:check
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:ui
       - run: pnpm --filter @core/mobile exec expo export --platform all --output-dir ../../work/platform-export

@@ -14,7 +14,7 @@ Verificação: 35 testes de domínio/PostgreSQL e 20 cenários de interface desk
 
 Instalador Docker oficial baixado, hash e assinatura verificados; execução por usuário falhou na checagem VirtualMachinePlatform. WSL não instalado; firmware reporta virtualização desativada. Sem reinicialização ou mudanças de BIOS. O desenvolvimento prossegue no Supabase hospedado.
 
-Workflow de qualidade preparado com actions fixadas em SHA. Nova arquitetura será mantida em branch separada do legado, sem merge ou deploy automático. Financeiro, avaliações, agenda, comunicação, complementos de treinamento e IA continuam pendentes conforme ROADMAP.md.
+Workflow de qualidade preparado com actions fixadas em SHA. Nova arquitetura salva na branch codex/core-personal-universal e no PR em rascunho https://github.com/JorgeBelo/Core/pull/1, sem merge ou deploy automático. O primeiro CI passou por instalação, formatação, tipos e 35 testes; parou na recomendação remota de novos patches do Expo. A verificação de compatibilidade foi ajustada para conferir os módulos instalados diretamente contra bundledNativeModules.json do SDK fixado, usando semver da própria CLI, sem depender de recomendações remotas variáveis ou do modo offline com validação reduzida. Testes e exportações permanecem obrigatórios. Financeiro, avaliações, agenda, comunicação, complementos de treinamento e IA continuam pendentes conforme ROADMAP.md.
 
 ## 03/11/2026 — Fundação inicial
 

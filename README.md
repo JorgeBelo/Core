@@ -97,7 +97,7 @@ Use Expo Go compatível com SDK 58 ou um development build. O código é univers
 ```powershell
 pnpm typecheck
 pnpm test
-pnpm --filter @core/mobile exec expo install --check
+pnpm sdk:check
 pnpm build:web
 pnpm exec playwright install chromium
 pnpm test:ui
@@ -109,6 +109,8 @@ pnpm test:ui
 - Login real confirmado pelo proprietário. Recuperação por e-mail no ambiente hospedado e dispositivos físicos ainda precisam de homologação.
 
 O GitHub Actions executa formatação, TypeScript, banco, interface e exportação universal, sem credenciais do banco hospedado. A configuração Vercel desta branch desabilita deploy automático; não houve publicação do app.
+
+`sdk:check` compara as versões instaladas com a matriz do SDK Expo fixado. A consulta online `expo install --check` também pode ser usada ao planejar atualizações, mas suas recomendações de patches podem mudar sem alteração do lockfile.
 
 O build de UI para testes é separado em `work/e2e-web`; a chave e a URL falsas de testes nunca são usadas no build normal. Para visualizar o build público normal:
 
