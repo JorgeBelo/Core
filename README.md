@@ -112,8 +112,8 @@ pnpm exec playwright install chromium
 pnpm test:ui
 ```
 
-- 81 testes de domínio/banco/PDF, incluindo aprovação, imutabilidade, idempotência, isolamento, regras financeiras e modelos de mensagem.
-- 44 testes de interface em viewport desktop e mobile Chromium. Auth/REST são fixtures exclusivas do teste, separadas do aplicativo.
+- 85 testes de domínio/banco/PDF, incluindo aprovação, imutabilidade, idempotência, isolamento, regras financeiras, máscaras e modelos de mensagem.
+- 46 testes de interface em viewport desktop e mobile Chromium. Auth/REST são fixtures exclusivas do teste, separadas do aplicativo.
 - `tests/live-training-rollback.sql`: cenário executado no Supabase hospedado com identidades Auth existentes, troca de roles e rollback integral dos dados de teste.
 - `tests/live-finance-rollback.sql`: contrato, parcelas, pagamentos, estorno, despesa, relatório, RLS e cancelamento validados no Supabase hospedado com rollback integral.
 - `tests/live-student-terms-rollback.sql` e `tests/live-profile-messages-rollback.sql`: mensalidade, frequência, CREF opcional, preferências e restrições de acesso validados com rollback integral.

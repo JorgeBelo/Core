@@ -1,5 +1,11 @@
 # Registro de desenvolvimento
 
+## 03/11/2026 — Máscaras de preenchimento
+
+Telefones do aluno e de emergência passam a formatar DDD, celulares de nove dígitos e fixos de oito dígitos; códigos internacionais explícitos são preservados. Mensalidade, contas, planos, recorrências, pagamentos e ajustes usam agrupamento de milhares e vírgula decimal. A digitação mantém reais como reais e completa duas casas decimais ao sair; não exige digitar centavos implicitamente. Valores ambíguos ou inválidos permanecem sujeitos à validação, sem truncar ou arredondar silenciosamente.
+
+Testes cobrem digitação, colagem, exclusão, limpeza de campos e persistência em centavos no navegador desktop/mobile. Total: 85 testes de domínio/banco/PDF e 46 cenários de interface. Sem migração ou alteração de valores existentes no banco.
+
 ## 03/11/2026 — Uso mais simples, cadastro, PDF e mensagens
 
 Dashboard reduzido a atalhos visuais e dois indicadores, com grade de ações no celular. Editor de treino refeito em Aluno → Exercícios → Revisão: seleção múltipla, favoritos, cadastro rápido sem sair da montagem, abas por treino, cartões recolhíveis, campos avançados sob demanda e confirmação de publicação. Referência pública de interação MFIT consultada sem copiar conteúdo ou identidade.

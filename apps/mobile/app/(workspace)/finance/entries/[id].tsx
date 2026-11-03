@@ -125,6 +125,7 @@ function ActionForm({
       {['payment', 'adjust'].includes(action.type) && (
         <Field
           label="Valor em reais *"
+          mask="brl"
           value={amount}
           onChangeText={setAmount}
           keyboardType="decimal-pad"

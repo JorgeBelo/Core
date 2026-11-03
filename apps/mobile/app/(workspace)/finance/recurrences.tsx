@@ -55,6 +55,7 @@ function CreateRecurrence({ onClose, onDone }: { onClose: () => void; onDone: ()
       />
       <Field
         label="Valor por ocorrência em reais"
+        mask="brl"
         value={amount}
         onChangeText={setAmount}
         keyboardType="decimal-pad"

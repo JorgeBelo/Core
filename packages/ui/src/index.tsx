@@ -9,6 +9,7 @@ import {
   type TextInputProps,
   type ViewStyle,
 } from 'react-native';
+import { moneyInput, finishMoneyInput, phoneInput } from './input-masks';
 export const colors = {
   background: '#111114',
   surface: '#202024',
@@ -103,8 +104,12 @@ export function Button({
 export function Field({
   label,
   error,
+  mask,
   ...props
-}: TextInputProps & { label: string; error?: string }) {
+}: TextInputProps & { label: string; error?: string; mask?: 'phone' | 'brl' }) {
+  const value = props.value ?? '';
+  const displayed =
+    mask === 'phone' ? phoneInput(value) : mask === 'brl' ? moneyInput(value) : props.value;
   return (
     <View style={{ gap: 7, flexGrow: 1 }}>
       <Label style={{ fontSize: 13, fontWeight: '500' }}>{label}</Label>
@@ -112,6 +117,23 @@ export function Field({
         accessibilityLabel={label}
         placeholderTextColor="#777781"
         {...props}
+        keyboardType={
+          props.keyboardType ??
+          (mask === 'phone' ? 'phone-pad' : mask === 'brl' ? 'decimal-pad' : undefined)
+        }
+        value={displayed}
+        onChangeText={
+          mask
+            ? (text) =>
+                props.onChangeText?.(
+                  mask === 'phone' ? phoneInput(text) : moneyInput(text, displayed),
+                )
+            : props.onChangeText
+        }
+        onBlur={(event) => {
+          if (mask === 'brl') props.onChangeText?.(finishMoneyInput(value));
+          props.onBlur?.(event);
+        }}
         style={[
           styles.input,
           props.multiline ? { minHeight: 90, textAlignVertical: 'top' } : {},

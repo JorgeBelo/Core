@@ -132,6 +132,7 @@ export function EntryForm({
       />
       <Field
         label="Valor original em reais *"
+        mask="brl"
         value={amount}
         onChangeText={setAmount}
         keyboardType="decimal-pad"
@@ -257,6 +258,7 @@ export function PlanForm({
       />
       <Field
         label="Valor por cobrança em reais *"
+        mask="brl"
         value={amount}
         onChangeText={setAmount}
         placeholder="300,00"

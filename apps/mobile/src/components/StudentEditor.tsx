@@ -144,6 +144,7 @@ export function StudentEditor({ student }: { student?: Student }) {
                   maxLength: 254,
                 })}
                 {field('phone', 'Telefone', {
+                  mask: 'phone',
                   placeholder: '(11) 99999-9999',
                   keyboardType: 'phone-pad',
                   maxLength: 30,
@@ -198,6 +199,7 @@ export function StudentEditor({ student }: { student?: Student }) {
                 <Heading level={3}>Mensalidade e frequência</Heading>
                 <Field
                   label="Mensalidade combinada (R$)"
+                  mask="brl"
                   placeholder="Ex.: 300,00"
                   keyboardType="decimal-pad"
                   value={monthlyFee}
@@ -260,6 +262,7 @@ export function StudentEditor({ student }: { student?: Student }) {
                 <Heading level={3}>Contato de emergência</Heading>
                 {field('emergency_name', 'Nome do contato de emergência', { maxLength: 120 })}
                 {field('emergency_phone', 'Telefone de emergência', {
+                  mask: 'phone',
                   keyboardType: 'phone-pad',
                   maxLength: 30,
                 })}

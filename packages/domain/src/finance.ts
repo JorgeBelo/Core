@@ -16,7 +16,7 @@ export function formatBRL(value: string | number | bigint): string {
   return `${cents < 0n ? '-' : ''}R$ ${new Intl.NumberFormat('pt-BR').format(absolute / 100n)},${String(absolute % 100n).padStart(2, '0')}`;
 }
 export function centsInput(value: number): string {
-  return `${Math.floor(value / 100)},${String(value % 100).padStart(2, '0')}`;
+  return formatBRL(value).replace('R$ ', '');
 }
 export const financeDate = z
   .string()
