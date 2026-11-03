@@ -45,6 +45,18 @@ export function createFinanceRepository(client: SupabaseClient) {
     return Object.fromEntries((data ?? []).map((s) => [s.id, s.full_name]));
   }
   return {
+    async studentEntries(studentId: string, page = 0) {
+      const { data, count, error } = await client
+        .from('finance_balances')
+        .select('*', { count: 'exact' })
+        .eq('student_id', studentId)
+        .eq('direction', 'receivable')
+        .order('due_date', { ascending: false })
+        .order('id')
+        .range(page * 20, page * 20 + 19);
+      if (error) throw error;
+      return { items: (data ?? []) as FinanceEntry[], count: count ?? 0 };
+    },
     async entries(
       direction: 'receivable' | 'payable',
       page = 0,
@@ -128,7 +140,7 @@ export function createFinanceRepository(client: SupabaseClient) {
         throw new Error('Este cadastro foi alterado em outra sessão. Recarregue antes de salvar.');
       return data;
     },
-    async ledger(id: string) {
+    async ledger(id: string, includeEvents = true) {
       const [p, a, e] = await Promise.all([
         client
           .from('finance_payments')
@@ -140,12 +152,14 @@ export function createFinanceRepository(client: SupabaseClient) {
           .select('*')
           .eq('entry_id', id)
           .order('created_at', { ascending: false }),
-        client
-          .from('finance_events')
-          .select('*')
-          .eq('entry_id', id)
-          .order('created_at', { ascending: false })
-          .limit(50),
+        includeEvents
+          ? client
+              .from('finance_events')
+              .select('*')
+              .eq('entry_id', id)
+              .order('created_at', { ascending: false })
+              .limit(50)
+          : Promise.resolve({ data: [], error: null }),
       ]);
       for (const r of [p, a, e]) if (r.error) throw r.error;
       return {

@@ -19,6 +19,7 @@ Plataforma universal para acompanhamento de alunos por personal trainers. Funda�
 - Contas a receber/pagar, pagamentos parciais manuais, estornos, ajustes, contestações e histórico.
 - Planos, contratos com snapshot, parcelas previstas e recorrências sob confirmação explícita.
 - Relatórios de caixa confirmado, competência, saldos em aberto, séries mensais, categorias e alunos. Escopo e limites em [FINANCE.md](docs/FINANCE.md).
+- Consulta do aluno às próprias cobranças e movimentações, em tela secundária sem operações de escrita.
 
 ## Ambiente hospedado configurado
 
@@ -107,7 +108,7 @@ pnpm test:ui
 ```
 
 - 69 testes de domínio/banco, incluindo aprovação, imutabilidade, idempotência, isolamento e regras financeiras.
-- 28 testes de interface em viewport desktop e mobile Chromium. Auth/REST são fixtures exclusivas do teste, separadas do aplicativo.
+- 30 testes de interface em viewport desktop e mobile Chromium. Auth/REST são fixtures exclusivas do teste, separadas do aplicativo.
 - `tests/live-training-rollback.sql`: cenário executado no Supabase hospedado com identidades Auth existentes, troca de roles e rollback integral dos dados de teste.
 - `tests/live-finance-rollback.sql`: contrato, parcelas, pagamentos, estorno, despesa, relatório, RLS e cancelamento validados no Supabase hospedado com rollback integral.
 - Login real confirmado pelo proprietário. Recuperação por e-mail no ambiente hospedado e dispositivos físicos ainda precisam de homologação.

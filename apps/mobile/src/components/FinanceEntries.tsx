@@ -94,7 +94,10 @@ export function FinanceEntries({ direction }: { direction: 'receivable' | 'payab
                   Total: {formatBRL(e.total_cents)} ·{' '}
                   {direction === 'receivable' ? 'Recebido' : 'Pago'}: {formatBRL(e.settled_cents)}
                 </Label>
-                <Heading level={3}>Saldo: {formatBRL(e.balance_cents)}</Heading>
+                <Heading level={3}>
+                  {e.status === 'cancelled' ? 'Valor cancelado' : 'Saldo'}:{' '}
+                  {formatBRL(e.balance_cents)}
+                </Heading>
                 <Button secondary onPress={() => router.push(`/finance/entries/${e.id}`)}>
                   Abrir conta
                 </Button>

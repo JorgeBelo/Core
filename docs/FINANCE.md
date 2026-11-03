@@ -18,7 +18,7 @@ Visão geral e relatórios distinguem caixa confirmado por data efetiva, compet�
 
 Migração `20261103173924_core_finance.sql`, aplicada no Supabase hospedado. RLS e grants por coluna; nenhuma escrita direta do cliente em pagamentos, ajustes, contratos ou eventos. Funções privilegiadas ficam no schema privado e derivam o profissional do Auth. A view de saldos usa security_invoker. O relatório restringe explicitamente o profissional atual além da RLS.
 
-Alunos ativos podem ler somente contratos e cobranças próprias, pagamentos e ajustes relacionados. Não podem confirmar ou alterar operações. A apresentação dessas informações na área do aluno ainda está pendente. Despesas e eventos internos não ficam disponíveis ao aluno.
+Alunos ativos podem ler somente contratos e cobranças próprias, pagamentos e ajustes relacionados. Não podem confirmar ou alterar operações. A tela secundária Meu financeiro apresenta cobranças paginadas, valores, vencimentos, confirmações, estornos e ajustes; mantém as quatro abas principais do aluno. A apresentação das condições contratuais ao aluno ainda está pendente. Despesas e eventos internos não ficam disponíveis ao aluno.
 
 Testes automatizados cobrem regras monetárias, restrições, isolamento, permissões, idempotência, snapshots, recorrência e diferença entre previsão/caixa. Playwright exercita recebimento parcial, quitação, estorno, despesa, contrato e recorrência nos tamanhos desktop/mobile com backend de teste. O script `tests/live-finance-rollback.sql` verifica o PostgreSQL hospedado com rollback obrigatório e identidades Auth existentes.
 

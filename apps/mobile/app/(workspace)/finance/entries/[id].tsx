@@ -236,7 +236,10 @@ export default function EntryDetail() {
         <Label>
           {e.direction === 'receivable' ? 'Recebido' : 'Pago'}: {formatBRL(e.settled_cents)}
         </Label>
-        <Heading level={2}>Saldo em aberto: {formatBRL(e.balance_cents)}</Heading>
+        <Heading level={2}>
+          {e.status === 'cancelled' ? 'Valor cancelado' : 'Saldo em aberto'}:{' '}
+          {formatBRL(e.balance_cents)}
+        </Heading>
         {e.status !== 'cancelled' && (
           <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
             <Button disabled={e.balance_cents <= 0 || e.disputed} onPress={() => open('payment')}>

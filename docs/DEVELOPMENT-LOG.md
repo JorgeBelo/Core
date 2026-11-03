@@ -6,7 +6,7 @@ Implementadas contas a receber/pagar, confirmações manuais parciais, estornos,
 
 Migração aplicada ao Supabase hospedado sem importar ou alterar o histórico antigo. Teste transacional hospedado validou contrato, parcelas, recebimento parcial, quitação, estorno, despesa, relatório, restrições do aluno e cancelamento; rollback obrigatório removeu todos os registros de teste. Nova migração de índices e políticas cobre as FKs indicadas pelo advisor e consolida políticas financeiras equivalentes sem ampliar o acesso.
 
-Validação local: 69 testes de domínio/PostgreSQL e 28 cenários Playwright desktop/mobile aprovados; TypeScript e matriz local do SDK Expo aprovados. Capturas usam fixtures, fora do Git. Complementos financeiros pendentes em FINANCE.md; demais fases em ROADMAP.md. Chaves públicas locais permanecem fora do repositório. Dependências Supabase fixadas em versão exata.
+Validação local: 69 testes de domínio/PostgreSQL e 30 cenários Playwright desktop/mobile aprovados; TypeScript e matriz local do SDK Expo aprovados. A tela secundária Meu financeiro permite consulta do aluno às próprias cobranças e movimentações, sem operações de escrita e preservando as quatro abas principais. Capturas usam fixtures, fora do Git. Complementos financeiros pendentes em FINANCE.md; demais fases em ROADMAP.md. Chaves públicas locais permanecem fora do repositório. Dependências Supabase fixadas em versão exata.
 
 ## 03/11/2026 — Conexão hospedada e núcleo de treinos
 

@@ -1,14 +1,15 @@
 import { test, expect, type Page } from '@playwright/test';
 import { fixture, login } from './fixtures';
-async function financialFixture(page: Page) {
-  const base = await fixture(page);
-  base.students.push({
-    id: '30000000-0000-4000-8000-000000000020',
-    professional_id: '20000000-0000-4000-8000-000000000001',
-    full_name: 'Aluno financeiro de teste',
-    status: 'active',
-    email: '',
-  });
+async function financialFixture(page: Page, role: 'professional' | 'student' = 'professional') {
+  const base = await fixture(page, { role });
+  if (role === 'professional')
+    base.students.push({
+      id: '30000000-0000-4000-8000-000000000020',
+      professional_id: '20000000-0000-4000-8000-000000000001',
+      full_name: 'Aluno financeiro de teste',
+      status: 'active',
+      email: '',
+    });
   const entries: any[] = [],
     payments: any[] = [],
     adjustments: any[] = [],
@@ -260,6 +261,7 @@ async function financialFixture(page: Page) {
           'contract_id',
           'professional_id',
           'client_key',
+          'student_id',
         ]) {
           const value = url.searchParams.get(key);
           if (value?.startsWith('eq.'))
@@ -271,7 +273,7 @@ async function financialFixture(page: Page) {
     }
     await route.fulfill({ status: 200, headers, body: JSON.stringify(body) });
   });
-  return { entries, payments, plans, contracts };
+  return { entries, payments, plans, contracts, students: base.students };
 }
 async function newEntry(page: Page, kind: 'receivable' | 'payable', name: string, amount: string) {
   await page.getByRole('link', { name: 'Financeiro', exact: true }).click();
@@ -416,4 +418,71 @@ test('recurrence generation is explicit and may be paused', async ({ page }) => 
   await expect(
     page.getByRole('button', { name: 'Gerar contas previstas', exact: true }),
   ).toBeDisabled();
+});
+
+test('student consults own charges and movements through a secondary read-only screen', async ({
+  page,
+}) => {
+  const state = await financialFixture(page, 'student');
+  const today = new Date().toISOString().slice(0, 10);
+  const base = {
+    professional_id: state.students[0].professional_id,
+    student_id: state.students[0].id,
+    direction: 'receivable',
+    amount_cents: 30000,
+    category: 'Presencial',
+    due_date: today,
+    competence_date: today,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  state.entries.push(
+    {
+      ...base,
+      id: '90000000-0000-4000-8000-000000000101',
+      description: 'Minha mensalidade de teste',
+    },
+    {
+      ...base,
+      id: '90000000-0000-4000-8000-000000000102',
+      student_id: '30000000-0000-4000-8000-000000000020',
+      description: 'Cobrança de outro aluno',
+    },
+    {
+      ...base,
+      id: '90000000-0000-4000-8000-000000000103',
+      student_id: null,
+      direction: 'payable',
+      description: 'Despesa do personal',
+    },
+  );
+  state.payments.push({
+    id: '90000000-0000-4000-8000-000000000104',
+    entry_id: state.entries[0].id,
+    amount_cents: 10000,
+    effective_date: today,
+    method: 'pix',
+    created_at: new Date().toISOString(),
+    reverses_id: null,
+  });
+  const writes: string[] = [];
+  page.on('request', (request) => {
+    if (/\/rest\/v1\/(?:finance_|rpc\/)/.test(request.url()) && request.method() !== 'GET')
+      writes.push(request.url());
+  });
+  await login(page);
+  await page.getByRole('button', { name: 'Meu financeiro', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Meu financeiro', exact: true })).toBeVisible();
+  await expect(page.getByText('Saldo em aberto: R$ 200,00', { exact: true })).toBeVisible();
+  await expect(page.getByText('Cobrança de outro aluno', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Despesa do personal', { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Ver movimentações', exact: true }).click();
+  await expect(page.getByText('Recebimento: R$ 100,00', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Registrar recebimento', exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByRole('tab')).toHaveCount(4);
+  await page.getByRole('button', { name: 'Voltar ao início', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Meu cadastro', exact: true })).toBeVisible();
+  expect(writes).toEqual([]);
 });

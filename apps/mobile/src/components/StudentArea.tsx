@@ -14,6 +14,7 @@ import {
 import { readableError } from '@core/api-client';
 import { trainingRepository } from '../lib/backend';
 import { Wordmark } from './Auth';
+import { StudentFinance } from './StudentFinance';
 
 export function StudentArea({
   student,
@@ -25,7 +26,7 @@ export function StudentArea({
   exitError: string;
 }) {
   const cache = useQueryClient();
-  const [tab, setTab] = useState<'home' | 'workout' | 'progress' | 'messages'>('home');
+  const [tab, setTab] = useState<'home' | 'workout' | 'progress' | 'messages' | 'finance'>('home');
   const [execution, setExecution] = useState<{
       version: ProgramVersion;
       day: number;
@@ -180,6 +181,9 @@ export function StudentArea({
               </Label>
               {latest && <Button onPress={() => setTab('workout')}>Abrir meu treino</Button>}
             </Card>
+            <Button secondary onPress={() => setTab('finance')}>
+              Meu financeiro
+            </Button>
             <Button secondary onPress={onSignOut}>
               Sair da conta
             </Button>
@@ -388,6 +392,9 @@ export function StudentArea({
               </Card>
             )}
           </>
+        )}
+        {tab === 'finance' && (
+          <StudentFinance studentId={student.id} onBack={() => setTab('home')} />
         )}
         {tab === 'messages' && (
           <>
