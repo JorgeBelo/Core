@@ -27,6 +27,8 @@ O projeto Supabase existente foi reutilizado com tabelas novas. Os registros das
 
 Para iniciar neste checkout:
 
+No Windows, abra `Abrir Core.cmd`. Ele inicia a prévia compilada em segundo plano quando necessário e abre o navegador em `http://127.0.0.1:4174/home`. O servidor precisa estar ligado para esse endereço funcionar; o arquivo permite reabri-lo depois de encerrar o computador. Para desenvolver com atualização do código:
+
 ```powershell
 pnpm web
 ```
