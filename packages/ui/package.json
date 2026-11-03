@@ -1,0 +1,14 @@
+{
+  "name": "@core/ui",
+  "private": true,
+  "version": "0.1.0",
+  "main": "src/index.tsx",
+  "types": "src/index.tsx",
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0"
+  }
+}

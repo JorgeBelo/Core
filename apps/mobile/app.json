@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Core Personal",
+    "slug": "core-personal",
+    "scheme": "corepersonal",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.com.corepersonal.app",
+      "config": { "usesNonExemptEncryption": false }
+    },
+    "android": { "package": "br.com.corepersonal.app" },
+    "web": { "bundler": "metro", "output": "single", "name": "Core Personal" },
+    "plugins": ["expo-router", "expo-secure-store"]
+  }
+}

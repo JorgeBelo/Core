@@ -1,0 +1,40 @@
+import { test, expect } from '@playwright/test';
+import { fixture, login } from './fixtures';
+test('phone and money masks support typing, paste, clearing and persistence', async ({ page }) => {
+  const state = await fixture(page);
+  await login(page);
+  await page.getByRole('button', { name: 'Cadastrar aluno', exact: false }).click();
+  await page
+    .getByRole('textbox', { name: 'Nome completo *', exact: true })
+    .fill('Aluno com máscara de teste');
+  const phone = page.getByRole('textbox', { name: 'Telefone', exact: true });
+  await phone.pressSequentially('11999990000');
+  await expect(phone).toHaveValue('(11) 99999-0000');
+  await phone.fill('1133334444');
+  await expect(phone).toHaveValue('(11) 3333-4444');
+  await phone.fill('');
+  await expect(phone).toHaveValue('');
+  await phone.fill('(21) 98888-7777');
+  const money = page.getByRole('textbox', { name: 'Mensalidade combinada (R$)', exact: true });
+  await money.pressSequentially('1250');
+  await expect(money).toHaveValue('1.250');
+  await money.press('Backspace');
+  await expect(money).toHaveValue('125');
+  await money.fill('R$ 1.250,50');
+  await money.press('Tab');
+  await expect(money).toHaveValue('1.250,50');
+  await money.fill('');
+  await expect(money).toHaveValue('');
+  await money.fill('1250,5');
+  await money.press('Tab');
+  await expect(money).toHaveValue('1.250,50');
+  await page.getByRole('radio', { name: 'Contexto e emergência', exact: true }).click();
+  const emergency = page.getByRole('textbox', { name: 'Telefone de emergência', exact: true });
+  await emergency.fill('21977776666');
+  await expect(emergency).toHaveValue('(21) 97777-6666');
+  await page.getByRole('button', { name: 'Salvar aluno', exact: true }).click();
+  await expect(page.getByText('Cadastro salvo com sucesso.', { exact: true })).toBeVisible();
+  expect(state.students[0].monthly_fee_cents).toBe(125050);
+  expect(state.students[0].phone).toBe('(21) 98888-7777');
+  expect(state.students[0].emergency_phone).toBe('(21) 97777-6666');
+});

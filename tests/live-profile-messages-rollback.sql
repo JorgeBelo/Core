@@ -1,0 +1,31 @@
+begin;
+do $check$
+declare owner_user uuid; tenant uuid; student_user uuid; fixture uuid; actual bigint;
+begin
+ select user_id,id into owner_user,tenant from public.professionals order by created_at limit 1;
+ select id into student_user from auth.users where id<>owner_user and not exists(select 1 from public.professionals p where p.user_id=auth.users.id) limit 1;
+ if owner_user is null or student_user is null then raise exception 'Two existing Auth identities required';end if;
+ perform set_config('request.jwt.claim.sub',owner_user::text,true);
+ execute 'set local role authenticated';
+ update public.professionals set cref='TESTE TRANSACIONAL' where id=tenant;
+ select count(*) into actual from public.professionals where id=tenant and cref='TESTE TRANSACIONAL';
+ if actual<>1 then raise exception 'Owner could not save optional CREF';end if;
+ update public.professionals set cref='' where id=tenant;
+ insert into public.students(professional_id,full_name,gender,whatsapp_opt_in) values(tenant,'TESTE PERFIL TRANSACIONAL — NÃO PERSISTIR','female',true) returning id into fixture;
+ select count(*) into actual from public.students where id=fixture and gender='female' and whatsapp_opt_in;
+ if actual<>1 then raise exception 'Student message preferences failed';end if;
+ execute 'reset role';
+ update public.students set user_id=student_user where id=fixture;
+ perform set_config('request.jwt.claim.sub',student_user::text,true);
+ execute 'set local role authenticated';
+ update public.professionals set cref='ATAQUE' where id=tenant;
+ get diagnostics actual=row_count;
+ if actual<>0 then raise exception 'Other identity modified professional';end if;
+ update public.students set gender='male' where id=fixture;
+ get diagnostics actual=row_count;
+ if actual<>0 then raise exception 'Student modified managed terms';end if;
+ execute 'reset role';
+end;
+$check$;
+rollback;
+select 'PASS: CREF opcional, preferências de mensagem e RLS; todos os dados revertidos e nenhuma mensagem enviada' as verification;
