@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, View, ScrollView } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Field, Heading, Label, Loading, Notice, colors } from '@core/ui';
@@ -19,6 +19,13 @@ export function RecordPicker({
   const [search, setSearch] = useState(''),
     [term, setTerm] = useState(''),
     [page, setPage] = useState(0);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTerm(search.trim());
+      setPage(0);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [search]);
   const query = useQuery<{ items: (Student | Exercise)[]; count: number }>({
     queryKey: ['picker', kind, term, page],
     queryFn: async () =>

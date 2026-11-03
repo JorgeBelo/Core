@@ -420,4 +420,51 @@ describe.sequential('Financial ledger, RLS and real PostgreSQL calculations', ()
       await asUser(owner, 'select * from public.finance_payments where entry_id=$1', [id]),
     ).toHaveLength(1);
   });
+  it('stores monthly fee and weekly attendance without creating financial entries or payments', async () => {
+    const before = await db.query(
+      'select (select count(*) from public.finance_entries)::int entries,(select count(*) from public.finance_payments)::int payments',
+    );
+    const created = await asUser(
+      owner,
+      'insert into public.students(professional_id,full_name,monthly_fee_cents,weekly_frequency) values($1,$2,35000,3) returning id,monthly_fee_cents,weekly_frequency',
+      [tenant, 'Aluno com mensalidade de teste'],
+    );
+    expect(Number(created[0].monthly_fee_cents)).toBe(35000);
+    expect(created[0].weekly_frequency).toBe(3);
+    const after = await db.query(
+      'select (select count(*) from public.finance_entries)::int entries,(select count(*) from public.finance_payments)::int payments',
+    );
+    expect(after.rows).toEqual(before.rows);
+    expect(
+      await asUser(other, 'select * from public.students where id=$1', [created[0].id]),
+    ).toHaveLength(0);
+    await expect(
+      asUser(owner, 'update public.students set weekly_frequency=8 where id=$1', [created[0].id]),
+    ).rejects.toThrow(/check constraint/);
+    await expect(
+      asUser(owner, 'update public.students set monthly_fee_cents=-1 where id=$1', [created[0].id]),
+    ).rejects.toThrow(/check constraint/);
+    const feeStudent = crypto.randomUUID();
+    await db.query('insert into auth.users(id) values($1)', [feeStudent]);
+    await db.query('update public.students set user_id=$1 where id=$2', [
+      feeStudent,
+      created[0].id,
+    ]);
+    expect(
+      (
+        await asUser(
+          feeStudent,
+          'select monthly_fee_cents,weekly_frequency from public.students where id=$1',
+          [created[0].id],
+        )
+      )[0].weekly_frequency,
+    ).toBe(3);
+    expect(
+      await asUser(
+        feeStudent,
+        'update public.students set monthly_fee_cents=100 where id=$1 returning id',
+        [created[0].id],
+      ),
+    ).toHaveLength(0);
+  });
 });

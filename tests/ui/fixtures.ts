@@ -21,6 +21,14 @@ export async function fixture(
   const programs: any[] = [];
   const versions: any[] = [];
   const sessions: any[] = [];
+  const professional = {
+    id: pid,
+    user_id: uid,
+    display_name: 'Profissional de teste',
+    cref: '',
+    created_at: '2026-01-01T12:00:00Z',
+    updated_at: '2026-01-01T12:00:00Z',
+  };
   if (role === 'student')
     students.push({
       id: '30000000-0000-4000-8000-000000000001',
@@ -128,12 +136,12 @@ export async function fixture(
         app_metadata: {},
         user_metadata: {},
       };
-    } else if (url.pathname.includes('/professionals'))
-      body =
-        role === 'professional'
-          ? [{ id: pid, user_id: uid, display_name: 'Profissional de teste' }]
-          : [];
-    else if (url.pathname.includes('/rpc/publish_program')) {
+    } else if (url.pathname.includes('/finance_balances')) body = [];
+    else if (url.pathname.includes('/professionals')) {
+      if (method === 'PATCH' && role === 'professional')
+        Object.assign(professional, req.postDataJSON(), { updated_at: new Date().toISOString() });
+      body = role === 'professional' ? [professional] : [];
+    } else if (url.pathname.includes('/rpc/publish_program')) {
       const input = req.postDataJSON();
       const p = programs.find((v) => v.id === input.p_program_id);
       const version = {
@@ -202,7 +210,19 @@ export async function fixture(
         body = [...collection];
         const id = url.searchParams.get('id');
         if (id) body = body.filter((v: any) => 'eq.' + v.id === id);
+        const name = url.searchParams.get('name');
+        if (name?.startsWith('ilike.'))
+          body = body.filter((v: any) =>
+            v.name.toLowerCase().includes(name.slice(6).replaceAll('%', '').toLowerCase()),
+          );
+        for (const key of ['archived', 'favorite']) {
+          const value = url.searchParams.get(key);
+          if (value) body = body.filter((v: any) => String(v[key] ?? false) === value.slice(3));
+        }
         headers['content-range'] = `0-${Math.max(0, body.length - 1)}/${body.length}`;
+        const limit = Number(url.searchParams.get('limit'));
+        const offset = Number(url.searchParams.get('offset') ?? 0);
+        if (limit) body = body.slice(offset, offset + limit);
       }
       if (req.headers().accept?.includes('vnd.pgrst.object+json')) body = body[0] ?? null;
     } else if (url.pathname.includes('/students')) {
@@ -244,7 +264,19 @@ export async function fixture(
               .toLowerCase()
               .includes(search.replace('ilike.%', '').replace(/%$/, '').toLowerCase()),
           );
+        const tenant = url.searchParams.get('professional_id');
+        if (tenant) body = body.filter((s: any) => 'eq.' + s.professional_id === tenant);
+        const cursor = url.searchParams.get('id');
+        if (cursor?.startsWith('gt.'))
+          body = [...students].filter(
+            (s: any) => s.id > cursor.slice(3) && (!tenant || 'eq.' + s.professional_id === tenant),
+          );
+        if (url.searchParams.get('order')?.startsWith('id.'))
+          body.sort((a: any, b: any) => a.id.localeCompare(b.id));
         headers['content-range'] = `0-${Math.max(0, body.length - 1)}/${body.length}`;
+        const limit = Number(url.searchParams.get('limit'));
+        const offset = Number(url.searchParams.get('offset') ?? 0);
+        if (limit) body = body.slice(offset, offset + limit);
       }
       if (req.headers().accept?.includes('vnd.pgrst.object+json')) body = body[0] ?? null;
     }
@@ -254,7 +286,7 @@ export async function fixture(
       body: method === 'HEAD' ? '' : JSON.stringify(body),
     });
   });
-  return { students, exercises, programs, versions, sessions };
+  return { students, exercises, programs, versions, sessions, professional };
 }
 export async function login(page: Page) {
   await page.goto('/home');

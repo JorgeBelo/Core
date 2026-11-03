@@ -173,7 +173,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               >
                 <Label style={{ fontSize: 12 }}>Construído para evoluir.</Label>
                 <Label muted style={{ fontSize: 11 }}>
-                  Fundação · versão 0.1
+                  Seu espaço profissional
                 </Label>
               </View>
             )}

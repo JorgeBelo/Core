@@ -6,6 +6,7 @@ import { Button, Card, Heading, Label, Loading, Notice } from '@core/ui';
 import { readableError } from '@core/api-client';
 import { trainingRepository } from '../../../src/lib/backend';
 import { useSession } from '../../../src/lib/session';
+import { ActionTile } from '../../../src/components/Visual';
 export default function Training() {
   const { professional } = useSession();
   const [page, setPage] = useState(0);
@@ -20,24 +21,28 @@ export default function Training() {
         style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}
       >
         <View style={{ gap: 7 }}>
-          <Label muted>PRESCRIÇÃO E ACOMPANHAMENTO</Label>
-          <Heading>Treinos que fazem sentido.</Heading>
-          <Label muted>Organize programas, revise e libere cada versão conscientemente.</Label>
+          <Heading>Treinos</Heading>
+          <Label muted>Monte, ajuste e acompanhe os treinos dos seus alunos.</Label>
         </View>
-        <Button onPress={() => router.push('/training/programs/new')}>＋ Criar programa</Button>
+        <Button onPress={() => router.push('/training/programs/new')}>＋ Criar treino</Button>
       </View>
       <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
-        <Button secondary onPress={() => router.push('/training/exercises')}>
-          Biblioteca de exercícios
-        </Button>
-        <Button secondary onPress={() => router.push('/training/history')}>
-          Histórico de execução
-        </Button>
+        <ActionTile
+          icon="barbell-outline"
+          title="Biblioteca de exercícios"
+          description="Seus exercícios e favoritos"
+          onPress={() => router.push('/training/exercises')}
+          style={{ flex: 1, minWidth: 145 }}
+        />
+        <ActionTile
+          icon="time-outline"
+          title="Histórico de execução"
+          description="O que seus alunos realizaram"
+          onPress={() => router.push('/training/history')}
+          style={{ flex: 1, minWidth: 145 }}
+        />
       </View>
-      <Notice>
-        Rascunhos ficam disponíveis apenas ao profissional. O aluno recebe uma versão somente após
-        sua aprovação explícita.
-      </Notice>
+      <Heading level={2}>Seus programas</Heading>
       {query.isPending ? (
         <Loading />
       ) : query.error ? (
@@ -54,13 +59,13 @@ export default function Training() {
               <Heading level={2}>{p.name}</Heading>
               <Label muted>
                 {p.frequency}× por semana · {p.duration_weeks} semanas · {p.draft_days.length}{' '}
-                divisão(ões)
+                treino(s)
               </Label>
               <Label muted style={{ fontSize: 12 }}>
                 Rascunho atualizado em {new Date(p.updated_at).toLocaleString('pt-BR')}
               </Label>
               <Button secondary onPress={() => router.push(`/training/programs/${p.id}`)}>
-                Abrir editor
+                Editar treino
               </Button>
             </Card>
           ))}
@@ -79,19 +84,10 @@ export default function Training() {
         </>
       ) : (
         <Card>
-          <Heading level={2}>Seu primeiro programa começa aqui</Heading>
-          <Label muted>
-            Cadastre exercícios na biblioteca, selecione um aluno e organize as divisões do treino.
-          </Label>
+          <Heading level={2}>Vamos criar o primeiro treino?</Heading>
+          <Label muted>Escolha um aluno, adicione os exercícios e revise antes de liberar.</Label>
         </Card>
       )}
-      <Card>
-        <Heading level={3}>Core AI</Heading>
-        <Label muted>
-          Integração desabilitada. A assistência de IA será disponibilizada em uma etapa posterior,
-          com contexto autorizado e revisão profissional.
-        </Label>
-      </Card>
     </>
   );
 }

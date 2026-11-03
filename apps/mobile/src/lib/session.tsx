@@ -10,6 +10,7 @@ type State = {
   loading: boolean;
   error: string | null;
   reload: () => void;
+  updateProfessional: (profile: Professional) => void;
 };
 const Context = createContext<State>({
   session: null,
@@ -18,6 +19,7 @@ const Context = createContext<State>({
   loading: true,
   error: null,
   reload: () => {},
+  updateProfessional: () => {},
 });
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -87,6 +89,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         loading: !ready || loading,
         error,
         reload: () => setAttempt((v) => v + 1),
+        updateProfessional: (updated) => {
+          if (updated.user_id === session?.user.id)
+            setProfile({ professional: updated, student: null });
+        },
       }}
     >
       {children}

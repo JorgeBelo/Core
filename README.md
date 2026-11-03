@@ -9,17 +9,20 @@ Plataforma universal para acompanhamento de alunos por personal trainers. Funda�
 - Aplicativo universal Android, iOS e web com Expo Router.
 - Design system compartilhado, layout web com lateral recolhível e navegação inferior mobile.
 - Login, recuperação por código de e-mail, saída e perfis profissional/aluno.
-- Cadastro essencial persistido de alunos: criação, busca paginada, edição e inativação.
-- Dashboard com dados da carteira: ativos, inativos, novas entradas e últimos cadastros.
+- Cadastro persistido de alunos: mensalidade combinada, frequência semanal, tratamento feminino/masculino/neutro, autorização para WhatsApp, contatos, edição e inativação.
+- Perfil profissional com nome editável e CREF opcional.
+- Dashboard compacto com atalhos visuais, alunos ativos, novas entradas no mês e cadastros recentes.
 - PostgreSQL com migração, RLS, restrições de coluna, isolamento por profissional e auditoria de gravações.
 - Validações compartilhadas, tratamento de erro e proteção contra sobrescrita de edição concorrente.
 - Biblioteca própria de exercícios com filtros, favoritos, edição, arquivamento e links de vídeo licenciados.
-- Editor de programas, divisões, ordenação, parâmetros opcionais, duplicação e aprovação explícita.
+- Editor visual em três etapas, seleção múltipla e cadastro rápido de exercícios, abas por treino, parâmetros opcionais, duplicação e aprovação explícita.
 - Versões publicadas imutáveis e área do aluno com registro de séries, cargas, repetições, esforço e histórico.
 - Contas a receber/pagar, pagamentos parciais manuais, estornos, ajustes, contestações e histórico.
 - Planos, contratos com snapshot, parcelas previstas e recorrências sob confirmação explícita.
 - Relatórios de caixa confirmado, competência, saldos em aberto, séries mensais, categorias e alunos. Escopo e limites em [FINANCE.md](docs/FINANCE.md).
 - Consulta do aluno às próprias cobranças e movimentações, em tela secundária sem operações de escrita.
+- PDF de todos os alunos, independentemente da página/busca visível: nome, telefone, e-mail, frequência e situação, com CREF quando preenchido.
+- Textos editáveis de vencimento e aniversário com nome do aluno; abertura manual no WhatsApp. Envio automático depende de conexão futura com a API oficial, ainda não configurada. Ver [MESSAGES.md](docs/MESSAGES.md).
 
 ## Ambiente hospedado configurado
 
@@ -109,10 +112,11 @@ pnpm exec playwright install chromium
 pnpm test:ui
 ```
 
-- 69 testes de domínio/banco, incluindo aprovação, imutabilidade, idempotência, isolamento e regras financeiras.
-- 30 testes de interface em viewport desktop e mobile Chromium. Auth/REST são fixtures exclusivas do teste, separadas do aplicativo.
+- 81 testes de domínio/banco/PDF, incluindo aprovação, imutabilidade, idempotência, isolamento, regras financeiras e modelos de mensagem.
+- 44 testes de interface em viewport desktop e mobile Chromium. Auth/REST são fixtures exclusivas do teste, separadas do aplicativo.
 - `tests/live-training-rollback.sql`: cenário executado no Supabase hospedado com identidades Auth existentes, troca de roles e rollback integral dos dados de teste.
 - `tests/live-finance-rollback.sql`: contrato, parcelas, pagamentos, estorno, despesa, relatório, RLS e cancelamento validados no Supabase hospedado com rollback integral.
+- `tests/live-student-terms-rollback.sql` e `tests/live-profile-messages-rollback.sql`: mensalidade, frequência, CREF opcional, preferências e restrições de acesso validados com rollback integral.
 - Login real confirmado pelo proprietário. Recuperação por e-mail no ambiente hospedado e dispositivos físicos ainda precisam de homologação.
 
 O GitHub Actions executa formatação, TypeScript, banco, interface e exportação universal, sem credenciais do banco hospedado. A configuração Vercel desta branch desabilita deploy automático; não houve publicação do app.

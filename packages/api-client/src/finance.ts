@@ -45,6 +45,32 @@ export function createFinanceRepository(client: SupabaseClient) {
     return Object.fromEntries((data ?? []).map((s) => [s.id, s.full_name]));
   }
   return {
+    async dueToday(professionalId: string, date: string) {
+      const result: FinanceEntry[] = [];
+      let cursor: string | undefined;
+      for (;;) {
+        let query = client
+          .from('finance_balances')
+          .select('*')
+          .eq('professional_id', professionalId)
+          .eq('direction', 'receivable')
+          .eq('due_date', date)
+          .is('cancelled_at', null)
+          .eq('disputed', false)
+          .gt('balance_cents', 0)
+          .order('id')
+          .limit(200);
+        if (cursor) query = query.gt('id', cursor);
+        const { data, error } = await query;
+        if (error) throw error;
+        const rows = (data ?? []) as FinanceEntry[];
+        result.push(...rows);
+        if (rows.length < 200) return result;
+        const next = rows[rows.length - 1].id;
+        if (next === cursor) throw new Error('Não foi possível carregar os vencimentos completos.');
+        cursor = next;
+      }
+    },
     async studentEntries(studentId: string, page = 0) {
       const { data, count, error } = await client
         .from('finance_balances')

@@ -19,3 +19,9 @@ Componentes compartilhados: Button, Card, Field, Choice, Heading, Label, Loading
 Estados explícitos: ambiente não configurado, acesso pendente, carteira vazia, busca sem resultado, carregamento, falha de servidor, sucesso de gravação e descarte de alterações. Módulos futuros são rotulados como planejados.
 
 Auditoria completa com VoiceOver/TalkBack, navegação por teclado e testes em dispositivos físicos ainda pendentes. Não há certificação formal de acessibilidade nesta entrega.
+
+## Simplificação de uso
+
+O início prioriza quatro ações: Criar treino, Meus alunos, Financeiro e Mensagens. No celular elas formam uma grade de atalhos; os indicadores se limitam a ativos e novas entradas no mês. Banners institucionais e chamadas para recursos indisponíveis saíram desse fluxo.
+
+Montagem de treino usa três etapas nomeadas e abas para cada treino. Cartões de exercícios mostram o resumo e abrem a edição individual. Campos avançados ficam recolhidos. Ações por ícone têm rótulos acessíveis; seleções indicam o estado também por semântica, além da cor. Remoções de treino/exercício pedem confirmação. Revisão precede publicação.

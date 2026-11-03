@@ -143,6 +143,7 @@ export function Choice<T extends string>({
             key={o.value}
             accessibilityRole="radio"
             accessibilityState={{ checked: value === o.value }}
+            aria-checked={value === o.value}
             onPress={() => onChange(o.value)}
             style={{
               paddingVertical: 11,

@@ -36,6 +36,8 @@ Os nomes locais foram alinhados às versões efetivamente registradas no Supabas
 3. `20261103165912_core_training.sql`
 4. `20261103173924_core_finance.sql`
 5. `20261103174116_finance_indexes_and_policies.sql`
+6. `20261103180931_student_monthly_fee_and_frequency.sql`
+7. `20261103182257_professional_profile_and_student_messages.sql`
 
 Em ambiente novo, aplicar na ordem. Em ambiente hospedado atual, já estão registradas: não executar novamente. Não usar `db reset`, limpeza do legado, restore ou sincronização destrutiva. Para desenvolver com CLI contra esse projeto, verificar o histórico antes de qualquer `db push`, pois o legado pré-existente ainda não possui uma migração de baseline completa.
 

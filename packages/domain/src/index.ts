@@ -1,6 +1,7 @@
 import { z } from 'zod';
 export * from './training';
 export * from './finance';
+export * from './messages';
 const optionalText = (max: number) => z.string().trim().max(max);
 export const studentSchema = z.object({
   full_name: z.string().trim().min(3, 'Informe pelo menos 3 caracteres.').max(120),
@@ -42,6 +43,10 @@ export const studentSchema = z.object({
   ),
   availability: optionalText(500),
   preferences: optionalText(1000),
+  monthly_fee_cents: z.number().int().min(1).max(1_000_000_000_000).nullable().default(null),
+  weekly_frequency: z.number().int().min(1).max(7).nullable().default(null),
+  gender: z.enum(['female', 'male', 'unspecified']).default('unspecified'),
+  whatsapp_opt_in: z.boolean().default(false),
 });
 export type StudentInput = z.infer<typeof studentSchema>;
 export type Student = StudentInput & {
@@ -56,6 +61,9 @@ export type Professional = {
   user_id: string;
   display_name: string;
   created_at: string;
+  updated_at: string;
+  cref: string;
+  message_templates: import('./messages').MessageTemplates;
 };
 export const modalityLabels = { in_person: 'Presencial', online: 'Online', hybrid: 'Híbrido' };
 export const experienceLabels = {
@@ -81,6 +89,10 @@ export function newStudent(): StudentInput {
     emergency_phone: '',
     availability: '',
     preferences: '',
+    monthly_fee_cents: null,
+    weekly_frequency: null,
+    gender: 'unspecified',
+    whatsapp_opt_in: false,
   };
 }
 export function initials(name: string) {

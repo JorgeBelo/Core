@@ -2,6 +2,10 @@
 
 ## Fluxo
 
+O editor agora organiza a montagem em três etapas: Aluno, Exercícios e Revisão. A escolha do aluno sugere o nome do programa e aproveita a frequência semanal cadastrada, que continua editável na prescrição. Estruturas Único/AB/ABC/ABCD criam treinos vazios; não prescrevem conteúdo automaticamente. Cada treino tem sua aba e somente um exercício fica expandido por vez.
+
+A seleção permite adicionar vários exercícios, pesquisar enquanto digita e usar favoritos. Um exercício ausente pode ser cadastrado dentro da seleção sem perder o rascunho. Séries, repetições e intervalo ficam juntos; carga, esforço, tempo e observações aparecem sob demanda. A revisão mostra todas as divisões e parâmetros, salva se necessário e exige uma segunda confirmação explícita para liberar. Rascunhos continuam privados.
+
 1. Personal cadastra exercícios próprios ou licenciados.
 2. Cria um programa vinculado a um aluno, com duração, frequência e divisões.
 3. Adiciona exercícios, séries, repetições e intervalos; parâmetros opcionais aparecem sob demanda.
@@ -31,5 +35,7 @@ O roteiro `tests/live-training-rollback.sql` passou no PostgreSQL hospedado, sem
 - A execução não promete offline. Estado em memória permanece ao trocar abas internas, mas recarregar/fechar pode perder registros não enviados. Não usar como solução offline até implementar cache protegido e sincronização.
 - Substituições de exercício, métodos agrupados e progressão automatizada ainda pendentes.
 - Core AI permanece desabilitado. Nenhum treino é gerado ou publicado automaticamente por IA.
+
+Referência pública de interação consultada: https://ajuda.mfitpersonal.com.br/ajuda/professor/como-criar-um-treino-para-o-meu-aluno-no-app-da-mfit/. A implementação mantém identidade própria; não copia biblioteca, vídeos ou telas do serviço.
 
 Esses limites impedem declarar a fase 2 integralmente concluída. O núcleo de prescrição/execução está implementado e verificado; a homologação em Android/iOS físicos permanece pendente.

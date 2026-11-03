@@ -10,6 +10,9 @@ import {
   type StudentInput,
   experienceLabels,
   modalityLabels,
+  parseBRL,
+  centsInput,
+  formatBRL,
 } from '@core/domain';
 import { readableError } from '@core/api-client';
 import { repository } from '../lib/backend';
@@ -21,12 +24,18 @@ export function StudentEditor({ student }: { student?: Student }) {
   const wide = width > 1050;
   const initial: StudentInput = student ?? newStudent();
   const [form, setForm] = useState<StudentInput>(initial),
+    [monthlyFee, setMonthlyFee] = useState(
+      initial.monthly_fee_cents == null ? '' : centsInput(initial.monthly_fee_cents),
+    ),
     [errors, setErrors] = useState<Record<string, string>>({}),
     [section, setSection] = useState<'basic' | 'context'>('basic'),
     [discard, setDiscard] = useState(false);
-  const dirty = Object.keys(newStudent()).some(
-    (k) => form[k as keyof StudentInput] !== initial[k as keyof StudentInput],
-  );
+  const dirty =
+    monthlyFee !==
+      (initial.monthly_fee_cents == null ? '' : centsInput(initial.monthly_fee_cents)) ||
+    Object.keys(newStudent()).some(
+      (k) => form[k as keyof StudentInput] !== initial[k as keyof StudentInput],
+    );
   const mutation = useMutation({
     mutationFn: (input: StudentInput) => repository!.saveStudent(input, professional!.id, student),
     onSuccess: async () => {
@@ -43,7 +52,17 @@ export function StudentEditor({ student }: { student?: Student }) {
     setErrors((e) => ({ ...e, [key]: '' }));
   }
   function submit() {
-    const parsed = studentSchema.safeParse(form);
+    let monthly_fee_cents: number | null = null;
+    try {
+      monthly_fee_cents = monthlyFee.trim() ? parseBRL(monthlyFee) : null;
+    } catch {
+      setErrors({
+        monthly_fee_cents: 'Informe uma mensalidade válida, como 300,00, ou deixe em branco.',
+      });
+      setSection('basic');
+      return;
+    }
+    const parsed = studentSchema.safeParse({ ...form, monthly_fee_cents });
     if (!parsed.success) {
       const err: Record<string, string> = {};
       for (const issue of parsed.error.issues) err[String(issue.path[0])] = issue.message;
@@ -58,7 +77,7 @@ export function StudentEditor({ student }: { student?: Student }) {
   const field = (key: keyof StudentInput, label: string, extra: any = {}) => (
     <Field
       label={label}
-      value={form[key]}
+      value={typeof form[key] === 'string' ? (form[key] as string) : ''}
       onChangeText={(value) => change(key, value)}
       error={errors[key]}
       {...extra}
@@ -68,6 +87,12 @@ export function StudentEditor({ student }: { student?: Student }) {
     if (dirty) setDiscard(true);
     else router.replace('/students');
   };
+  let monthlySummary = 'Mensalidade a definir';
+  try {
+    if (monthlyFee.trim()) monthlySummary = `${formatBRL(parseBRL(monthlyFee))}/mês`;
+  } catch {
+    monthlySummary = 'Confira o valor da mensalidade';
+  }
   return (
     <>
       <View
@@ -143,6 +168,25 @@ export function StudentEditor({ student }: { student?: Student }) {
                   }))}
                 />
                 <Choice
+                  label="Tratamento nas mensagens"
+                  value={form.gender}
+                  onChange={(v) => change('gender', v)}
+                  options={[
+                    { value: 'female', label: 'Feminino' },
+                    { value: 'male', label: 'Masculino' },
+                    { value: 'unspecified', label: 'Prefiro não informar' },
+                  ]}
+                />
+                <Choice
+                  label="Avisos pelo WhatsApp"
+                  value={form.whatsapp_opt_in ? 'yes' : 'no'}
+                  onChange={(v) => change('whatsapp_opt_in', v === 'yes')}
+                  options={[
+                    { value: 'no', label: 'Não autorizado' },
+                    { value: 'yes', label: 'Aluno autorizou' },
+                  ]}
+                />
+                <Choice
                   label="Status do acompanhamento"
                   value={form.status}
                   onChange={(v) => change('status', v)}
@@ -151,6 +195,34 @@ export function StudentEditor({ student }: { student?: Student }) {
                     { value: 'inactive', label: 'Inativo' },
                   ]}
                 />
+                <Heading level={3}>Mensalidade e frequência</Heading>
+                <Field
+                  label="Mensalidade combinada (R$)"
+                  placeholder="Ex.: 300,00"
+                  keyboardType="decimal-pad"
+                  value={monthlyFee}
+                  onChangeText={(v) => {
+                    setMonthlyFee(v);
+                    setErrors((e) => ({ ...e, monthly_fee_cents: '' }));
+                  }}
+                  error={errors.monthly_fee_cents}
+                  maxLength={24}
+                />
+                <Choice
+                  label="Quantas vezes por semana?"
+                  value={form.weekly_frequency == null ? '' : String(form.weekly_frequency)}
+                  onChange={(v) => change('weekly_frequency', v ? Number(v) : null)}
+                  options={[
+                    { value: '', label: 'A definir' },
+                    ...Array.from({ length: 7 }, (_, i) => ({
+                      value: String(i + 1),
+                      label: `${i + 1}×`,
+                    })),
+                  ]}
+                />
+                <Label muted style={{ fontSize: 12 }}>
+                  Valor mensal combinado. Os recebimentos são registrados no Financeiro.
+                </Label>
                 {form.status === 'inactive' && (
                   <Notice>
                     O cadastro será preservado. O acesso vinculado do aluno ficará suspenso enquanto
@@ -206,10 +278,13 @@ export function StudentEditor({ student }: { student?: Student }) {
           </View>
         </View>
         <Card style={{ width: wide ? 280 : '100%' }}>
-          <Label style={{ fontSize: 10, letterSpacing: 1.4, color: '#D6AAA8' }}>
-            CUIDADO DESDE O PRIMEIRO CONTATO
+          <Heading level={3}>Resumo do acompanhamento</Heading>
+          <Label>
+            {form.weekly_frequency
+              ? `${form.weekly_frequency}× por semana`
+              : 'Frequência a definir'}
           </Label>
-          <Heading level={3}>Só o necessário, no momento certo.</Heading>
+          <Label>{monthlySummary}</Label>
           <Label muted>
             Nome e data de início são obrigatórios. Os outros campos podem ser preenchidos durante o
             acompanhamento.

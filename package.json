@@ -20,6 +20,7 @@
     "@electric-sql/pglite": "^0.3.14",
     "@playwright/test": "^1.56.1",
     "@types/node": "^24.0.0",
+    "pdf-lib": "1.17.1",
     "prettier": "3.7.0",
     "typescript": "~6.0.3",
     "vitest": "^4.0.0"

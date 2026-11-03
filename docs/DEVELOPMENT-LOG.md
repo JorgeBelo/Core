@@ -1,5 +1,17 @@
 # Registro de desenvolvimento
 
+## 03/11/2026 — Uso mais simples, cadastro, PDF e mensagens
+
+Dashboard reduzido a atalhos visuais e dois indicadores, com grade de ações no celular. Editor de treino refeito em Aluno → Exercícios → Revisão: seleção múltipla, favoritos, cadastro rápido sem sair da montagem, abas por treino, cartões recolhíveis, campos avançados sob demanda e confirmação de publicação. Referência pública de interação MFIT consultada sem copiar conteúdo ou identidade.
+
+Cadastro de aluno ganhou mensalidade combinada, frequência semanal, tratamento feminino/masculino/não informado e autorização de WhatsApp. Perfil profissional permite nome e CREF opcional, sem alterar identidade. Migrações aditivas aplicadas e testes transacionais hospedados com rollback passaram. Valores cadastrados não criam cobranças ou pagamentos.
+
+Exportação PDF inclui a carteira inteira, contatos e frequência, com CREF quando preenchido. Consulta por cursor, fontes locais Noto Sans/OFL e geração no dispositivo. PDF de 205 alunos validado por extração de texto e revisão visual da primeira/última página. Integração web corrigida com override específico da dependência tslib de pdf-lib; não há configuração global de Metro desabilitando exports.
+
+Modelos editáveis de vencimento e aniversário usam primeiro nome e tratamento escolhido. As mensagens podem ser abertas manualmente no WhatsApp após autorização e conferência do telefone. O proprietário usa somente o aplicativo no celular: não há conexão oficial, fila, dispatcher, agendamento ou envio automático ativo. A ativação depende da Plataforma WhatsApp Business, conforme MESSAGES.md. Nenhuma mensagem real foi enviada em testes.
+
+Validação: 81 testes de domínio/PostgreSQL/PDF e 44 cenários de interface desktop/mobile; verificações de tipos, SDK e exportações universais. Testes usam somente fixtures e arquivos ignorados em work/. Homologação em aparelhos físicos permanece pendente.
+
 ## 03/11/2026 — Financeiro gerencial
 
 Implementadas contas a receber/pagar, confirmações manuais parciais, estornos, descontos, juros/multas, contestações, cancelamentos e histórico. Planos e contratos preservam condições em snapshot e geram parcelas previstas. Recorrências só geram contas por ação explícita. Relatórios distinguem caixa confirmado, competência e saldos atuais, com detalhamento mensal, por categoria e aluno.

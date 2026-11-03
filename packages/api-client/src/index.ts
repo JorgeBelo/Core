@@ -7,6 +7,10 @@ import {
   type StudentInput,
   type Student,
   type Professional,
+  professionalProfileSchema,
+  messageTemplatesSchema,
+  defaultMessageTemplates,
+  type MessageTemplates,
 } from '@core/domain';
 export function createRepository(client: SupabaseClient) {
   return {
@@ -17,12 +21,70 @@ export function createRepository(client: SupabaseClient) {
         .eq('user_id', userId)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      return data
+        ? {
+            ...data,
+            cref: data.cref ?? '',
+            updated_at: data.updated_at ?? data.created_at ?? '',
+            message_templates: data.message_templates ?? defaultMessageTemplates,
+          }
+        : null;
     },
     async ownStudent(): Promise<Student | null> {
       const { data, error } = await client.from('students').select('*').limit(1).maybeSingle();
       if (error) throw error;
       return normalize(data);
+    },
+    async saveProfessional(
+      input: { display_name: string; cref: string },
+      existing: Professional,
+    ): Promise<Professional> {
+      const { data, error } = await client
+        .from('professionals')
+        .update(professionalProfileSchema.parse(input))
+        .eq('id', existing.id)
+        .eq('updated_at', existing.updated_at)
+        .select()
+        .maybeSingle();
+      if (error) throw error;
+      if (!data)
+        throw new Error('Este cadastro foi alterado em outra sessão. Recarregue antes de salvar.');
+      return data;
+    },
+    async saveMessageTemplates(input: MessageTemplates, existing: Professional) {
+      const { data, error } = await client
+        .from('professionals')
+        .update({ message_templates: messageTemplatesSchema.parse(input) })
+        .eq('id', existing.id)
+        .eq('updated_at', existing.updated_at)
+        .select()
+        .maybeSingle();
+      if (error) throw error;
+      if (!data)
+        throw new Error('Este cadastro foi alterado em outra sessão. Recarregue antes de salvar.');
+      return data as Professional;
+    },
+    async allStudents(professionalId: string): Promise<Student[]> {
+      const result: Student[] = [];
+      let cursor: string | undefined;
+      for (;;) {
+        let q = client
+          .from('students')
+          .select('*')
+          .eq('professional_id', professionalId)
+          .order('id')
+          .limit(200);
+        if (cursor) q = q.gt('id', cursor);
+        const { data, error } = await q;
+        if (error) throw error;
+        const rows = (data ?? []).map((v) => normalize(v)!);
+        result.push(...rows);
+        if (rows.length < 200) return result;
+        const next = rows[rows.length - 1].id;
+        if (next === cursor)
+          throw new Error('Não foi possível carregar a lista completa de alunos.');
+        cursor = next;
+      }
     },
     async students(search: string, page: number): Promise<{ items: Student[]; count: number }> {
       let query = client
@@ -94,7 +156,17 @@ export function createRepository(client: SupabaseClient) {
   };
 }
 function normalize(data: any): Student | null {
-  return data ? { ...data, email: data.email ?? '', birth_date: data.birth_date ?? '' } : null;
+  return data
+    ? {
+        ...data,
+        email: data.email ?? '',
+        birth_date: data.birth_date ?? '',
+        monthly_fee_cents: data.monthly_fee_cents ?? null,
+        weekly_frequency: data.weekly_frequency ?? null,
+        gender: data.gender ?? 'unspecified',
+        whatsapp_opt_in: data.whatsapp_opt_in ?? false,
+      }
+    : null;
 }
 export function readableError(error: unknown): string {
   const value = error as { message?: string; code?: string };

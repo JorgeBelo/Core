@@ -29,6 +29,12 @@ RLS está habilitada em todas as tabelas públicas. Grants são revogados explic
 
 `20261103173924_core_finance.sql` cria commercial_plans, commercial_contracts, finance_recurrences, finance_entries, finance_payments, finance_adjustments, finance_events e a view finance_balances com security_invoker. Valores individuais em bigint/centavos; agregados serializados como strings. Recebimentos, estornos, ajustes, contratos e recorrências usam RPCs transacionais com identidade derivada do Auth. Detalhes em FINANCE.md. Migração posterior adiciona índices de FKs e consolida políticas equivalentes de leitura.
 
+## Cadastro e preferências
+
+`20261103180931_student_monthly_fee_and_frequency.sql` adiciona mensalidade opcional em centavos e frequência semanal opcional (1 a 7). Representam condições combinadas; não geram parcelas, caixa nem presença realizada.
+
+`20261103182257_professional_profile_and_student_messages.sql` permite ao proprietário editar nome, CREF opcional e quatro modelos de mensagem, com timestamp e auditoria. Não permite mudar identidade ou criar outro profissional pelo cliente. Alunos ganham tratamento feminino/masculino/não informado e autorização de WhatsApp desativada por padrão. As políticas de propriedade e restrições do aluno permanecem vigentes.
+
 ## Modelo de expansão (inclui complementos ainda não migrados)
 
 Todas as relações de domínio deverão carregar professional_id, com FKs compostas quando ligadas a outra entidade do tenant.

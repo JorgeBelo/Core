@@ -8,6 +8,7 @@ Decisão em 03/11/2026: aplicativo universal Expo, TypeScript, React Native, Rea
 - `packages/ui`: tokens e componentes React Native reutilizáveis.
 - `packages/domain`: entidades, validações Zod e contrato de provedor de IA.
 - `packages/api-client`: operações Supabase, paginação, agregações e erros.
+- `packages/reports`: geração local de PDF com fontes Noto Sans licenciadas sob OFL, sem envio da carteira a serviços de documentos.
 - `supabase/migrations`: fonte versionada do esquema e das permissões.
 - `tests`: validações, migração executada em PostgreSQL embarcado e testes de interface isolados.
 
@@ -28,6 +29,10 @@ As rotas e o layout orientam a navegação, mas o PostgreSQL é a autoridade de 
 TanStack Query mantém cache em memória, segregado por identidade e limpo na mudança de usuário. Cadastros só são confirmados depois da resposta do servidor. Não há banco paralelo local, modo demo ou dados sem persistência. Listagem é paginada em 20 registros. Formulário usa validação compartilhada; banco revalida constraints essenciais. Edição condiciona `updated_at` para detectar gravações concorrentes.
 
 Web mantém tokens apenas em memória (recarregar exige login). Mobile usa Expo SecureStore; auto-refresh acompanha o estado do aplicativo. Não persistimos dados pessoais em cache de disco. Offline e sincronização ficam para fase posterior.
+
+Exceção intencional: o PDF solicitado pelo profissional é baixado no navegador ou criado no cache privado do aplicativo para compartilhamento pelo sistema no Android/iOS. O arquivo contém dados pessoais de contato; a cópia compartilhada fica sob controle do destino escolhido. Não é sincronizado como cache offline de cadastros.
+
+O perfil profissional pode ser atualizado localmente com a resposta autenticada do servidor, sem desmontar a navegação. Identidade e permissões continuam impostas pelo Auth e pela RLS. Mensagens WhatsApp são preparadas em memória e só abrem o aplicativo após ação e autorização cadastrada; não existe dispatcher ou agendamento ativo nesta etapa.
 
 ## Limites da entrega
 

@@ -35,6 +35,23 @@ describe('Student validation', () => {
     expect(periodStart('quarter', date)).toBe('2026-10-01');
     expect(periodStart('year', date)).toBe('2026-01-01');
   });
+  it('keeps monthly fee and attendance optional and validates integer limits', () => {
+    const base = { ...newStudent(), full_name: 'Aluno de teste' };
+    expect(studentSchema.parse(base).monthly_fee_cents).toBeNull();
+    expect(
+      studentSchema.parse({ ...base, monthly_fee_cents: 35000, weekly_frequency: 3 })
+        .weekly_frequency,
+    ).toBe(3);
+    for (const changes of [
+      { monthly_fee_cents: -100 },
+      { monthly_fee_cents: 0 },
+      { monthly_fee_cents: 100.5 },
+      { weekly_frequency: 0 },
+      { weekly_frequency: 8 },
+      { weekly_frequency: 1.5 },
+    ])
+      expect(studentSchema.safeParse({ ...base, ...changes }).success).toBe(false);
+  });
   it('uses only the first two name initials', () => {
     expect(initials('  Maria Silva Souza ')).toBe('MS');
   });

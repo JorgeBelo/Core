@@ -20,6 +20,8 @@ Anamnese, protocolos, medidas, comparativos, fotos privadas, consentimentos, cal
 
 ## Fase 5 — Consultoria online
 
+Disponíveis parcialmente: preparação de lembretes de vencimento e aniversário, modelos editáveis e abertura manual no WhatsApp. O envio automático solicitado depende de conexão oficial ainda ausente; não há agendamento ativo. Ver MESSAGES.md. Mensagens internas, push e acompanhamento remoto permanecem pendentes.
+
 Mensagens, feedbacks, push, preferências, renovação e fluxos remotos. Gate: mensagens visíveis apenas aos participantes e notificações respeitando preferências.
 
 ## Fase 6 — Core AI

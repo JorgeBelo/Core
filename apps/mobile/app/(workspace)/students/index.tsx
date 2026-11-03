@@ -3,16 +3,32 @@ import { View, FlatList } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Field, Heading, Label, Loading, Notice, colors } from '@core/ui';
-import { initials, modalityLabels } from '@core/domain';
+import { initials, modalityLabels, formatBRL } from '@core/domain';
 import { readableError } from '@core/api-client';
 import { repository } from '../../../src/lib/backend';
 import { useSession } from '../../../src/lib/session';
+import { exportStudentReport } from '../../../src/lib/student-report';
 export default function Students() {
   const { professional } = useSession();
   const params = useLocalSearchParams<{ q?: string; saved?: string }>();
   const [search, setSearch] = useState(params.q ?? ''),
     [debounced, setDebounced] = useState(search),
     [page, setPage] = useState(0);
+  const [exporting, setExporting] = useState(false),
+    [exportError, setExportError] = useState('');
+  async function exportPdf() {
+    if (!professional || exporting) return;
+    setExporting(true);
+    setExportError('');
+    try {
+      const rows = await repository!.allStudents(professional.id);
+      await exportStudentReport(rows, professional);
+    } catch {
+      setExportError('Não foi possível gerar o PDF completo. Confira a conexão e tente novamente.');
+    } finally {
+      setExporting(false);
+    }
+  }
   useEffect(() => {
     setSearch(params.q ?? '');
   }, [params.q]);
@@ -40,9 +56,15 @@ export default function Students() {
           <Heading>Seus alunos</Heading>
           <Label muted>Uma visão organizada de cada pessoa que confia em você.</Label>
         </View>
-        <Button onPress={() => router.push('/students/new')}>＋ Cadastrar aluno</Button>
+        <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+          <Button secondary loading={exporting} onPress={exportPdf}>
+            Exportar todos em PDF
+          </Button>
+          <Button onPress={() => router.push('/students/new')}>＋ Cadastrar aluno</Button>
+        </View>
       </View>
       {params.saved === '1' && <Notice>Cadastro salvo com sucesso.</Notice>}
+      {exportError && <Notice error>{exportError}</Notice>}
       <Card>
         <Field
           label="Buscar aluno"
@@ -103,6 +125,13 @@ export default function Students() {
                       {s.email}
                     </Label>
                   )}
+                  <Label muted style={{ fontSize: 12 }}>
+                    {s.weekly_frequency ? `${s.weekly_frequency}×/semana` : 'Frequência a definir'}{' '}
+                    ·{' '}
+                    {s.monthly_fee_cents != null
+                      ? `${formatBRL(s.monthly_fee_cents)}/mês`
+                      : 'Mensalidade a definir'}
+                  </Label>
                 </View>
                 <Button secondary onPress={() => router.push(`/students/${s.id}`)}>
                   Ver cadastro

@@ -51,15 +51,28 @@ test('professional creates, searches, edits and inactivates a student', async ({
     .getByRole('textbox', { name: 'Nome completo *', exact: true })
     .fill('Aluno funcional de teste');
   await page.getByRole('textbox', { name: 'E-mail', exact: true }).fill('aluno@example.test');
+  await page
+    .getByRole('textbox', { name: 'Mensalidade combinada (R$)', exact: true })
+    .fill('350,00');
+  await page.getByRole('radio', { name: '3×', exact: true }).click();
   await page.getByRole('button', { name: 'Salvar aluno', exact: true }).click();
   await expect(page.getByText('Cadastro salvo com sucesso.')).toBeVisible();
+  await expect(page.getByText('3×/semana · R$ 350,00/mês', { exact: true })).toBeVisible();
   await expect(page.getByText('Aluno funcional de teste', { exact: true })).toBeVisible();
   await page.getByRole('textbox', { name: 'Buscar aluno', exact: true }).fill('funcional');
   await expect(page.getByText('1 aluno(s) encontrado(s)')).toBeVisible();
   await page.getByRole('button', { name: 'Ver cadastro', exact: true }).click();
+  await expect(
+    page.getByRole('textbox', { name: 'Mensalidade combinada (R$)', exact: true }),
+  ).toHaveValue('350,00');
+  await page
+    .getByRole('textbox', { name: 'Mensalidade combinada (R$)', exact: true })
+    .fill('400,00');
+  await page.getByRole('radio', { name: '2×', exact: true }).click();
   await page.getByRole('radio', { name: 'Inativo', exact: true }).click();
   await page.getByRole('button', { name: 'Salvar alterações', exact: true }).click();
   await expect(page.getByText('Presencial · Inativo')).toBeVisible();
+  await expect(page.getByText('2×/semana · R$ 400,00/mês', { exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Início', exact: true }).click();
   await expect(page.getByText('Aluno funcional de teste', { exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Minha conta', exact: true }).click();
@@ -129,21 +142,25 @@ test('professional builds an exercise and explicitly approves a program', async 
     page.getByRole('heading', { name: 'Exercício autoral de teste', exact: true }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Voltar para treinos', exact: true }).click();
-  await page.getByRole('button', { name: 'Criar programa', exact: false }).click();
+  await page.getByRole('button', { name: 'Criar treino', exact: false }).click();
   await page
     .getByRole('textbox', { name: 'Nome do programa *', exact: true })
     .fill('Programa funcional de teste');
   await page.getByRole('button', { name: 'Escolher aluno', exact: true }).click();
   await page.getByRole('button', { name: 'Selecionar', exact: true }).click();
-  await page.getByRole('button', { name: 'Adicionar exercício', exact: false }).click();
-  await page.getByRole('button', { name: 'Selecionar', exact: true }).click();
+  await page.getByRole('button', { name: 'Montar exercícios →', exact: true }).click();
+  await page.getByRole('button', { name: 'Adicionar exercícios', exact: false }).click();
+  await page.getByRole('checkbox', { name: 'Exercício autoral de teste', exact: true }).click();
+  await page.getByRole('button', { name: 'Adicionar 1 exercício', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
   await page.getByRole('button', { name: 'Salvar rascunho', exact: true }).click();
   await expect(page.getByText('Rascunho salvo. Ainda não foi liberado ao aluno.')).toBeVisible();
-  await page.getByRole('button', { name: 'Revisar e liberar ao aluno', exact: true }).click();
+  await page.getByRole('button', { name: 'Revisar treino →', exact: true }).click();
+  await page.getByRole('button', { name: 'Liberar ao aluno', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'Aprovar esta prescrição?', exact: true }),
+    page.getByRole('heading', { name: 'Liberar este treino?', exact: true }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Aprovar e disponibilizar', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirmar e liberar', exact: true }).click();
   await expect(
     page.getByText('Versão aprovada e liberada ao aluno.', { exact: true }),
   ).toBeVisible();
