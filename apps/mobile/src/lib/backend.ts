@@ -2,7 +2,11 @@ import 'react-native-url-polyfill/auto';
 import { AppState, Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { createClient } from '@supabase/supabase-js';
-import { createRepository, createTrainingRepository } from '@core/api-client';
+import {
+  createRepository,
+  createTrainingRepository,
+  createFinanceRepository,
+} from '@core/api-client';
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 export const configured = Boolean(url?.startsWith('http') && key && !key.includes('replace-with'));
@@ -27,6 +31,7 @@ export const supabase = configured
   : null;
 export const repository = supabase ? createRepository(supabase) : null;
 export const trainingRepository = supabase ? createTrainingRepository(supabase) : null;
+export const financeRepository = supabase ? createFinanceRepository(supabase) : null;
 if (Platform.OS !== 'web' && supabase)
   AppState.addEventListener('change', (state) => {
     if (state === 'active') supabase.auth.startAutoRefresh();

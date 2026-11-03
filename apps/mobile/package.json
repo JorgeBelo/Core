@@ -16,7 +16,7 @@
     "@core/domain": "workspace:*",
     "@core/ui": "workspace:*",
     "@expo/vector-icons": "^15.0.0",
-    "@supabase/supabase-js": "^2.99.0",
+    "@supabase/supabase-js": "2.118.0",
     "@tanstack/react-query": "^5.90.0",
     "expo": "~58.0.22",
     "expo-constants": "~58.0.0",

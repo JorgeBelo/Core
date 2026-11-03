@@ -6,6 +6,6 @@
   "types": "src/index.ts",
   "dependencies": {
     "@core/domain": "workspace:*",
-    "@supabase/supabase-js": "^2.99.0"
+    "@supabase/supabase-js": "2.118.0"
   }
 }

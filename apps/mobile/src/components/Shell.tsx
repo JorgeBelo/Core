@@ -103,7 +103,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const name = session.professional.display_name;
   function navItem(item: (typeof nav)[number], small = false) {
     const active =
-      item.path === '/students' || item.path === '/training'
+      item.path === '/students' || item.path === '/training' || item.path === '/finance'
         ? path.startsWith(item.path)
         : path === item.path;
     return (

@@ -25,6 +25,10 @@ RLS está habilitada em todas as tabelas públicas. Grants são revogados explic
 
 `20261103165510_legacy_security_hardening.sql` endurece funções/tabelas antigas se existirem; não apaga dados. As versões locais correspondem ao histórico do Supabase hospedado. Objetos do legado anterior continuam fora do baseline local, por isso evitar db push cego contra a base existente.
 
+## Financeiro implementado
+
+`20261103173924_core_finance.sql` cria commercial_plans, commercial_contracts, finance_recurrences, finance_entries, finance_payments, finance_adjustments, finance_events e a view finance_balances com security_invoker. Valores individuais em bigint/centavos; agregados serializados como strings. Recebimentos, estornos, ajustes, contratos e recorrências usam RPCs transacionais com identidade derivada do Auth. Detalhes em FINANCE.md. Migração posterior adiciona índices de FKs e consolida políticas equivalentes de leitura.
+
 ## Modelo de expansão (inclui complementos ainda não migrados)
 
 Todas as relações de domínio deverão carregar professional_id, com FKs compostas quando ligadas a outra entidade do tenant.

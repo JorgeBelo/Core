@@ -2,7 +2,7 @@
 
 Plataforma universal para acompanhamento de alunos por personal trainers. Fundação em React Native + Expo + TypeScript + Supabase, com a identidade Core em preto, vermelho e branco.
 
-**Entrega atual:** fundação conectada ao Supabase hospedado e núcleo de treinos implementado. O proprietário confirmou login real. O fluxo transacional de prescrição e execução passou no PostgreSQL hospedado. Não há dados de demonstração no aplicativo. Financeiro, avaliações, agenda e comunicação permanecem nas próximas fases; o escopo integral continua em desenvolvimento.
+**Entrega atual:** fundação conectada ao Supabase hospedado, núcleo de treinos e financeiro gerencial implementados. O proprietário confirmou login real. Os fluxos transacionais de treino e financeiro passaram no PostgreSQL hospedado com rollback dos testes. Não há dados de demonstração no aplicativo. Avaliações, agenda, comunicação, IA e os complementos documentados permanecem em desenvolvimento.
 
 ## O que já existe
 
@@ -16,6 +16,9 @@ Plataforma universal para acompanhamento de alunos por personal trainers. Funda�
 - Biblioteca própria de exercícios com filtros, favoritos, edição, arquivamento e links de vídeo licenciados.
 - Editor de programas, divisões, ordenação, parâmetros opcionais, duplicação e aprovação explícita.
 - Versões publicadas imutáveis e área do aluno com registro de séries, cargas, repetições, esforço e histórico.
+- Contas a receber/pagar, pagamentos parciais manuais, estornos, ajustes, contestações e histórico.
+- Planos, contratos com snapshot, parcelas previstas e recorrências sob confirmação explícita.
+- Relatórios de caixa confirmado, competência, saldos em aberto, séries mensais, categorias e alunos. Escopo e limites em [FINANCE.md](docs/FINANCE.md).
 
 ## Ambiente hospedado configurado
 
@@ -27,7 +30,7 @@ Para iniciar neste checkout:
 pnpm web
 ```
 
-Para a prévia já compilada: `node scripts/serve-web.mjs --port 4174`, abrindo `http://127.0.0.1:4174/home`. Use as credenciais existentes do Core. As migrações da fundação, de segurança do legado e de treinos já foram aplicadas no projeto hospedado. Não reaplicá-las manualmente.
+Para a prévia já compilada: `node scripts/serve-web.mjs --port 4174`, abrindo `http://127.0.0.1:4174/home`. Use as credenciais existentes do Core. As migrações versionadas da fundação, segurança, treinos e financeiro já foram aplicadas no projeto hospedado. Não reaplicá-las manualmente.
 
 Leia [a integração com o legado](docs/LEGACY-INTEGRATION.md) antes de migrar dados ou alterar ambientes. O briefing novo é a especificação vigente; o modelo antigo não limita o produto novo.
 
@@ -103,9 +106,10 @@ pnpm exec playwright install chromium
 pnpm test:ui
 ```
 
-- 35 testes de domínio/banco, incluindo aprovação, imutabilidade, idempotência e isolamento de execução.
-- 20 testes de interface em viewport desktop e mobile Chromium. Auth/REST são fixtures exclusivas do teste, separadas do aplicativo.
+- 69 testes de domínio/banco, incluindo aprovação, imutabilidade, idempotência, isolamento e regras financeiras.
+- 28 testes de interface em viewport desktop e mobile Chromium. Auth/REST são fixtures exclusivas do teste, separadas do aplicativo.
 - `tests/live-training-rollback.sql`: cenário executado no Supabase hospedado com identidades Auth existentes, troca de roles e rollback integral dos dados de teste.
+- `tests/live-finance-rollback.sql`: contrato, parcelas, pagamentos, estorno, despesa, relatório, RLS e cancelamento validados no Supabase hospedado com rollback integral.
 - Login real confirmado pelo proprietário. Recuperação por e-mail no ambiente hospedado e dispositivos físicos ainda precisam de homologação.
 
 O GitHub Actions executa formatação, TypeScript, banco, interface e exportação universal, sem credenciais do banco hospedado. A configuração Vercel desta branch desabilita deploy automático; não houve publicação do app.

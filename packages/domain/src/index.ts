@@ -1,5 +1,6 @@
 import { z } from 'zod';
 export * from './training';
+export * from './finance';
 const optionalText = (max: number) => z.string().trim().max(max);
 export const studentSchema = z.object({
   full_name: z.string().trim().min(3, 'Informe pelo menos 3 caracteres.').max(120),

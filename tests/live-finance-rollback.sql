@@ -1,0 +1,54 @@
+-- Hosted integration check: existing identities, disposable records, mandatory rollback.
+begin;
+do $check$
+declare owner_user uuid; tenant uuid; student_user uuid; sid uuid; plan uuid; contract uuid; invoice uuid; expense uuid; payment uuid; request_key uuid=gen_random_uuid(); today date=(current_timestamp at time zone 'America/Sao_Paulo')::date; actual bigint;
+begin
+ select user_id,id into owner_user,tenant from public.professionals order by created_at limit 1;
+ if owner_user is null then raise exception 'Provision a professional first';end if;
+ select id into student_user from auth.users where id<>owner_user and not exists(select 1 from public.professionals p where p.user_id=auth.users.id) limit 1;
+ if student_user is null then raise exception 'A second existing Auth identity is required';end if;
+ perform set_config('request.jwt.claim.sub',owner_user::text,true);
+ execute 'set local role authenticated';
+ insert into public.students(professional_id,full_name) values(tenant,'TESTE FINANCEIRO TRANSACIONAL — NÃO PERSISTIR') returning id into sid;
+ insert into public.commercial_plans(professional_id,name,amount_cents,modality) values(tenant,'Plano transacional de teste',30000,'Presencial') returning id into plan;
+ contract=public.create_commercial_contract(plan,sid,today,(today+interval '2 months')::date,today,2,1,gen_random_uuid());
+ select id into invoice from public.finance_entries where contract_id=contract order by installment_number limit 1;
+ select settled_cents into actual from public.finance_balances where id=invoice;
+ if actual<>0 then raise exception 'Contract created a payment';end if;
+ payment=public.confirm_finance_payment(invoice,10000,today,'pix','Teste',request_key);
+ if public.confirm_finance_payment(invoice,10000,today,'pix','Teste',request_key)<>payment then raise exception 'Payment retry duplicated';end if;
+ select balance_cents into actual from public.finance_balances where id=invoice;
+ if actual<>20000 then raise exception 'Partial payment balance failed';end if;
+ perform public.confirm_finance_payment(invoice,20000,today,'pix','Complemento',gen_random_uuid());
+ select balance_cents into actual from public.finance_balances where id=invoice;
+ if actual<>0 then raise exception 'Settlement failed';end if;
+ perform public.reverse_finance_payment(payment,today,'Correção transacional de teste',gen_random_uuid());
+ select balance_cents into actual from public.finance_balances where id=invoice;
+ if actual<>10000 then raise exception 'Reversal failed';end if;
+ insert into public.finance_entries(professional_id,direction,description,amount_cents,category,due_date,competence_date) values(tenant,'payable','Despesa transacional de teste',5000,'Teste',today,today) returning id into expense;
+ perform public.confirm_finance_payment(expense,5000,today,'transfer','Teste',gen_random_uuid());
+ if public.finance_report(today,today)->>'received_cents' is null then raise exception 'Report failed';end if;
+ execute 'reset role';
+ update public.students set user_id=student_user where id=sid;
+ perform set_config('request.jwt.claim.sub',student_user::text,true);
+ execute 'set local role authenticated';
+ select count(*) into actual from public.finance_balances where contract_id=contract;
+ if actual<>2 then raise exception 'Student cannot read own installments';end if;
+ select count(*) into actual from public.finance_balances where id=expense;
+ if actual<>0 then raise exception 'Student saw professional expense';end if;
+ begin
+  perform public.confirm_finance_payment(invoice,100,today,'pix','Forbidden',gen_random_uuid());
+  raise exception 'Student registered a payment';
+ exception when insufficient_privilege then null;
+ end;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',owner_user::text,true);
+ execute 'set local role authenticated';
+ perform public.cancel_commercial_contract(contract,'Cancelamento transacional de teste',true);
+ select count(*) into actual from public.finance_entries where contract_id=contract and cancelled_at is not null;
+ if actual<>1 then raise exception 'Cancellation did not preserve partially paid installment';end if;
+ execute 'reset role';
+end;
+$check$;
+rollback;
+select 'PASS: contrato → parcelas → pagamento parcial → quitação → estorno → despesa → relatório → RLS → cancelamento; todas as linhas de teste revertidas' as verification;

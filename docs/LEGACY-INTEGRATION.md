@@ -34,6 +34,8 @@ Os nomes locais foram alinhados às versões efetivamente registradas no Supabas
 1. `20261103165452_core_foundation.sql`
 2. `20261103165510_legacy_security_hardening.sql`
 3. `20261103165912_core_training.sql`
+4. `20261103173924_core_finance.sql`
+5. `20261103174116_finance_indexes_and_policies.sql`
 
 Em ambiente novo, aplicar na ordem. Em ambiente hospedado atual, já estão registradas: não executar novamente. Não usar `db reset`, limpeza do legado, restore ou sincronização destrutiva. Para desenvolver com CLI contra esse projeto, verificar o histórico antes de qualquer `db push`, pois o legado pré-existente ainda não possui uma migração de baseline completa.
 
@@ -51,3 +53,5 @@ Fontes de remediação:
 
 - https://supabase.com/docs/guides/database/database-linter?lint=0027_pg_graphql_authenticated_table_exposed
 - https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+
+Após o financeiro, os avisos de FKs sem índice foram corrigidos. Não há avisos de políticas permissivas duplicadas nas tabelas financeiras. Persistem otimizações de políticas duplicadas/initplan do legado, mantidas até reconciliação específica; índices ainda sem uso são esperados em tabelas novas e não devem ser removidos apenas por esse aviso.

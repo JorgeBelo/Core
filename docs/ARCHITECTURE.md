@@ -31,9 +31,11 @@ Web mantém tokens apenas em memória (recarregar exige login). Mobile usa Expo 
 
 ## Limites da entrega
 
-Fundação e núcleo de treinamento estão migrados; os demais domínios estão planejados em DATABASE.md. Apenas o contrato de IA existe; nenhum provedor é chamado. Fotos e dados clínicos não têm fluxos de coleta nesta etapa. A base é evolutiva: arquitetura definitiva não significa esquema congelado.
+Fundação, núcleo de treinamento e financeiro gerencial estão migrados; os demais domínios estão planejados em DATABASE.md. Apenas o contrato de IA existe; nenhum provedor é chamado. Fotos e dados clínicos não têm fluxos de coleta nesta etapa. A base é evolutiva: arquitetura definitiva não significa esquema congelado.
 
 O Supabase existente foi conectado e as novas tabelas coexistem com o legado. Ver LEGACY-INTEGRATION.md. Publicações de treino são snapshots imutáveis produzidos por operação explícita no servidor; execução é uma entidade separada e idempotente. Ver TRAINING.md.
+
+Financeiro separa obrigação prevista de movimentação confirmada. Pagamentos, estornos e ajustes são imutáveis; RPCs derivam identidade do Auth, bloqueiam a conta e conferem o saldo. Contratos guardam snapshots; geração de recorrências não confirma recebimento. Ver FINANCE.md.
 
 ## Fontes oficiais consultadas
 

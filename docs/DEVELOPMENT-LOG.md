@@ -1,5 +1,13 @@
 # Registro de desenvolvimento
 
+## 03/11/2026 — Financeiro gerencial
+
+Implementadas contas a receber/pagar, confirmações manuais parciais, estornos, descontos, juros/multas, contestações, cancelamentos e histórico. Planos e contratos preservam condições em snapshot e geram parcelas previstas. Recorrências só geram contas por ação explícita. Relatórios distinguem caixa confirmado, competência e saldos atuais, com detalhamento mensal, por categoria e aluno.
+
+Migração aplicada ao Supabase hospedado sem importar ou alterar o histórico antigo. Teste transacional hospedado validou contrato, parcelas, recebimento parcial, quitação, estorno, despesa, relatório, restrições do aluno e cancelamento; rollback obrigatório removeu todos os registros de teste. Nova migração de índices e políticas cobre as FKs indicadas pelo advisor e consolida políticas financeiras equivalentes sem ampliar o acesso.
+
+Validação local: 69 testes de domínio/PostgreSQL e 28 cenários Playwright desktop/mobile aprovados; TypeScript e matriz local do SDK Expo aprovados. Capturas usam fixtures, fora do Git. Complementos financeiros pendentes em FINANCE.md; demais fases em ROADMAP.md. Chaves públicas locais permanecem fora do repositório. Dependências Supabase fixadas em versão exata.
+
 ## 03/11/2026 — Conexão hospedada e núcleo de treinos
 
 O proprietário reafirmou que o briefing novo prevalece sobre a arquitetura antiga e autorizou a instalação das ferramentas necessárias. GitHub conectado: repositório Core identificado. Supabase conectado pela integração oficial e confirmado ACTIVE_HEALTHY.

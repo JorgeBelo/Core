@@ -12,7 +12,7 @@ Biblioteca própria/licenciada, editor, versões de prescrições, publicação,
 
 ## Fase 3 — Financeiro
 
-Planos, contratos, parcelas, recebimentos parciais, despesas, fluxo de caixa, relatórios e comprovantes privados. Gate: vencimento não gera baixa, dois pagamentos parciais totalizam obrigação, caixa só inclui recebimentos/despesas confirmados. Valores em centavos e transações auditáveis.
+Núcleo gerencial implementado: planos, contratos com snapshot, parcelas, recebimentos parciais, despesas, estornos, ajustes, contestação, recorrências explícitas e relatórios de caixa/competência. Testes de domínio/banco e interface desktop/mobile passaram; transação no Supabase hospedado foi validada e revertida. Vencimento e geração de parcelas não produzem baixa. Valores em centavos e movimentações imutáveis. Comprovantes privados, exportações, integrações e demais complementos estão detalhados em FINANCE.md.
 
 ## Fase 4 — Avaliações e agenda
 

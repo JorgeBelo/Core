@@ -196,19 +196,19 @@ export default function Home() {
             </Card>
             <Card style={{ flex: 1 }}>
               <Label style={{ fontSize: 10, letterSpacing: 1.6, color: '#D6AAA8' }}>
-                PRÓXIMOS PASSOS DO PRODUTO
+                SUA ROTINA
               </Label>
-              <Heading level={2}>Uma base para ir além.</Heading>
+              <Heading level={2}>Acompanhamento em dia.</Heading>
               <Label muted>
-                Treinos, agenda e financeiro fazem parte das próximas entregas. Seus indicadores
-                aparecerão quando os módulos estiverem implementados.
+                Organize as prescrições dos seus alunos e acompanhe contas previstas e pagamentos
+                confirmados.
               </Label>
               <Button secondary onPress={() => router.push('/training')}>
-                Conhecer a próxima etapa →
+                Abrir treinos →
               </Button>
-              <Label muted style={{ fontSize: 11 }}>
-                Nenhum valor financeiro é estimado nesta versão.
-              </Label>
+              <Button secondary onPress={() => router.push('/finance')}>
+                Abrir financeiro →
+              </Button>
             </Card>
           </View>
         </>
