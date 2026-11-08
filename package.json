@@ -5,6 +5,10 @@
   "type": "module",
   "packageManager": "pnpm@11.25.0",
   "scripts": {
+    "offline": "pnpm --filter @core/offline start",
+    "offline:web": "pnpm --filter @core/offline web",
+    "offline:build": "pnpm --filter @core/offline build:web",
+    "offline:typecheck": "pnpm --filter @core/offline typecheck",
     "dev": "pnpm --filter @core/mobile start",
     "web": "pnpm --filter @core/mobile web",
     "preview": "node scripts/serve-web.mjs",

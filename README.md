@@ -1,5 +1,7 @@
 # Core Personal
 
+**Direção atual: retorno ao aplicativo offline para personal trainers.** A nova base está em `apps/offline`, separada da plataforma anterior, e sua especificação, execução e limitações estão em [OFFLINE.md](docs/OFFLINE.md). Use `pnpm offline` para desenvolvimento mobile. O conteúdo abaixo documenta a versão universal anterior, preservada.
+
 Plataforma universal para acompanhamento de alunos por personal trainers. Fundação em React Native + Expo + TypeScript + Supabase, com a identidade Core em preto, vermelho e branco.
 
 **Entrega atual:** fundação conectada ao Supabase hospedado, núcleo de treinos e financeiro gerencial implementados. O proprietário confirmou login real. Os fluxos transacionais de treino e financeiro passaram no PostgreSQL hospedado com rollback dos testes. Não há dados de demonstração no aplicativo. Avaliações, agenda, comunicação, IA e os complementos documentados permanecem em desenvolvimento.

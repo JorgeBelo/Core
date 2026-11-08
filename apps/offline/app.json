@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Core Personal Offline",
+    "slug": "core-personal-offline",
+    "scheme": "coreoffline",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "br.com.corepersonal.offline" },
+    "android": { "package": "br.com.corepersonal.offline" },
+    "web": { "bundler": "metro", "name": "Core Personal Offline", "favicon": "./assets/icon.png" },
+    "plugins": ["expo-sqlite", "expo-document-picker"]
+  }
+}
