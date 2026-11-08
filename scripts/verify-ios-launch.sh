@@ -20,7 +20,14 @@ xcrun simctl boot "$DEVICE_ID" || true
 xcrun simctl bootstatus "$DEVICE_ID" -b
 xcrun simctl status_bar "$DEVICE_ID" override --time '09:41' --batteryState charged --batteryLevel 100
 xcrun simctl install "$DEVICE_ID" "$CHECK_DIR/build/Build/Products/Release-iphonesimulator/Core.app"
+# simctl launch can return after the short intro is already over. Start recording first.
+xcrun simctl io "$DEVICE_ID" recordVideo --codec=h264 "$CHECK_DIR/launch.mp4" &
+VIDEO_PID=$!
+sleep 0.5
 xcrun simctl launch --terminate-running-process "$DEVICE_ID" br.com.corepersonal.offline
+sleep 2
+kill -INT "$VIDEO_PID"
+wait "$VIDEO_PID" || true
 
 # Capture the actual native startup: black launch, logo fade and first app screen.
 for n in $(seq -w 1 14); do

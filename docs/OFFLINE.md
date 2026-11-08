@@ -93,3 +93,15 @@ A versão 0.1.0/build 1 foi compilada em macOS/Xcode e instalada pelo proprietá
 Atualização 0.2.0/build 2: compilação nativa na execução https://github.com/JorgeBelo/Core/actions/runs/42491554243, fonte `3837146727c57ccbea63b926b3f3958ee3c2163b`. Compilação concluída com sucesso; IPA baixado e verificado (SHA256 externo/interno, CRCs, Info.plist, arm64 e código embarcado).
 
 Identificador mantido: `br.com.corepersonal.offline`. O pacote Release contém o JavaScript/Hermes e funciona sem Metro após a instalação. O IPA precisa ser assinado com o mesmo Apple ID utilizado anteriormente e instalado por cima do CORE existente. Não desinstalar para atualizar; exportar backup antes da atualização caso já existam dados importantes. A assinatura gratuita continua exigindo renovação em sete dias.
+
+## Correção da abertura — 0.2.1/build 3
+
+O proprietário testou a 0.2.0 no iPhone e relatou a logo ampliada/cortada. A abertura agora define largura e altura explícitas tanto na imagem quanto no contêiner animado, com limite de 320 pontos e margem nas duas dimensões da tela. Isso evita usar a altura intrínseca do PNG nativo com apenas largura/aspectRatio definidos. A imagem original permanece intacta, centralizada com contain sobre preto.
+
+A tela de lançamento nativa fica preta até a imagem carregar e a primeira disposição da abertura terminar. Depois a logo ganha opacidade durante 550 ms, permanece visível por 650 ms e abre o app. Sem zoom ou fade out. A versão em Ajustes vem do app.json para acompanhar o pacote.
+
+Os 15 fluxos existentes passaram novamente. Três verificações adicionais de abertura (computador, celular e tablet) passaram, conferindo enquadramento completo, centro, proporção, fundo preto e transição até o app. O workflow iOS também compila a variante de simulador Release e captura a sequência real de lançamento para inspeção visual. A confirmação final desta correção no aparelho do proprietário continua pendente.
+
+Compilação 0.2.1: https://github.com/JorgeBelo/Core/actions/runs/42494962549, fonte `d2ef78ae111f86a70f1d6e41133082a1c923bf38`. IPA arm64/build 3 baixado e verificado (hash externo/interno, CRCs, Info.plist e código embarcado). As verificações gerais do repositório passaram.
+
+O app abriu no simulador iOS Release, mas as 14 capturas começaram depois da intro e mostram o perfil inicial. Elas NÃO confirmam visualmente a animação nativa. Proporção/centro/fundo foram verificados na prévia web; a confirmação final no iPhone está pendente. O script foi ajustado para gravar vídeo antes de executar simctl launch nas próximas compilações; essa gravação nova ainda não foi executada.

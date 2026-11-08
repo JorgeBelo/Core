@@ -79,6 +79,7 @@ jobs:
           name: Core-launch-native-check
           path: |
             work/ios-launch/launch-*.png
+            work/ios-launch/launch.mp4
             work/ios-launch/build.log
           if-no-files-found: warn
           retention-days: 7
