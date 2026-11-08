@@ -921,7 +921,7 @@ function CoreApp() {
                     dia a dia, mesmo sem internet.
                   </Txt>
                   <Txt muted style={{ fontSize: 12 }}>
-                    Desenvolvido por Jorge Amado Belo · Base offline 0.1
+                    Desenvolvido por Jorge Amado Belo · Versão 0.2.0
                   </Txt>
                 </Card>
               </>
