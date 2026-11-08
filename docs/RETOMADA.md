@@ -1,46 +1,40 @@
-# Retomada do Core em 7 de novembro de 2026
+# Retomada do Core em 8 de novembro de 2026
 
-## Produto e direção escolhida
+## Direção e preservação
 
-O CORE volta à ideia inicial: gestão administrativa de alunos, agenda e financeiro para personal trainers, com foco em aplicativo instalado no celular e tablet, uso offline e simplicidade. Não inclui prescrição de treinos ou fichas de exercícios. O proprietário quer aparência e comportamento de app nativo.
+Aplicativo nativo offline para celular/tablet, com gestão administrativa de alunos, agenda e mensalidades. Sem prescrição de treinos. TypeScript, React Native/Expo 58 e SQLite local em `apps/offline`. Não migrar para PWA ou depender de computador no uso diário.
 
-A base nova está em `apps/offline`, com TypeScript, React Native, Expo SDK 58 e SQLite no aparelho. O aplicativo universal anterior, o briefing completo e as referências Swift foram preservados. A branch anterior `codex/core-personal-universal` permanece no commit `a73f82da07cce9be8b4207e74e5712be61ee736b`. As imagens recuperadas e a transcrição parcial de Swift estão no backup local, não no repositório público.
+O projeto universal posterior permanece preservado em `apps/mobile` e na branch `codex/core-personal-universal`, commit `a73f82da07cce9be8b4207e74e5712be61ee736b`. As 21 imagens, o briefing completo e a recuperação parcial da conversa Swift estão no backup local `outputs/core-preservado`.
 
-## O que está feito
+## Instalação física já resolvida
 
-- Alunos, mensalidades mensais com histórico, registro e reversão de pagamento, totais financeiros, lembretes dentro do app, relatórios e backup com restauração.
-- Agenda diária com navegação semanal e bloqueio de conflito de horários.
-- Cobrança manual: abre o WhatsApp com mensagem preenchida; o profissional revisa e envia.
-- TypeScript, oito testes de domínio e quatro fluxos de interface passaram. A interface foi inspecionada em tamanho de celular.
-- Compilação nativa Release do iPhone concluída com sucesso em Xcode 27.1. Execução: https://github.com/JorgeBelo/Core/actions/runs/42437061858.
-- IPA verificado: arm64, iPhoneOS, iOS mínimo 16.4, versão 0.1.0, build 1, identificador `br.com.corepersonal.offline`. O código está embarcado, sem depender de Metro após a instalação.
+O cabo Motorola permitiu conectar e confiar no computador. Sideloadly e componentes oficiais Apple estão instalados. O usuário assinou com seu Apple ID gratuito, viu Done, autorizou o perfil pessoal e ativou o Modo Desenvolvedor no iPhone. Confirmou que o CORE 0.1.0 abriu. Não repetir a investigação de cabo, instalar componentes novamente ou tratar a primeira instalação como pendente.
 
-O IPA ainda precisa ser assinado para o aparelho. Nenhum teste físico foi realizado. Não confundir exportação de bundles, compilação nativa e homologação em iPhone real.
+Manter a mesma conta, identificador e dados para atualizar. Não pedir senha/código Apple no chat nem automatizar autenticação. Renovação gratuita a cada sete dias pelo Sideloadly.
 
-## Situação da instalação
+## Ajustes solicitados e implementados na 0.2.0
 
-O proprietário tem somente Apple ID gratuito e não tem acesso a Mac. O Windows não reconhece seu iPhone; o cabo é paralelo, mas não foi confirmado se suporta dados. Não houve diagnóstico dos drivers ou da conexão USB.
+- Logo original central com fade de aproximadamente um segundo.
+- Perfil local do personal com nome, CREF e foto opcional.
+- Início com recebido/falta receber e atalhos.
+- Cadastro básico curto; nascimento e observações opcionais recolhidos; vencimento e frequência com +/−.
+- Dias e horários semanais em **Alunos → perfil do aluno → Organizar dias e horários**, separados do cadastro.
+- Expediente em **Ajustes → Meus horários de trabalho**, com dias e vários períodos, como 06–11 e 15–20.
+- Agenda com Aulas/Horários livres: desconta aulas fixas e avulsas do expediente e bloqueia sobreposição. Cancelar ocorrência libera só a data; encerrar recorrência mantém o passado.
+- Relatório para academia com todos os ativos e frequência semanal; sem dados de cobrança/telefone. Exportação financeira permanece em Financeiro.
+- Cabeçalho fixo de voltar/cancelar/salvar e provedor de área segura próprio na janela nativa. Uma janela para alternar perfil e edição evita apresentações nativas simultâneas.
+- Leitura compatível com snapshot e backup antigos. SQLite e identificador mantidos.
 
-Foi explicado que Modo Desenvolvedor sozinho não dispensa assinatura. Com Apple ID gratuito, Sideloadly pode assinar e instalar, e a assinatura precisa ser renovada após sete dias, sem cobrança por renovação. O primeiro pareamento para uso posterior por Wi-Fi requer USB.
+## Verificação
 
-Expo Go via Wi-Fi, serviço de assinatura pago e PWA offline foram discutidos como alternativas. O proprietário não autorizou migração para PWA nem contratou serviços. Manter o app nativo como direção vigente. Não presumir que Sideloadly já esteja instalado ou que algum perfil tenha sido configurado no iPhone.
+14 testes de domínio e 15 fluxos de interface passaram em computador, tamanho de iPhone e tablet. Incluem backup, pagamentos, reabertura sem rede, horário fixo, turnos, vagas, conflito e cabeçalho fixo em 320 × 568. PDF de 45 alunos em três páginas renderizado e inspecionado. Não equivalem à homologação da versão nova em aparelho físico.
 
-## Próximo passo
+Fonte da atualização: `3837146727c57ccbea63b926b3f3958ee3c2163b`. Compilação iOS 0.2.0/build 2: https://github.com/JorgeBelo/Core/actions/runs/42491554243. Compilação concluída com sucesso; pacote baixado e verificado. As verificações gerais do repositório também passaram.
 
-Resolver o reconhecimento USB para instalar o IPA gratuitamente: conferir cabo de dados, porta, aparelho desbloqueado, confiança no computador e componentes Apple do Windows. Não remover instalações Apple existentes indiscriminadamente. Se necessário, testar outro cabo compatível com dados. O proprietário deve inserir credenciais e confirmar ações no próprio aparelho ou no fluxo oficial; não solicitar senha ou código no chat.
+## Entrega e próximo passo
 
-Após instalar, testar cadastro, reabertura, modo offline, pagamento, conflito de agenda e exportação de backup. Configurar pareamento por Wi-Fi quando disponível. Preservar identificador e dados nas atualizações e exportar backup antes de apagar o app.
+Pasta local: `C:/Users/Jorge-PC/Documents/Codex/2026-11-07/co/outputs`.
 
-## Arquivos de entrega locais
+`Core-iPhone-v0.2.0.ipa` é a atualização para assinatura pessoal. `Core-iPhone-teste.ipa` preserva a versão 0.1.0 anterior. As fontes atuais e o histórico Git continuam nos arquivos ZIP/bundle. O estado da entrega e os hashes estão nos JSONs dessa pasta.
 
-Pasta: `C:/Users/Jorge-PC/Documents/Codex/2026-11-07/co/outputs`.
-
-- `Core-iPhone-teste.ipa` — pacote para assinatura pessoal.
-- `Core-iPhone-teste-SHA256.txt` e `Core-iPhone-teste-verificacao.json` — integridade e metadados.
-- `INSTALAR-CORE-NO-IPHONE.txt` — instruções de instalação.
-- `core-personal-offline-source.zip` — fontes atuais.
-- `core-preservado/` — projeto anterior, histórico Git, 21 imagens e trechos Swift recuperados.
-
-SHA256 do IPA: `7af01e765d38b6997a620608f359498203d7019846340262dd0708698aeac053`.
-
-O artefato da compilação no GitHub tem retenção limitada; a cópia IPA local foi preservada separadamente. Não iniciar nova compilação apenas para retomar esta instalação.
+Instalar a 0.2.0 pelo Sideloadly por cima da versão atual, usando a mesma conta. Conferir no aparelho: topo fora do recorte das câmeras, teclado, foto, fade, PDF/compartilhamento, fluxo de dias/horários e dados preservados. Manter os dados no aparelho e exportar backup; nuvem automática ainda não implementada.
