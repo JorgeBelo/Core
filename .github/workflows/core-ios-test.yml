@@ -1,0 +1,80 @@
+name: Core iPhone test package
+
+on:
+  push:
+    branches: [codex/core-ios-test]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  iphone:
+    runs-on: xcode-27
+    timeout-minutes: 45
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Verify TypeScript and finance rules
+        run: |
+          pnpm offline:typecheck
+          pnpm exec vitest run tests/offline.test.ts
+      - name: Generate native iOS project
+        run: pnpm --filter @core/offline exec expo prebuild --platform ios --no-install
+      - name: Install CocoaPods dependencies
+        working-directory: apps/offline/ios
+        run: pod install
+      - name: Archive native iPhone app without personal signing credentials
+        working-directory: apps/offline/ios
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p "$GITHUB_WORKSPACE/work/ios-build"
+          xcodebuild archive \
+            -workspace Core.xcworkspace \
+            -scheme Core \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$GITHUB_WORKSPACE/work/ios-build/Core.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' \
+            2>&1 | tee "$GITHUB_WORKSPACE/work/ios-build/xcodebuild.log" | xcbeautify
+      - name: Package IPA for personal signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p outputs/iphone/Payload
+          ditto work/ios-build/Core.xcarchive/Products/Applications/Core.app outputs/iphone/Payload/Core.app
+          test -f outputs/iphone/Payload/Core.app/main.jsbundle
+          test -f outputs/iphone/Payload/Core.app/Info.plist
+          /usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' outputs/iphone/Payload/Core.app/Info.plist
+          file outputs/iphone/Payload/Core.app/Core
+          cd outputs/iphone
+          ditto -c -k --keepParent Payload Core-iPhone-teste.ipa
+          shasum -a 256 Core-iPhone-teste.ipa > SHA256.txt
+          printf '%s\n' 'Core para teste pessoal no iPhone.' 'Este IPA precisa ser assinado com seu Apple ID e instalado pelo computador, por exemplo com Sideloadly. Não instala diretamente pelo Google Drive.' 'A assinatura gratuita precisa ser renovada após 7 dias. Exporte backup no Core antes de remover o aplicativo.' > COMO-INSTALAR.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Core-iPhone-teste
+          path: |
+            outputs/iphone/Core-iPhone-teste.ipa
+            outputs/iphone/SHA256.txt
+            outputs/iphone/COMO-INSTALAR.txt
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve build logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Core-iPhone-build-logs
+          path: work/ios-build/xcodebuild.log
+          if-no-files-found: ignore
+          retention-days: 7

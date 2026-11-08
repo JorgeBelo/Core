@@ -8,7 +8,7 @@ A implementação nova fica em `apps/offline`. Não conecta ao backend anterior,
 
 ## Referência Swift recuperada
 
-Conversa: **Erro de compatibilidade MacOS**, ID `6963fb46-9d4c-8330-8495-ff19ebbc93f4`. A consulta disponibilizou cinco interações recentes, incluindo código SwiftUI: `CadastroAlunoView`, `DetalhesAlunoView`, `AlunosViewModel` e `RelatoriosView`. Foram preservadas separadamente a resposta JSON, a transcrição e quatro arquivos Swift extraídos. Eles são referências históricas: não constituem um projeto Xcode completo, não foram compilados e contêm versões em correção. Não assumir que representam a última versão instalada pelo proprietário.
+Conversa: **Erro de compatibilidade MacOS**. A consulta disponibilizou cinco interações recentes, incluindo código SwiftUI: `CadastroAlunoView`, `DetalhesAlunoView`, `AlunosViewModel` e `RelatoriosView`. Foram preservadas separadamente a resposta JSON, a transcrição e quatro arquivos Swift extraídos. Eles são referências históricas: não constituem um projeto Xcode completo, não foram compilados e contêm versões em correção. Não assumir que representam a última versão instalada pelo proprietário.
 
 ## Limites de produto e expansão
 
