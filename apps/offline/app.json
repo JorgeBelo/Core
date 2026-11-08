@@ -7,7 +7,11 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
-    "ios": { "supportsTablet": true, "bundleIdentifier": "br.com.corepersonal.offline", "buildNumber": "1" },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.com.corepersonal.offline",
+      "buildNumber": "1"
+    },
     "android": { "package": "br.com.corepersonal.offline" },
     "web": { "bundler": "metro", "name": "Core Personal Offline", "favicon": "./assets/icon.png" },
     "plugins": ["expo-sqlite", "expo-document-picker"]

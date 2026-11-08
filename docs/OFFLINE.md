@@ -76,3 +76,9 @@ Testes web não substituem teste físico: assinatura, instaladores Android/iOS, 
 ## Validação desta entrega
 
 TypeScript e exportação web passaram. Oito testes de domínio e quatro fluxos de interface passaram no Chrome, em tela de computador e em tamanho de iPhone: cadastro, pagamento, reabertura, edição sem rede, agenda com conflito, backup, restauração e rejeição de arquivo inválido. Bundles Hermes de Android e iOS foram gerados. Não foram gerados instaladores assinados nem executados testes físicos.
+
+## Pacote para teste no iPhone
+
+Compilação nativa Release concluída em macOS/Xcode 27.1, execução https://github.com/JorgeBelo/Core/actions/runs/42437061858. IPA gerado para iPhoneOS arm64, iOS mínimo 16.4, identificador `br.com.corepersonal.offline`, versão 0.1.0, build 1. Código Hermes embarcado; não depende do Metro para abrir após instalação.
+
+O IPA foi baixado e teve os hashes externo e interno, CRCs, Info.plist, arquitetura Mach-O e presença do bundle verificados. O pacote precisa de assinatura pessoal antes de instalar. Com Apple ID gratuito, o proprietário pode usar um instalador como Sideloadly no computador; baixar do Drive não efetua a instalação. A assinatura gratuita exige renovação em sete dias. Não houve login Apple, provisionamento nem teste em aparelho físico nesta sessão.
