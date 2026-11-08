@@ -13,11 +13,21 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaProvider,
+  SafeAreaView,
+  initialWindowMetrics,
+} from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { randomUUID } from 'expo-crypto';
+import { Intro, Sheet, Avatar } from './src/mobile-ui';
+import { EditorForm, Editor } from './src/editors';
+import { AgendaScreen } from './src/agenda-screen';
+import { academyReportHtml, academyStudents } from './src/academy-report';
 import {
   CoreState,
+  setDaySessionStatus,
+  minutes,
+  weekNames,
   Student,
   Bill,
   Reminder,
@@ -59,12 +69,6 @@ import {
 import { finishMoneyInput, moneyInput, phoneInput } from '../../packages/ui/src/input-masks';
 
 type Tab = 'Início' | 'Agenda' | 'Alunos' | 'Financeiro' | 'Ajustes' | 'Relatórios';
-type Editor =
-  | { kind: 'student'; student?: Student }
-  | { kind: 'profile' }
-  | { kind: 'reminder' }
-  | { kind: 'session' }
-  | null;
 type Confirm = { title: string; detail: string; action: () => Promise<void> } | null;
 const errorText = (e: unknown) =>
   e instanceof Error
@@ -75,12 +79,14 @@ const errorText = (e: unknown) =>
 
 export default function App() {
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <CoreApp />
     </SafeAreaProvider>
   );
 }
 function CoreApp() {
+  const [showIntro, setShowIntro] = useState(true);
+  const [showReminders, setShowReminders] = useState(false);
   const [state, setState] = useState<CoreState | null>(null);
   const current = useRef<CoreState | null>(null);
   const lock = useRef(false);
@@ -90,7 +96,7 @@ function CoreApp() {
   const [tab, setTab] = useState<Tab>('Início');
   const [selectedMonth, setMonth] = useState(currentMonth());
   const [today, setToday] = useState(localDay());
-  const [editor, setEditor] = useState<Editor>(null);
+  const [editor, setEditor] = useState<Editor | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [search, setSearch] = useState('');
@@ -165,6 +171,23 @@ function CoreApp() {
     }
   }, [notice]);
 
+  useEffect(() => {
+    if (
+      !showIntro &&
+      state &&
+      !state.profile.name.trim() &&
+      !state.profile.setupComplete &&
+      !editor
+    )
+      setEditor({ kind: 'profile', onboarding: true });
+  }, [showIntro, state?.profile.name, state?.profile.setupComplete]);
+  if (showIntro)
+    return (
+      <>
+        <StatusBar style="light" />
+        <Intro onDone={() => setShowIntro(false)} />
+      </>
+    );
   if (!state)
     return (
       <SafeAreaView style={s.root}>
@@ -229,7 +252,7 @@ function CoreApp() {
       },
     });
   }
-  function report() {
+  function financialReport() {
     const esc = (x: string) =>
       x.replace(
         /[&<>"']/g,
@@ -237,6 +260,16 @@ function CoreApp() {
       );
     const html = `<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>CORE — Relatório</title><style>body{font:14px Arial;color:#222;margin:40px}h1{color:#a20100}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:12px 6px;border-bottom:1px solid #ddd}small{color:#666}tr{break-inside:avoid}</style><h1>Core</h1><h2>Mensalidades — ${esc(monthLabel(selectedMonth))}</h2><p>${esc(state!.profile.name || 'Personal Trainer')} ${state!.profile.cref ? '· CREF ' + esc(state!.profile.cref) : ''}</p><p>Previsto: ${money(summary.expected)} · Recebido: ${money(summary.received)} · Em aberto: ${money(summary.pending)}</p><table><thead><tr><th>Aluno</th><th>Valor</th><th>Vencimento</th><th>Situação</th><th>Pagamento</th></tr></thead><tbody>${bills.map((b) => `<tr><td>${esc(nameOf(b))}</td><td>${money(b.amountCents)}</td><td>${displayDay(b.dueDate)}</td><td>${status(b, today)}</td><td>${b.paidOn ? displayDay(b.paidOn) : '—'}</td></tr>`).join('')}</tbody></table><p><small>Gerado em ${displayDay(today)}. Resumo por mês da mensalidade, com pagamentos registrados manualmente. Não é comprovante bancário.</small></p></html>`;
     void run(() => exportReport(html));
+  }
+  function report() {
+    void run(() => exportReport(academyReportHtml(current.current!)));
+  }
+  function closeEditor() {
+    if (editor?.kind === 'profile' && editor.onboarding && !state!.profile.setupComplete) {
+      void commit((s) => ({ ...s, profile: { ...s.profile, setupComplete: true } })).then((ok) => {
+        if (ok) setEditor(null);
+      });
+    } else setEditor(null);
   }
   const monthPicker = (
     <View style={[ui.row, { justifyContent: 'flex-start' }]}>
@@ -337,10 +370,10 @@ function CoreApp() {
           <View style={ui.row}>
             <Image
               source={require('./assets/icon.png')}
-              style={{ width: 50, height: 50, borderRadius: 12 }}
+              style={{ width: 36, height: 36, borderRadius: 10 }}
             />
             <View>
-              <Txt style={{ fontSize: 24, fontWeight: '800', letterSpacing: -1 }}>Core</Txt>
+              <Txt style={{ fontSize: 22, fontWeight: '800', letterSpacing: -1 }}>Core</Txt>
               {wide && (
                 <Txt muted style={{ fontSize: 10 }}>
                   GESTÃO PARA PERSONAL TRAINERS
@@ -378,9 +411,9 @@ function CoreApp() {
             key={tab}
             style={{ flex: 1 }}
             contentContainerStyle={{
-              padding: wide ? 36 : 20,
+              padding: wide ? 28 : 16,
               paddingBottom: 32,
-              gap: 22,
+              gap: 16,
               maxWidth: 1150,
               width: '100%',
               alignSelf: 'center',
@@ -400,62 +433,162 @@ function CoreApp() {
             )}
             {tab === 'Início' && (
               <>
-                <Heading
-                  title={
-                    state.profile.name
-                      ? `Olá, ${state.profile.name.split(' ')[0]}.`
-                      : 'Seu dia no Core'
-                  }
-                  subtitle={new Date(today + 'T12:00:00').toLocaleDateString('pt-BR', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                  })}
-                  action={
-                    <Button
-                      title="Novo aluno"
-                      icon="add"
-                      onPress={() => setEditor({ kind: 'student' })}
-                    />
-                  }
-                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Editar meu perfil"
+                  onPress={() => setEditor({ kind: 'profile' })}
+                >
+                  <Card style={{ padding: 16 }}>
+                    <View style={ui.row}>
+                      <Avatar name={state.profile.name} photo={state.profile.photo} />
+                      <View style={{ flex: 1, gap: 5 }}>
+                        <Txt style={{ fontSize: 21, fontWeight: '700' }}>
+                          {state.profile.name || 'Seu perfil no Core'}
+                        </Txt>
+                        <Txt muted style={{ fontSize: 12 }}>
+                          {state.profile.cref ? `CREF ${state.profile.cref}` : 'Personal Trainer'}
+                        </Txt>
+                      </View>
+                      <Icon name="create-outline" color={colors.muted} />
+                    </View>
+                  </Card>
+                </Pressable>
+                <View style={{ gap: 12 }}>
+                  <Txt style={s.section}>Mensalidades de {monthLabel(currentMonth())}</Txt>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    {[
+                      ['Já recebeu', homeTotals.received, colors.green],
+                      ['Falta receber', homeTotals.pending, colors.amber],
+                    ].map(([label, value, color]) => (
+                      <Card key={String(label)} style={{ flex: 1, padding: 15, gap: 8 }}>
+                        <Txt muted style={{ fontSize: 12 }}>
+                          {label}
+                        </Txt>
+                        <Txt
+                          style={{ fontSize: 23, fontWeight: '700', letterSpacing: -0.7, color }}
+                        >
+                          {money(Number(value))}
+                        </Txt>
+                      </Card>
+                    ))}
+                  </View>
+                  <Txt muted style={{ fontSize: 12 }}>
+                    Previsto no mês: {money(homeTotals.expected)} · {active.length} aluno
+                    {active.length === 1 ? '' : 's'} ativo{active.length === 1 ? '' : 's'}
+                  </Txt>
+                </View>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  {(
+                    [
+                      [
+                        'Cadastrar aluno',
+                        'person-add-outline',
+                        () => setEditor({ kind: 'student' }),
+                      ],
+                      ['Alunos', 'people-outline', () => navigate('Alunos')],
+                      ['Financeiro', 'wallet-outline', () => navigate('Financeiro')],
+                      ['Relatórios', 'document-text-outline', () => navigate('Relatórios')],
+                    ] as [string, IconName, () => void][]
+                  ).map(([label, icon, action]) => (
+                    <Pressable
+                      key={label}
+                      accessibilityRole="button"
+                      accessibilityLabel={label}
+                      onPress={action}
+                      style={({ pressed }) => ({
+                        flexBasis: '47%',
+                        flexGrow: 1,
+                        backgroundColor: colors.panel,
+                        borderWidth: 1,
+                        borderColor: colors.line,
+                        borderRadius: 17,
+                        padding: 18,
+                        gap: 12,
+                        opacity: pressed ? 0.7 : 1,
+                      })}
+                    >
+                      <Icon
+                        name={icon}
+                        color={label === 'Cadastrar aluno' ? colors.accent : colors.text}
+                        size={25}
+                      />
+                      <Txt style={{ fontWeight: '700' }}>{label}</Txt>
+                    </Pressable>
+                  ))}
+                </View>
+                {overdue.length > 0 && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Ver mensalidades em atraso"
+                    onPress={() => navigate('Financeiro')}
+                  >
+                    <Card style={{ padding: 15, borderLeftWidth: 3, borderLeftColor: colors.red }}>
+                      <View style={ui.row}>
+                        <Icon name="alert-circle-outline" color={colors.accent} />
+                        <View style={{ flex: 1, gap: 3 }}>
+                          <Txt style={{ fontWeight: '700' }}>
+                            {overdue.length} mensalidade(s) em atraso
+                          </Txt>
+                          <Txt muted style={{ fontSize: 12 }}>
+                            {money(totals(overdue, today).pending)} considerando todos os meses
+                          </Txt>
+                        </View>
+                        <Icon name="chevron-forward" color={colors.muted} />
+                      </View>
+                    </Card>
+                  </Pressable>
+                )}
                 <View style={ui.row}>
-                  <Txt style={s.section}>Resumo de {monthLabel(currentMonth())}</Txt>
-                  <Badge
-                    label={`${active.length} aluno${active.length === 1 ? '' : 's'} ativo${active.length === 1 ? '' : 's'}`}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Mostrar lembretes"
+                    onPress={() => setShowReminders(!showReminders)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                  >
+                    <Txt style={s.section}>Lembretes ({pendingReminders.length})</Txt>
+                    <Icon name={showReminders ? 'chevron-up' : 'chevron-down'} size={16} />
+                  </Pressable>
+                  <Button
+                    title="Novo lembrete"
+                    icon="add"
+                    iconOnly
+                    secondary
+                    onPress={() => setEditor({ kind: 'reminder' })}
                   />
                 </View>
-                {stats(homeTotals)}
-                <Card style={{ borderLeftColor: colors.red, borderLeftWidth: 4 }}>
-                  <View style={ui.row}>
-                    <View style={{ flex: 1, gap: 8 }}>
-                      <Txt style={{ fontSize: 19, fontWeight: '700' }}>
-                        O que precisa de atenção
-                      </Txt>
-                      <Txt muted style={{ lineHeight: 22 }}>
-                        {overdue.length
-                          ? `${overdue.length} mensalidade(s) em atraso, somando ${money(totals(overdue, today).pending)} em todos os meses.`
-                          : 'Nenhuma mensalidade em atraso.'}
-                      </Txt>
-                    </View>
-                    <Icon name="notifications-outline" color={colors.accent} size={28} />
-                  </View>
-                  <Button title="Ver financeiro" secondary onPress={() => navigate('Financeiro')} />
-                </Card>
-                {!state.students.length && (
-                  <Empty
-                    title="Comece pelo primeiro aluno"
-                    detail="Cadastre os dados e o valor combinado. O Core organiza a mensalidade e o vencimento para você."
-                  >
-                    <Button
-                      title="Cadastrar primeiro aluno"
-                      icon="person-add-outline"
-                      onPress={() => setEditor({ kind: 'student' })}
-                    />
-                  </Empty>
-                )}
+                {showReminders &&
+                  (pendingReminders.length ? (
+                    pendingReminders.map((r) => (
+                      <Card key={r.id} style={{ padding: 15 }}>
+                        <View style={ui.row}>
+                          <View style={{ flex: 1, gap: 5 }}>
+                            <Txt>{r.title}</Txt>
+                            <Txt muted style={{ fontSize: 12 }}>
+                              {displayDay(r.date)}
+                            </Txt>
+                          </View>
+                          <Button
+                            title="Concluir lembrete"
+                            icon="checkmark"
+                            iconOnly
+                            secondary
+                            onPress={() => {
+                              void commit((s) => ({
+                                ...s,
+                                reminders: s.reminders.map((x) =>
+                                  x.id === r.id ? { ...x, done: true } : x,
+                                ),
+                              }));
+                            }}
+                          />
+                        </View>
+                      </Card>
+                    ))
+                  ) : (
+                    <Txt muted>Nenhum lembrete pendente.</Txt>
+                  ))}
                 {birthdays.map((st) => (
-                  <Card key={st.id}>
+                  <Card key={st.id} style={{ padding: 15 }}>
                     <Txt>Hoje é aniversário de {st.name} 🎉</Txt>
                     <Button
                       title="Parabenizar no WhatsApp"
@@ -466,7 +599,7 @@ function CoreApp() {
                           Linking.openURL(
                             whatsappUrl(
                               st,
-                              `Olá, ${st.name}! Feliz aniversário! Desejo muita saúde, felicidade e conquistas. Um ótimo dia para você!`,
+                              `Olá, ${st.name}! Feliz aniversário! Desejo muita saúde e felicidade!`,
                             ),
                           ),
                         );
@@ -474,57 +607,6 @@ function CoreApp() {
                     />
                   </Card>
                 ))}
-                <View style={ui.row}>
-                  <Txt style={s.section}>Lembretes</Txt>
-                  <Button
-                    title="Novo lembrete"
-                    icon="add"
-                    secondary
-                    onPress={() => setEditor({ kind: 'reminder' })}
-                  />
-                </View>
-                {pendingReminders.length ? (
-                  pendingReminders.map((r) => (
-                    <Card key={r.id}>
-                      <View style={ui.row}>
-                        <View style={{ flex: 1, gap: 6 }}>
-                          <Txt style={{ fontWeight: '600' }}>{r.title}</Txt>
-                          <Txt muted style={{ fontSize: 12 }}>
-                            {displayDay(r.date)}
-                            {r.date < today ? ' · Pendente' : ''}
-                          </Txt>
-                        </View>
-                        <Button
-                          title="Concluir"
-                          secondary
-                          icon="checkmark"
-                          onPress={() => {
-                            void commit((s) => ({
-                              ...s,
-                              reminders: s.reminders.map((x) =>
-                                x.id === r.id ? { ...x, done: true } : x,
-                              ),
-                            }));
-                          }}
-                        />
-                      </View>
-                    </Card>
-                  ))
-                ) : (
-                  <Txt muted>Nenhum lembrete pendente. Os lembretes aparecem aqui no app.</Txt>
-                )}
-                <Button
-                  title="Abrir agenda"
-                  secondary
-                  icon="calendar-outline"
-                  onPress={() => navigate('Agenda')}
-                />
-                <Button
-                  title="Ver relatórios"
-                  secondary
-                  icon="document-text-outline"
-                  onPress={() => navigate('Relatórios')}
-                />
               </>
             )}
             {tab === 'Alunos' && (
@@ -611,161 +693,34 @@ function CoreApp() {
               </>
             )}
             {tab === 'Agenda' && (
-              <>
-                <Heading
-                  title="Agenda"
-                  subtitle="Seus atendimentos, um horário de cada vez."
-                  action={
-                    <Button
-                      title="Novo horário"
-                      icon="add"
-                      disabled={!active.length}
-                      onPress={() => setEditor({ kind: 'session' })}
-                    />
-                  }
-                />
-                <View style={ui.row}>
-                  <Button
-                    title="Semana anterior"
-                    iconOnly
-                    icon="chevron-back"
-                    secondary
-                    onPress={() => {
-                      const d = new Date(agendaDate + 'T12:00:00');
-                      d.setDate(d.getDate() - 7);
-                      setAgendaDate(localDay(d));
-                    }}
-                  />
-                  <Txt style={{ fontWeight: '700' }}>
-                    {new Date(agendaDate + 'T12:00:00').toLocaleDateString('pt-BR', {
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </Txt>
-                  <Button
-                    title="Próxima semana"
-                    iconOnly
-                    icon="chevron-forward"
-                    secondary
-                    onPress={() => {
-                      const d = new Date(agendaDate + 'T12:00:00');
-                      d.setDate(d.getDate() + 7);
-                      setAgendaDate(localDay(d));
-                    }}
-                  />
-                </View>
-                <View style={{ flexDirection: 'row', gap: 4 }}>
-                  {Array.from({ length: 7 }, (_, i) => {
-                    const d = new Date(agendaDate + 'T12:00:00');
-                    d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + i);
-                    const iso = localDay(d);
-                    return (
-                      <Pressable
-                        key={iso}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Ver dia ${displayDay(iso)}`}
-                        onPress={() => setAgendaDate(iso)}
-                        style={{
-                          flex: 1,
-                          alignItems: 'center',
-                          gap: 7,
-                          paddingVertical: 13,
-                          borderRadius: 12,
-                          backgroundColor: iso === agendaDate ? colors.red : colors.panel,
-                        }}
-                      >
-                        <Txt muted style={{ fontSize: 10 }}>
-                          {['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][d.getDay()]}
-                        </Txt>
-                        <Txt style={{ fontWeight: '700', fontSize: 18 }}>{d.getDate()}</Txt>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-                <Txt style={s.section}>Atendimentos em {displayDay(agendaDate)}</Txt>
-                {state.sessions
-                  .filter((row) => row.date === agendaDate)
-                  .sort((a, b) => a.start.localeCompare(b.start))
-                  .map((row) => (
-                    <Card key={row.id}>
-                      <View style={ui.row}>
-                        <View style={{ flex: 1, gap: 7 }}>
-                          <Txt style={{ fontWeight: '700', fontSize: 17 }}>
-                            {state.students.find((st) => st.id === row.studentId)!.name}
-                          </Txt>
-                          <Txt muted>
-                            {row.start} – {row.end}
-                          </Txt>
-                        </View>
-                        <Badge
-                          label={
-                            row.status === 'scheduled'
-                              ? 'Agendado'
-                              : row.status === 'done'
-                                ? 'Concluído'
-                                : 'Cancelado'
-                          }
-                          tone={row.status === 'done' ? 'green' : 'muted'}
-                        />
-                      </View>
-                      {row.notes !== '' && <Txt muted>{row.notes}</Txt>}
-                      {row.status === 'scheduled' && (
-                        <View style={s.wrap}>
-                          <Button
-                            title="Concluir atendimento"
-                            secondary
-                            icon="checkmark"
-                            onPress={() => {
-                              void commit((s) => ({
-                                ...s,
-                                sessions: s.sessions.map((x) =>
-                                  x.id === row.id ? { ...x, status: 'done' } : x,
-                                ),
-                              }));
-                            }}
-                          />
-                          <Button
-                            title="Cancelar horário"
-                            secondary
-                            onPress={() =>
-                              setConfirm({
-                                title: 'Cancelar este horário?',
-                                detail:
-                                  'O atendimento permanecerá no histórico como cancelado, liberando o horário na agenda. A mensalidade não será alterada.',
-                                action: async () => {
-                                  if (
-                                    await commit((s) => ({
-                                      ...s,
-                                      sessions: s.sessions.map((x) =>
-                                        x.id === row.id ? { ...x, status: 'canceled' } : x,
-                                      ),
-                                    }))
-                                  )
-                                    setConfirm(null);
-                                },
-                              })
-                            }
-                          />
-                        </View>
-                      )}
-                    </Card>
-                  ))}
-                {!state.sessions.some((row) => row.date === agendaDate) && (
-                  <Empty
-                    title="Dia livre por aqui"
-                    detail={
-                      active.length
-                        ? 'Adicione um horário para organizar o atendimento de um aluno.'
-                        : 'Cadastre um aluno antes de agendar o primeiro atendimento.'
-                    }
-                  />
-                )}
-                <Button
-                  title="Voltar para hoje"
-                  secondary
-                  onPress={() => setAgendaDate(localDay())}
-                />
-              </>
+              <AgendaScreen
+                state={state}
+                date={agendaDate}
+                onDate={setAgendaDate}
+                onCreate={(range) =>
+                  setEditor({
+                    kind: 'session',
+                    date: agendaDate,
+                    start: range?.start,
+                    duration: range ? Math.min(60, minutes(range.end) - minutes(range.start)) : 60,
+                  })
+                }
+                onWorkHours={() => setEditor({ kind: 'work-hours' })}
+                onComplete={(row) => {
+                  void commit((s) => setDaySessionStatus(s, row, 'done'));
+                }}
+                onCancel={(row) =>
+                  setConfirm({
+                    title: 'Cancelar esta aula?',
+                    detail:
+                      'O horário será liberado nesta data. Uma aula fixa continuará nos outros dias. A mensalidade não será alterada.',
+                    action: async () => {
+                      if (await commit((s) => setDaySessionStatus(s, row, 'canceled')))
+                        setConfirm(null);
+                    },
+                  })
+                }
+              />
             )}
             {tab === 'Financeiro' && (
               <>
@@ -775,6 +730,12 @@ function CoreApp() {
                 />
                 {monthPicker}
                 {stats(summary)}
+                <Button
+                  title="Exportar financeiro"
+                  secondary
+                  icon="document-text-outline"
+                  onPress={financialReport}
+                />
                 <Txt muted style={{ fontSize: 12, lineHeight: 19 }}>
                   Em aberto inclui valores a vencer e em atraso deste mês. O pagamento é registrado
                   por você, sem consulta ao banco.
@@ -822,40 +783,58 @@ function CoreApp() {
             )}
             {tab === 'Relatórios' && (
               <>
-                <Heading title="Relatórios" subtitle="Uma visão simples do seu trabalho." />
-                {monthPicker}
-                {stats(summary)}
-                <Card>
-                  <Txt style={s.section}>Seus alunos hoje</Txt>
+                <Heading
+                  title="Relatório para a academia"
+                  subtitle="Alunos e frequência semanal, prontos para compartilhar."
+                />
+                <Button
+                  title="Gerar PDF para academia"
+                  icon="document-text-outline"
+                  onPress={report}
+                />
+                <Card style={{ padding: 16 }}>
                   <View style={ui.row}>
                     <Txt muted>Alunos ativos</Txt>
-                    <Txt>{active.length}</Txt>
+                    <Txt style={{ fontSize: 24, fontWeight: '700' }}>{active.length}</Txt>
                   </View>
                   <View style={ui.row}>
-                    <Txt muted>Atendimentos contratados / semana</Txt>
-                    <Txt>{active.reduce((n, st) => n + st.frequency, 0)}</Txt>
+                    <Txt muted style={{ flex: 1 }}>
+                      Atendimentos previstos / semana
+                    </Txt>
+                    <Txt style={{ fontSize: 24, fontWeight: '700' }}>
+                      {active.reduce((sum, st) => sum + st.frequency, 0)}
+                    </Txt>
                   </View>
-                  <Txt muted style={{ fontSize: 12 }}>
-                    A frequência indica o combinado, sem controle de presença.
-                  </Txt>
-                  {Array.from(new Set(active.map((st) => st.frequency)))
-                    .sort()
-                    .map((f) => (
-                      <View key={f} style={ui.row}>
-                        <Txt>{f}x por semana</Txt>
-                        <Txt>{active.filter((st) => st.frequency === f).length} aluno(s)</Txt>
-                      </View>
-                    ))}
                 </Card>
-                <Button title="Gerar relatório PDF" icon="document-text-outline" onPress={report} />
-                <Txt muted style={{ fontSize: 12 }}>
-                  No navegador, escolha “Salvar como PDF” na janela de impressão.
+                <Txt muted style={{ fontSize: 12, lineHeight: 20 }}>
+                  O PDF inclui seu nome, CREF, todos os alunos ativos e quantas vezes cada um treina
+                  por semana. Valores de mensalidade e contatos ficam fora desse documento.
                 </Txt>
+                {academyStudents(state).map((st) => (
+                  <Card key={st.id} style={{ padding: 15 }}>
+                    <View style={ui.row}>
+                      <Txt style={{ flex: 1, fontWeight: '600' }}>{st.name}</Txt>
+                      <Badge label={`${st.frequency}x / semana`} />
+                    </View>
+                  </Card>
+                ))}
+                {!active.length && (
+                  <Empty
+                    title="Sua relação de alunos aparecerá aqui"
+                    detail="Cadastre seus alunos e a frequência combinada para gerar o relatório."
+                  />
+                )}
               </>
             )}
             {tab === 'Ajustes' && (
               <>
                 <Heading title="Ajustes" subtitle="Seu perfil e a segurança dos seus dados." />
+                <Button
+                  title="Meus horários de trabalho"
+                  secondary
+                  icon="time-outline"
+                  onPress={() => setEditor({ kind: 'work-hours' })}
+                />
                 <Card>
                   <View style={ui.row}>
                     <View style={{ flex: 1, gap: 8 }}>
@@ -963,126 +942,138 @@ function CoreApp() {
             ))}
           </View>
         )}
-        {editor && (
+        {(editor || student) && (
           <Modal
             visible
             animationType="slide"
             onRequestClose={() => {
-              if (!busy) setEditor(null);
+              if (!busy) {
+                if (editor) closeEditor();
+                else setDetailId(null);
+              }
             }}
           >
-            <SafeAreaView style={s.root}>
-              <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-              >
-                <ScrollView
-                  keyboardShouldPersistTaps="handled"
-                  contentContainerStyle={s.modalContent}
+            {editor ? (
+              <EditorForm
+                editor={editor}
+                state={state}
+                busy={busy}
+                saveError={notice}
+                onClose={closeEditor}
+                onSubmit={async (change) => {
+                  if (await commit(change)) setEditor(null);
+                }}
+              />
+            ) : (
+              student && (
+                <Sheet
+                  title="Perfil do aluno"
+                  closeLabel="Voltar aos alunos"
+                  onClose={() => setDetailId(null)}
                 >
-                  {editor && (
-                    <EditorForm
-                      editor={editor}
-                      state={state}
-                      busy={busy}
-                      saveError={notice}
-                      onClose={() => setEditor(null)}
-                      onSubmit={async (change) => {
-                        if (await commit(change)) setEditor(null);
-                      }}
-                    />
+                  {student && (
+                    <>
+                      <Heading
+                        title={student.name}
+                        subtitle={
+                          student.archivedOn
+                            ? 'Aluno arquivado · histórico preservado'
+                            : 'Dados do aluno'
+                        }
+                      />
+                      <Card>
+                        <Info label="Telefone" value={phoneInput(student.phone)} />
+                        <Info
+                          label="Nascimento"
+                          value={
+                            student.birthDate ? displayDay(student.birthDate) : 'Não informado'
+                          }
+                        />
+                        <Info label="Frequência" value={`${student.frequency}x por semana`} />
+                        <Info label="Mensalidade combinada" value={money(student.feeCents)} />
+                        <Info label="Vencimento" value={`Todo dia ${student.dueDay}`} />
+                        {student.notes !== '' && <Txt muted>{student.notes}</Txt>}
+                      </Card>
+                      <Button
+                        title="Conversar no WhatsApp"
+                        secondary
+                        icon="logo-whatsapp"
+                        onPress={() => {
+                          void run(() =>
+                            Linking.openURL(
+                              whatsappUrl(student, `Olá, ${student.name}! Tudo bem?`),
+                            ),
+                          );
+                        }}
+                      />
+                      {!student.archivedOn && (
+                        <Button
+                          title="Editar aluno"
+                          secondary
+                          icon="create-outline"
+                          onPress={() => {
+                            setDetailId(null);
+                            setEditor({ kind: 'student', student });
+                          }}
+                        />
+                      )}
+                      {!student.archivedOn && (
+                        <Button
+                          title="Organizar dias e horários"
+                          secondary
+                          icon="calendar-outline"
+                          onPress={() => {
+                            setDetailId(null);
+                            setEditor({ kind: 'weekly', student });
+                          }}
+                        />
+                      )}
+                      {state.weeklySlots
+                        .filter(
+                          (slot) =>
+                            slot.studentId === student.id &&
+                            (!slot.endsBefore || slot.endsBefore > today),
+                        )
+                        .map((slot) => (
+                          <Txt key={slot.id} muted>
+                            {weekNames[slot.weekday]} · {slot.start} às {slot.end}
+                          </Txt>
+                        ))}
+                      <Txt style={s.section}>Histórico de mensalidades</Txt>
+                      {state.bills
+                        .filter((b) => b.studentId === student.id)
+                        .sort((a, b) => b.month.localeCompare(a.month))
+                        .map((b) => billCard(b, false))}
+                      {!student.archivedOn && (
+                        <Button
+                          title="Arquivar aluno"
+                          secondary
+                          icon="archive-outline"
+                          onPress={() => {
+                            setDetailId(null);
+                            setConfirm({
+                              title: 'Arquivar aluno?',
+                              detail: `${student.name} sairá da lista de ativos. O mês atual e todo o histórico financeiro serão mantidos. Novas mensalidades deixarão de ser geradas após este mês.`,
+                              action: async () => {
+                                if (
+                                  await commit((s) => ({
+                                    ...s,
+                                    students: s.students.map((st) =>
+                                      st.id === student.id ? { ...st, archivedOn: localDay() } : st,
+                                    ),
+                                  }))
+                                )
+                                  setConfirm(null);
+                              },
+                            });
+                          }}
+                        />
+                      )}
+                    </>
                   )}
-                </ScrollView>
-              </KeyboardAvoidingView>
-            </SafeAreaView>
-          </Modal>
-        )}
-        {student && (
-          <Modal visible animationType="slide" onRequestClose={() => setDetailId(null)}>
-            <SafeAreaView style={s.root}>
-              <ScrollView contentContainerStyle={s.modalContent}>
-                {student && (
-                  <>
-                    <Button
-                      title="Voltar aos alunos"
-                      secondary
-                      icon="arrow-back"
-                      onPress={() => setDetailId(null)}
-                    />
-                    <Heading
-                      title={student.name}
-                      subtitle={
-                        student.archivedOn
-                          ? 'Aluno arquivado · histórico preservado'
-                          : 'Dados do aluno'
-                      }
-                    />
-                    <Card>
-                      <Info label="Telefone" value={phoneInput(student.phone)} />
-                      <Info
-                        label="Nascimento"
-                        value={student.birthDate ? displayDay(student.birthDate) : 'Não informado'}
-                      />
-                      <Info label="Frequência" value={`${student.frequency}x por semana`} />
-                      <Info label="Mensalidade combinada" value={money(student.feeCents)} />
-                      <Info label="Vencimento" value={`Todo dia ${student.dueDay}`} />
-                      {student.notes !== '' && <Txt muted>{student.notes}</Txt>}
-                    </Card>
-                    <Button
-                      title="Conversar no WhatsApp"
-                      secondary
-                      icon="logo-whatsapp"
-                      onPress={() => {
-                        void run(() =>
-                          Linking.openURL(whatsappUrl(student, `Olá, ${student.name}! Tudo bem?`)),
-                        );
-                      }}
-                    />
-                    {!student.archivedOn && (
-                      <Button
-                        title="Editar aluno"
-                        secondary
-                        icon="create-outline"
-                        onPress={() => {
-                          setDetailId(null);
-                          setEditor({ kind: 'student', student });
-                        }}
-                      />
-                    )}
-                    <Txt style={s.section}>Histórico de mensalidades</Txt>
-                    {state.bills
-                      .filter((b) => b.studentId === student.id)
-                      .sort((a, b) => b.month.localeCompare(a.month))
-                      .map((b) => billCard(b, false))}
-                    {!student.archivedOn && (
-                      <Button
-                        title="Arquivar aluno"
-                        secondary
-                        icon="archive-outline"
-                        onPress={() => {
-                          setDetailId(null);
-                          setConfirm({
-                            title: 'Arquivar aluno?',
-                            detail: `${student.name} sairá da lista de ativos. O mês atual e todo o histórico financeiro serão mantidos. Novas mensalidades deixarão de ser geradas após este mês.`,
-                            action: async () => {
-                              if (
-                                await commit((s) => ({
-                                  ...s,
-                                  students: s.students.map((st) =>
-                                    st.id === student.id ? { ...st, archivedOn: localDay() } : st,
-                                  ),
-                                }))
-                              )
-                                setConfirm(null);
-                            },
-                          });
-                        }}
-                      />
-                    )}
-                  </>
-                )}
-              </ScrollView>
-            </SafeAreaView>
+                </Sheet>
+              )
+            )}
           </Modal>
         )}
         {confirm && (
@@ -1161,249 +1152,6 @@ function Info({ label, value }: { label: string; value: string }) {
     </View>
   );
 }
-function EditorForm({
-  editor,
-  state,
-  busy,
-  saveError,
-  onClose,
-  onSubmit,
-}: {
-  editor: NonNullable<Editor>;
-  state: CoreState;
-  busy: boolean;
-  saveError: string;
-  onClose: () => void;
-  onSubmit: (change: (s: CoreState) => CoreState) => Promise<void>;
-}) {
-  const st = editor.kind === 'student' ? editor.student : undefined;
-  const [name, setName] = useState(
-    st?.name ?? (editor.kind === 'profile' ? state.profile.name : ''),
-  );
-  const [cref, setCref] = useState(state.profile.cref);
-  const [phone, setPhone] = useState(st ? phoneInput(st.phone) : '');
-  const [fee, setFee] = useState(
-    st ? (st.feeCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '',
-  );
-  const [due, setDue] = useState(String(st?.dueDay ?? 5));
-  const [frequency, setFrequency] = useState(String(st?.frequency ?? 3));
-  const [birth, setBirth] = useState(st?.birthDate ? displayDay(st.birthDate) : '');
-  const [notes, setNotes] = useState(st?.notes ?? '');
-  const [date, setDate] = useState(displayDay(localDay()));
-  const [error, setError] = useState('');
-  const [sessionStudent, setSessionStudent] = useState('');
-  const [start, setStart] = useState('08:00');
-  const [end, setEnd] = useState('09:00');
-  const toISO = (d: string) => d.split('/').reverse().join('-');
-  async function submit() {
-    setError('');
-    try {
-      if (editor.kind === 'student') {
-        if (!/^\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?$/.test(fee))
-          throw new Error('Informe a mensalidade no formato 400,00.');
-        const cents = Math.round(Number(fee.replace(/\./g, '').replace(',', '.')) * 100);
-        const bday = birth ? day.parse(toISO(birth)) : '';
-        if (bday > localDay()) throw new Error('Nascimento não pode estar no futuro.');
-        const student: Student = {
-          id: st?.id ?? randomUUID(),
-          name: name.trim(),
-          phone: phone.replace(/\D/g, ''),
-          feeCents: cents,
-          dueDay: Number(due),
-          frequency: Number(frequency),
-          birthDate: bday,
-          notes,
-          startMonth: st?.startMonth ?? currentMonth(),
-          archivedOn: st?.archivedOn ?? null,
-        };
-        // Validate before handing off so the form retains its error and values.
-        saveStudent(state, student);
-        await onSubmit((s) => saveStudent(s, student));
-      } else if (editor.kind === 'profile') {
-        if (name.trim().length < 2 || name.length > 120 || cref.length > 50)
-          throw new Error('Informe um nome válido. CREF é opcional.');
-        await onSubmit((s) => ({ ...s, profile: { name: name.trim(), cref: cref.trim() } }));
-      } else if (editor.kind === 'session') {
-        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(start) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(end))
-          throw new Error('Informe início e término no formato HH:MM.');
-        if (end <= start) throw new Error('O término deve ser após o início.');
-        const session: Session = {
-          id: randomUUID(),
-          studentId: sessionStudent,
-          date: day.parse(toISO(date)),
-          start,
-          end,
-          status: 'scheduled',
-          notes,
-        };
-        saveSession(state, session);
-        await onSubmit((s) => saveSession(s, session));
-      } else {
-        if (!name.trim() || name.length > 200)
-          throw new Error('Informe um lembrete com até 200 caracteres.');
-        const reminder: Reminder = {
-          id: randomUUID(),
-          title: name.trim(),
-          date: day.parse(toISO(date)),
-          done: false,
-        };
-        await onSubmit((s) => ({ ...s, reminders: [...s.reminders, reminder] }));
-      }
-    } catch (e) {
-      setError(errorText(e));
-    }
-  }
-  const maskDate = (value: string) =>
-    value
-      .replace(/\D/g, '')
-      .slice(0, 8)
-      .replace(/^(\d{2})(\d)/, '$1/$2')
-      .replace(/^(\d{2})\/(\d{2})(\d)/, '$1/$2/$3');
-  return (
-    <>
-      <Button
-        title="Cancelar edição"
-        secondary
-        icon="arrow-back"
-        onPress={onClose}
-        disabled={busy}
-      />
-      <Heading
-        title={
-          editor.kind === 'student'
-            ? st
-              ? 'Editar aluno'
-              : 'Novo aluno'
-            : editor.kind === 'profile'
-              ? 'Seu perfil'
-              : editor.kind === 'session'
-                ? 'Novo horário'
-                : 'Novo lembrete'
-        }
-        subtitle={
-          editor.kind === 'student' ? 'O essencial para organizar o atendimento.' : undefined
-        }
-      />
-      {editor.kind !== 'session' && (
-        <Card>
-          <Field
-            label={editor.kind === 'reminder' ? 'Lembrete' : 'Nome'}
-            value={name}
-            onChange={setName}
-            placeholder={
-              editor.kind === 'reminder' ? 'Ex.: conversar sobre renovação' : 'Nome completo'
-            }
-          />
-          {editor.kind === 'profile' && (
-            <Field label="CREF (opcional)" value={cref} onChange={setCref} />
-          )}
-          {editor.kind === 'reminder' && (
-            <Field
-              label="Data do lembrete"
-              value={date}
-              onChange={(v) => setDate(maskDate(v))}
-              keyboard="number-pad"
-              placeholder="DD/MM/AAAA"
-            />
-          )}
-          {editor.kind === 'student' && (
-            <>
-              <Field
-                label="Telefone com DDD"
-                value={phone}
-                onChange={(v) => setPhone(phoneInput(v))}
-                keyboard="phone-pad"
-                placeholder="(49) 99999-9999"
-              />
-              <Field
-                label="Nascimento (opcional)"
-                value={birth}
-                onChange={(v) => setBirth(maskDate(v))}
-                keyboard="number-pad"
-                placeholder="DD/MM/AAAA"
-              />
-            </>
-          )}
-        </Card>
-      )}
-      {editor.kind === 'session' && (
-        <Card>
-          <Txt style={s.section}>Escolha o aluno</Txt>
-          {state.students
-            .filter((st) => !st.archivedOn)
-            .map((st) => (
-              <Button
-                key={st.id}
-                title={st.name}
-                secondary={sessionStudent !== st.id}
-                onPress={() => setSessionStudent(st.id)}
-              />
-            ))}
-          <Field
-            label="Data do atendimento"
-            value={date}
-            onChange={(v) => setDate(maskDate(v))}
-            keyboard="number-pad"
-            placeholder="DD/MM/AAAA"
-          />
-          <Field label="Início (HH:MM)" value={start} onChange={setStart} placeholder="08:00" />
-          <Field label="Término (HH:MM)" value={end} onChange={setEnd} placeholder="09:00" />
-          <Field
-            label="Observações do horário (opcional)"
-            value={notes}
-            onChange={setNotes}
-            multiline
-          />
-        </Card>
-      )}
-      {editor.kind === 'student' && (
-        <Card>
-          <Txt style={s.section}>Mensalidade e frequência</Txt>
-          <Field
-            label="Mensalidade (R$)"
-            value={fee}
-            onChange={(v) => setFee(moneyInput(v, fee))}
-            keyboard="decimal-pad"
-            placeholder="400,00"
-          />
-          <Field
-            label="Dia do vencimento (1 a 31)"
-            value={due}
-            onChange={setDue}
-            keyboard="number-pad"
-          />
-          <Field
-            label="Treinos por semana (1 a 7)"
-            value={frequency}
-            onChange={setFrequency}
-            keyboard="number-pad"
-          />
-          <Field label="Observações (opcional)" value={notes} onChange={setNotes} multiline />
-          <Txt muted style={{ fontSize: 12, lineHeight: 20 }}>
-            {st
-              ? 'Alterações no valor e vencimento valem para as próximas mensalidades. As já geradas mantêm os valores originais.'
-              : 'A primeira mensalidade será criada para o mês atual.'}{' '}
-            Vencimentos em dias inexistentes no mês usam o último dia.
-          </Txt>
-        </Card>
-      )}
-      {(error || saveError) !== '' && (
-        <Card style={{ borderColor: colors.accent }}>
-          <Txt style={{ color: colors.accent }}>{error || saveError}</Txt>
-        </Card>
-      )}
-      <Button
-        title={busy ? 'Salvando…' : 'Salvar'}
-        icon="checkmark"
-        onPress={() => {
-          setFee(finishMoneyInput(fee));
-          void submit();
-        }}
-        disabled={busy}
-      />
-    </>
-  );
-}
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   top: {
@@ -1412,8 +1160,9 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
-    paddingHorizontal: 20,
-    paddingVertical: 13,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 10,
     gap: 8,
   },
   sidebar: { width: 215, padding: 18, gap: 10, borderRightWidth: 1, borderRightColor: colors.line },

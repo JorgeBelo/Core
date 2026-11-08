@@ -30,12 +30,21 @@ export function Txt({
   children,
   muted = false,
   style,
+  accessibilityLabel,
 }: {
   children: React.ReactNode;
   muted?: boolean;
   style?: any;
+  accessibilityLabel?: string;
 }) {
-  return <Text style={[styles.text, muted && { color: colors.muted }, style]}>{children}</Text>;
+  return (
+    <Text
+      accessibilityLabel={accessibilityLabel}
+      style={[styles.text, muted && { color: colors.muted }, style]}
+    >
+      {children}
+    </Text>
+  );
 }
 export function Button({
   title,

@@ -37,6 +37,21 @@ const reminderSchema = z.object({
   done: z.boolean(),
 });
 const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
+const weekday = z.number().int().min(0).max(6);
+export const workHourSchema = z
+  .object({ weekday, start: time, end: time })
+  .refine((x) => x.end > x.start, 'O fim do período deve ser após o início.');
+export const weeklySlotSchema = z
+  .object({
+    id,
+    studentId: id,
+    weekday,
+    start: time,
+    end: time,
+    from: day,
+    endsBefore: day.nullable(),
+  })
+  .refine((x) => x.end > x.start, 'O fim da aula deve ser após o início.');
 export const sessionSchema = z
   .object({
     id,
@@ -46,23 +61,39 @@ export const sessionSchema = z
     end: time,
     status: z.enum(['scheduled', 'done', 'canceled']),
     notes: z.string().max(1000),
+    weeklySlotId: id.optional(),
   })
   .refine((x) => x.end > x.start, 'O término deve ser após o início.');
 export const stateSchema = z
   .object({
     version: z.literal(1),
-    profile: z.object({ name: z.string().max(120), cref: z.string().max(50) }),
+    profile: z.object({
+      name: z.string().max(120),
+      cref: z.string().max(50),
+      photo: z
+        .string()
+        .max(3000000)
+        .regex(/^(|data:image\/jpeg;base64,[A-Za-z0-9+/=]+)$/)
+        .default(''),
+      setupComplete: z.boolean().default(false),
+      workHours: z.array(workHourSchema).max(70).default([]),
+    }),
     students: z.array(studentSchema).max(10000),
     bills: z.array(billSchema).max(240000),
     reminders: z.array(reminderSchema).max(10000),
     sessions: z.array(sessionSchema).max(100000).default([]),
+    weeklySlots: z.array(weeklySlotSchema).max(50000).default([]),
   })
   .superRefine((s, ctx) => {
-    for (const rows of [s.students, s.bills, s.reminders, s.sessions]) {
+    for (const rows of [s.students, s.bills, s.reminders, s.sessions, s.weeklySlots]) {
       if (new Set(rows.map((r) => r.id)).size !== rows.length)
         ctx.addIssue({ code: 'custom', message: 'Identificadores duplicados no backup' });
     }
     const students = new Map(s.students.map((s) => [s.id, s]));
+    for (const row of s.weeklySlots) {
+      if (!students.has(row.studentId))
+        ctx.addIssue({ code: 'custom', message: 'Aluno do horário fixo não encontrado' });
+    }
     for (const row of s.sessions) {
       if (!students.has(row.studentId))
         ctx.addIssue({ code: 'custom', message: 'Aluno da agenda não encontrado' });
@@ -85,13 +116,17 @@ export type Bill = z.infer<typeof billSchema>;
 export type CoreState = z.infer<typeof stateSchema>;
 export type Reminder = CoreState['reminders'][number];
 export type Session = CoreState['sessions'][number];
+export type WeeklySlot = CoreState['weeklySlots'][number];
+export type WorkHour = CoreState['profile']['workHours'][number];
+export type DaySession = Session & { virtual?: boolean };
 export const emptyState = (): CoreState => ({
   version: 1,
-  profile: { name: '', cref: '' },
+  profile: { name: '', cref: '', photo: '', setupComplete: false, workHours: [] },
   students: [],
   bills: [],
   reminders: [],
   sessions: [],
+  weeklySlots: [],
 });
 export function localDay(d = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -205,9 +240,10 @@ export function saveSession(s: CoreState, input: Session): CoreState {
     throw new Error('Escolha um aluno ativo.');
   if (
     session.status !== 'canceled' &&
-    s.sessions.some(
+    sessionsForDate(s, session.date).some(
       (row) =>
         row.id !== session.id &&
+        (!session.weeklySlotId || row.weeklySlotId !== session.weeklySlotId) &&
         row.status !== 'canceled' &&
         row.date === session.date &&
         row.start < session.end &&
@@ -215,10 +251,155 @@ export function saveSession(s: CoreState, input: Session): CoreState {
     )
   )
     throw new Error('Este horário coincide com outro atendimento. Escolha um horário livre.');
+  if (
+    session.status === 'scheduled' &&
+    s.profile.workHours.length &&
+    !insideWorkHours(
+      s.profile.workHours,
+      new Date(session.date + 'T12:00:00').getDay(),
+      session.start,
+      session.end,
+    )
+  )
+    throw new Error('Este horário está fora dos seus períodos de atendimento.');
   return {
     ...s,
     sessions: s.sessions.some((row) => row.id === session.id)
       ? s.sessions.map((row) => (row.id === session.id ? session : row))
       : [...s.sessions, session],
   };
+}
+export const weekNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+export function minutes(value: string) {
+  const [h, m] = value.split(':').map(Number);
+  return h * 60 + m;
+}
+export function clock(value: number) {
+  return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+}
+export function insideWorkHours(hours: WorkHour[], weekday: number, start: string, end: string) {
+  return hours.some((h) => h.weekday === weekday && h.start <= start && h.end >= end);
+}
+export function sessionsForDate(s: CoreState, date: string): DaySession[] {
+  const actual = s.sessions.filter((row) => row.date === date);
+  const overridden = new Set(actual.map((row) => row.weeklySlotId).filter(Boolean));
+  const weekday = new Date(date + 'T12:00:00').getDay();
+  const recurring: DaySession[] = s.weeklySlots
+    .filter((slot) => {
+      const student = s.students.find((st) => st.id === slot.studentId);
+      return (
+        slot.weekday === weekday &&
+        slot.from <= date &&
+        (!slot.endsBefore || date < slot.endsBefore) &&
+        student &&
+        (!student.archivedOn || date < student.archivedOn) &&
+        !overridden.has(slot.id)
+      );
+    })
+    .map((slot) => ({
+      id: `weekly:${slot.id}:${date}`,
+      studentId: slot.studentId,
+      date,
+      start: slot.start,
+      end: slot.end,
+      status: 'scheduled',
+      notes: '',
+      weeklySlotId: slot.id,
+      virtual: true,
+    }));
+  return [...actual, ...recurring].sort((a, b) => a.start.localeCompare(b.start));
+}
+export function setDaySessionStatus(
+  s: CoreState,
+  row: DaySession,
+  status: Session['status'],
+): CoreState {
+  const saved = sessionSchema.parse({ ...row, status });
+  return {
+    ...s,
+    sessions: s.sessions.some((x) => x.id === row.id)
+      ? s.sessions.map((x) => (x.id === row.id ? saved : x))
+      : [...s.sessions, saved],
+  };
+}
+export function validateWorkHours(s: CoreState, input: WorkHour[]): WorkHour[] {
+  const hours = z
+    .array(workHourSchema)
+    .max(70)
+    .parse(input)
+    .sort((a, b) => a.weekday - b.weekday || a.start.localeCompare(b.start));
+  for (let i = 1; i < hours.length; i++)
+    if (hours[i].weekday === hours[i - 1].weekday && hours[i].start < hours[i - 1].end)
+      throw new Error('Há períodos de trabalho sobrepostos no mesmo dia.');
+  for (const slot of s.weeklySlots.filter(
+    (x) =>
+      (!x.endsBefore || x.endsBefore > localDay()) &&
+      s.students.some((st) => st.id === x.studentId && !st.archivedOn),
+  )) {
+    if (!insideWorkHours(hours, slot.weekday, slot.start, slot.end))
+      throw new Error(
+        `Existe uma aula fixa na ${weekNames[slot.weekday].toLowerCase()} às ${slot.start}. Ajuste esse horário do aluno antes de reduzir seu expediente.`,
+      );
+  }
+  return hours;
+}
+export function saveWeeklySlot(s: CoreState, input: WeeklySlot): CoreState {
+  const slot = weeklySlotSchema.parse(input);
+  if (!s.students.some((st) => st.id === slot.studentId && !st.archivedOn))
+    throw new Error('Escolha um aluno ativo.');
+  if (
+    s.profile.workHours.length &&
+    !insideWorkHours(s.profile.workHours, slot.weekday, slot.start, slot.end)
+  )
+    throw new Error('Este horário está fora dos seus períodos de atendimento.');
+  const overlaps = (x: { start: string; end: string }) => x.start < slot.end && x.end > slot.start;
+  if (
+    s.weeklySlots.some(
+      (x) =>
+        x.id !== slot.id &&
+        x.weekday === slot.weekday &&
+        overlaps(x) &&
+        x.from < (slot.endsBefore ?? '9999-12-31') &&
+        slot.from < (x.endsBefore ?? '9999-12-31') &&
+        s.students.some((st) => st.id === x.studentId && !st.archivedOn),
+    )
+  )
+    throw new Error('Já existe uma aula fixa neste horário. Escolha outro período.');
+  if (
+    s.sessions.some(
+      (x) =>
+        x.status !== 'canceled' &&
+        x.weeklySlotId !== slot.id &&
+        x.date >= slot.from &&
+        (!slot.endsBefore || x.date < slot.endsBefore) &&
+        new Date(x.date + 'T12:00:00').getDay() === slot.weekday &&
+        overlaps(x),
+    )
+  )
+    throw new Error('Uma aula avulsa já ocupa uma das próximas datas deste horário.');
+  return {
+    ...s,
+    weeklySlots: s.weeklySlots.some((x) => x.id === slot.id)
+      ? s.weeklySlots.map((x) => (x.id === slot.id ? slot : x))
+      : [...s.weeklySlots, slot],
+  };
+}
+export function freeRanges(s: CoreState, date: string): { start: string; end: string }[] {
+  const weekday = new Date(date + 'T12:00:00').getDay();
+  const busy = sessionsForDate(s, date).filter((x) => x.status !== 'canceled');
+  const result: { start: string; end: string }[] = [];
+  for (const work of s.profile.workHours.filter((h) => h.weekday === weekday)) {
+    let ranges = [{ start: work.start, end: work.end }];
+    for (const block of busy)
+      ranges = ranges.flatMap((r) =>
+        block.end <= r.start || block.start >= r.end
+          ? [r]
+          : [
+              ...(block.start > r.start ? [{ start: r.start, end: block.start }] : []),
+              ...(block.end < r.end ? [{ start: block.end, end: r.end }] : []),
+            ],
+      );
+    result.push(...ranges);
+  }
+  return result.sort((a, b) => a.start.localeCompare(b.start));
 }

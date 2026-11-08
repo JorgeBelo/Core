@@ -3,17 +3,40 @@
     "name": "Core",
     "slug": "core-personal-offline",
     "scheme": "coreoffline",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "br.com.corepersonal.offline",
-      "buildNumber": "1"
+      "buildNumber": "2"
     },
-    "android": { "package": "br.com.corepersonal.offline" },
-    "web": { "bundler": "metro", "name": "Core Personal Offline", "favicon": "./assets/icon.png" },
-    "plugins": ["expo-sqlite", "expo-document-picker"]
+    "android": {
+      "package": "br.com.corepersonal.offline"
+    },
+    "web": {
+      "bundler": "metro",
+      "name": "Core Personal Offline",
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-document-picker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Escolha uma foto para personalizar seu perfil no Core.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#000000"
+        }
+      ]
+    ]
   }
 }
