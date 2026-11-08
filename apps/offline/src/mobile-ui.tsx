@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Image,
@@ -9,6 +9,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import {
   SafeAreaProvider,
   SafeAreaView,
@@ -19,29 +20,47 @@ import { Button, Icon, Txt, colors, styles as ui } from './ui';
 export function Intro({ onDone }: { onDone: () => void }) {
   const opacity = useRef(new Animated.Value(0)).current;
   const done = useRef(onDone);
-  const { width } = useWindowDimensions();
+  const [imageReady, setImageReady] = useState(false);
+  const [laidOut, setLaidOut] = useState(false);
+  const { width, height } = useWindowDimensions();
+  const logoSize = Math.min(width - 48, height - 48, 320);
   useEffect(() => {
+    if (!imageReady || !laidOut) return;
+    let stopped = false;
     const animation = Animated.sequence([
-      Animated.timing(opacity, { toValue: 1, duration: 280, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 550, useNativeDriver: true }),
       Animated.delay(650),
-      Animated.timing(opacity, { toValue: 0, duration: 180, useNativeDriver: true }),
     ]);
-    animation.start(({ finished }) => {
-      if (finished) done.current();
+    void SplashScreen.hideAsync().finally(() => {
+      if (!stopped)
+        animation.start(({ finished }) => {
+          if (finished) done.current();
+        });
     });
-    return () => animation.stop();
-  }, [opacity]);
+    return () => {
+      stopped = true;
+      animation.stop();
+    };
+  }, [opacity, imageReady, laidOut]);
   return (
     <View
       testID="core-intro"
+      onLayout={() => setLaidOut(true)}
       style={{ flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}
     >
-      <Animated.View style={{ opacity }}>
+      <Animated.View style={{ opacity, width: logoSize, height: logoSize }}>
         <Image
+          testID="core-intro-logo"
           accessibilityLabel="Core, Gestão para Personal Trainers"
           source={require('../assets/logo-original.png')}
           resizeMode="contain"
-          style={{ width: Math.min(width - 32, 390), aspectRatio: 1 }}
+          // Native Image supplies intrinsic bitmap dimensions; override BOTH axes.
+          style={{ width: logoSize, height: logoSize }}
+          onLoad={() => setImageReady(true)}
+          onError={() => {
+            SplashScreen.hide();
+            done.current();
+          }}
         />
       </Animated.View>
     </View>

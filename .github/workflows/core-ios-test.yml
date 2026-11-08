@@ -70,6 +70,18 @@ jobs:
             outputs/iphone/COMO-INSTALAR.txt
           if-no-files-found: error
           retention-days: 14
+      - name: Check launch on native iPhone simulator
+        timeout-minutes: 15
+        run: bash scripts/verify-ios-launch.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Core-launch-native-check
+          path: |
+            work/ios-launch/launch-*.png
+            work/ios-launch/build.log
+          if-no-files-found: warn
+          retention-days: 7
       - name: Preserve build logs
         if: failure()
         uses: actions/upload-artifact@v4

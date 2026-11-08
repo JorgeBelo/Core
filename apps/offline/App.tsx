@@ -19,6 +19,7 @@ import {
   initialWindowMetrics,
 } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import appConfig from './app.json';
 import { Intro, Sheet, Avatar } from './src/mobile-ui';
 import { EditorForm, Editor } from './src/editors';
 import { AgendaScreen } from './src/agenda-screen';
@@ -921,7 +922,7 @@ function CoreApp() {
                     dia a dia, mesmo sem internet.
                   </Txt>
                   <Txt muted style={{ fontSize: 12 }}>
-                    Desenvolvido por Jorge Amado Belo · Versão 0.2.0
+                    Desenvolvido por Jorge Amado Belo · Versão {appConfig.expo.version}
                   </Txt>
                 </Card>
               </>
