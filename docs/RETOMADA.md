@@ -35,9 +35,9 @@ Fonte da atualização: `3837146727c57ccbea63b926b3f3958ee3c2163b`. Compilação
 
 Pasta local: `C:/Users/Jorge-PC/Documents/Codex/2026-11-07/co/outputs`.
 
-`Core-iPhone-v0.2.0.ipa` é a atualização para assinatura pessoal. `Core-iPhone-teste.ipa` preserva a versão 0.1.0 anterior. As fontes atuais e o histórico Git continuam nos arquivos ZIP/bundle. O estado da entrega e os hashes estão nos JSONs dessa pasta.
+`Core-iPhone-v0.2.1.ipa` é a atualização atual para assinatura pessoal. `Core-iPhone-v0.2.0.ipa` e `Core-iPhone-teste.ipa` preservam as versões anteriores. As fontes atuais e o histórico Git continuam nos arquivos ZIP/bundle. O estado da entrega e os hashes estão nos JSONs dessa pasta.
 
-Instalar a 0.2.0 pelo Sideloadly por cima da versão atual, usando a mesma conta. Conferir no aparelho: topo fora do recorte das câmeras, teclado, foto, fade, PDF/compartilhamento, fluxo de dias/horários e dados preservados. Manter os dados no aparelho e exportar backup; nuvem automática ainda não implementada.
+Instalar a 0.2.1 pelo Sideloadly por cima da versão atual, usando a mesma conta e sem desinstalar o CORE. Conferir no aparelho: topo fora do recorte das câmeras, teclado, foto, fade, PDF/compartilhamento, fluxo de dias/horários e dados preservados. Manter os dados no aparelho e exportar backup; nuvem automática ainda não implementada.
 
 ## Atualização da abertura — 0.2.1
 
@@ -48,3 +48,9 @@ O usuário instalou/testou a 0.2.0 e relatou logo ampliada/cortada. A correção
 Compilação 0.2.1: https://github.com/JorgeBelo/Core/actions/runs/42494962549, fonte `d2ef78ae111f86a70f1d6e41133082a1c923bf38`. IPA arm64/build 3 baixado e verificado (hash externo/interno, CRCs, Info.plist e código embarcado). As verificações gerais do repositório passaram.
 
 O app abriu no simulador iOS Release, mas as 14 capturas começaram depois da intro e mostram o perfil inicial. Elas NÃO confirmam visualmente a animação nativa. Proporção/centro/fundo foram verificados na prévia web; a confirmação final no iPhone está pendente. O script foi ajustado para gravar vídeo antes de executar simctl launch nas próximas compilações; essa gravação nova ainda não foi executada.
+
+## Estado ao encerrar em 8 de novembro
+
+O proprietário pediu para salvar e commitar tudo antes de desligar o computador. Código da correção, testes, documentação e roteiro de retomada estão salvos no GitHub. IPA 0.2.1, fontes ZIP e histórico Git bundle estão preservados na pasta outputs indicada acima.
+
+A instalação/teste da 0.2.1 pelo proprietário ainda não foi confirmada. Na retomada, conferir primeiro o relato dele sobre a abertura. O IPA já foi compilado e verificado; não iniciar nova compilação só para retomar a instalação. Continuar usando Sideloadly e a mesma conta/identificador para manter os dados.
